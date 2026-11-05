@@ -1,5 +1,5 @@
 import { workspaceScope } from '../../../features/teams/workspaceScope'
-/** 画布顶栏：返回、标题、保存状态、设置占位 */
+/** 画布顶栏：กลับ、标题、บันทึกสถานะ、ตั้งค่า占位 */
 import { useState } from 'react'
 import { ChevronLeft, Maximize2, Settings } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
@@ -10,16 +10,16 @@ type Props = {
   variant?: 'fullscreen' | 'embedded'
 }
 
-/** 保存状态文案 */
+/** บันทึกสถานะ文案 */
 function saveStatusLabel(status: CanvasSaveStatus): string | null {
-  if (status === 'dirty') return '未保存'
-  if (status === 'saving') return '保存中…'
-  if (status === 'saved') return '已保存'
-  if (status === 'error') return '保存失败'
+  if (status === 'dirty') return '未บันทึก'
+  if (status === 'saving') return 'กำลังบันทึก…'
+  if (status === 'saved') return '已บันทึก'
+  if (status === 'error') return 'บันทึกไม่สำเร็จ'
   return null
 }
 
-/** 渲染画布页顶部工具栏 */
+/** เรนเดอร์画布页顶部工具栏 */
 export function CanvasTopBar({ variant = 'fullscreen' }: Props) {
   const navigate = useNavigate()
   const { saveStatus, projectId, freeCanvasMode } = useCanvasStore()
@@ -35,8 +35,8 @@ export function CanvasTopBar({ variant = 'fullscreen' }: Props) {
             <button
               type="button"
               className="fc-icon-btn"
-              aria-label="返回"
-              title="返回"
+              aria-label="กลับ"
+              title="กลับ"
               onClick={() => {
                 if (freeCanvasMode) {
                   navigate(workspaceScope.teamId ? `/teams/${workspaceScope.teamId}?tab=projects` : '/canvas')
@@ -50,7 +50,7 @@ export function CanvasTopBar({ variant = 'fullscreen' }: Props) {
             </button>
           )}
           <span className="fc-topbar-title">
-            {embedded ? '资产画布' : freeCanvasMode ? '自由画布' : '资产库编排'}
+            {embedded ? 'แอสเซท画布' : freeCanvasMode ? '自由画布' : 'แอสเซท库编排'}
           </span>
           {statusText ? (
             <span
@@ -85,8 +85,8 @@ export function CanvasTopBar({ variant = 'fullscreen' }: Props) {
           <button
             type="button"
             className="fc-icon-btn"
-            aria-label="设置"
-            title="设置"
+            aria-label="ตั้งค่า"
+            title="ตั้งค่า"
             aria-expanded={settingsOpen}
             onClick={() => setSettingsOpen((v) => !v)}
           >
@@ -96,11 +96,11 @@ export function CanvasTopBar({ variant = 'fullscreen' }: Props) {
       </div>
 
       {settingsOpen ? (
-        <div className="fc-settings-pop" role="dialog" aria-label="画布设置">
-          <strong>画布设置</strong>
+        <div className="fc-settings-pop" role="dialog" aria-label="画布ตั้งค่า">
+          <strong>画布ตั้งค่า</strong>
           {freeCanvasMode
-            ? '在画布上添加节点、连线并生成图片与视频。布局与资产会自动保存。'
-            : '布局与项目资产会自动同步保存。上传走 OSS；合成时按需拉本地缓存。'}
+            ? '在画布上เพิ่ม节点、连线并สร้างรูปภาพ与วิดีโอ。布局与แอสเซท会自动บันทึก。'
+            : '布局与โปรเจกต์แอสเซท会自动同步บันทึก。อัปโหลด走 OSS；合成时按需拉本地缓存。'}
           <div style={{ marginTop: 10 }}>
             <button
               type="button"
@@ -108,7 +108,7 @@ export function CanvasTopBar({ variant = 'fullscreen' }: Props) {
               style={{ width: 'auto', padding: '0 12px', borderRadius: 10 }}
               onClick={() => setSettingsOpen(false)}
             >
-              关闭
+              ปิด
             </button>
           </div>
         </div>

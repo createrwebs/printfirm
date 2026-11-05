@@ -1,4 +1,4 @@
-/** 出境资产节点：缩略图卡片，可关联多个分镜 */
+/** 出境แอสเซท节点：缩略图卡片，可关联多个分镜 */
 import { memo } from 'react'
 import { useTeamReadOnly } from '../../../features/teams/readOnlyContext'
 import { Handle, Position, type Node, type NodeProps } from '@xyflow/react'
@@ -10,7 +10,7 @@ type Props = NodeProps<Node<EpisodeAssetNodeData>> & {
   onUnlinkAsset?: (fragmentId: number, assetId: number) => void
 }
 
-// 渲染出境资产节点（同一资产全局只显示一张卡片）
+// เรนเดอร์出境แอสเซท节点（同一แอสเซททั่วไป只显示一张卡片）
 function EpisodeAssetNodeComponent({ data, selected, onUnlinkAsset }: Props) {
   const readOnly = useTeamReadOnly()
   const links = data.linkedFragments || []
@@ -25,8 +25,8 @@ function EpisodeAssetNodeComponent({ data, selected, onUnlinkAsset }: Props) {
               key={link.fragmentId}
               type="button"
               className="ep-asset-node-unlink-chip"
-              aria-label={`取消 ${link.label} 的关联`}
-              title={`取消 ${link.label} 的关联`}
+              aria-label={`ยกเลิก ${link.label} 的关联`}
+              title={`ยกเลิก ${link.label} 的关联`}
               disabled={readOnly}
               onClick={() => onUnlinkAsset?.(link.fragmentId, data.assetId)}
             >

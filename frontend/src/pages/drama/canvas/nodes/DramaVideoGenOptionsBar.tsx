@@ -1,5 +1,5 @@
 import { MediaCostNotice } from '../../../../components/billing/MediaCostNotice'
-/** 画布视频节点：风格 / Seedance 模型 / 时长 / 比例清晰度 */
+/** 画布วิดีโอ节点：สไตล์ / Seedance 模型 / ความยาว / อัตราส่วนความคมชัด */
 import { useEffect, useRef, useState, type MouseEvent } from 'react'
 import { BarChart3, ChevronDown, RectangleVertical, Smile, Timer } from 'lucide-react'
 import {
@@ -38,7 +38,7 @@ type DramaVideoGenOptionsBarProps = {
 
 type OpenPanel = 'style' | 'model' | 'duration' | 'output' | null
 
-/** 渲染视频生成选项条 */
+/** เรนเดอร์วิดีโอ生成选项条 */
 export function DramaVideoGenOptionsBar({
   value,
   onChange,
@@ -47,7 +47,7 @@ export function DramaVideoGenOptionsBar({
   const rootRef = useRef<HTMLDivElement>(null)
   const [open, setOpen] = useState<OpenPanel>(null)
   const [adjustment, setAdjustment] = useState('')
-  // 自定义时长草稿：输入过程不立刻 clamp，避免打「24」时中间的「2」被夹成 min
+  // กำหนดเองความยาวฉบับร่าง：输入过程不立刻 clamp，避免打「24」时中间的「2」被夹成 min
   const [durationDraft, setDurationDraft] = useState<string | null>(null)
   const durationDraftRef = useRef<string | null>(null)
   const catalog = useMediaModelsCatalog()
@@ -58,7 +58,7 @@ export function DramaVideoGenOptionsBar({
   }, [durationDraft])
 
   useEffect(() => {
-    // 目录到达后，把旧 Kie/方舟 id 换成后台默认视频模型
+    // 目录到达后，把旧 Kie/方舟 id 换成后台ค่าเริ่มต้นวิดีโอ模型
     if (!catalog || disabled) return
     const next = resolveCatalogModelSelection(catalog, 'video', value.model_id)
     if (next === value.model_id) return
@@ -78,7 +78,7 @@ export function DramaVideoGenOptionsBar({
   }, [catalog, disabled, value.model_id])
 
   useEffect(() => {
-    // 换模型后：清晰度 / 比例 / 时长钳到允许范围（须已知目录行，避免 SAFE 误写）
+    // 换模型后：ความคมชัด / อัตราส่วน / ความยาว钳到允许范围（须已知目录行，避免 SAFE 误写）
     if (disabled) return
     if (!hasKnownVideoModelResolutions(value.model_id, catalog, videoModels)) return
     const nextRes = clampVideoResolutionForModel(
@@ -99,7 +99,7 @@ export function DramaVideoGenOptionsBar({
       nextAspect !== value.aspect_ratio ||
       nextDur !== value.duration_sec
     ) {
-      setAdjustment('所选模型不支持原参数，已调整规格，请核对时长和报价后生成。')
+      setAdjustment('所选模型不支持原参数，已调整规格，请核对ความยาว和报价后生成。')
       onChange({
         ...value,
         resolution: nextRes,
@@ -116,7 +116,7 @@ export function DramaVideoGenOptionsBar({
     (sec) => sec >= durationBounds.min && sec <= durationBounds.max,
   )
 
-  /** 把草稿提交为夹紧后的 duration_sec */
+  /** 把ฉบับร่างส่ง为夹紧后的 duration_sec */
   function commitDurationDraft(raw: string | null = durationDraftRef.current) {
     if (raw == null) return
     const text = raw.trim()
@@ -150,8 +150,8 @@ export function DramaVideoGenOptionsBar({
     e.stopPropagation()
   }
 
-  const styleLabel = getImageStyleLabel(value.image_style_id) || '风格'
-  const modelLabel = catalogModelLabel(value.model_id, videoModels, '视频模型')
+  const styleLabel = getImageStyleLabel(value.image_style_id) || 'สไตล์'
+  const modelLabel = catalogModelLabel(value.model_id, videoModels, 'วิดีโอ模型')
   const outputLabel = formatVideoOutputLabel(value.aspect_ratio, value.resolution)
 
   return (
@@ -202,8 +202,8 @@ export function DramaVideoGenOptionsBar({
       </div>
 
       {open === 'style' ? (
-        <div className="fc-gen-opt-panel fc-gen-style-panel" role="dialog" aria-label="视频风格">
-          <div className="fc-gen-opt-panel-title">视频风格</div>
+        <div className="fc-gen-opt-panel fc-gen-style-panel" role="dialog" aria-label="วิดีโอสไตล์">
+          <div className="fc-gen-opt-panel-title">วิดีโอสไตล์</div>
           <div className="fc-gen-style-grid">
             {IMAGE_STYLE_OPTIONS.map((opt) => {
               const selected = value.image_style_id === opt.id
@@ -227,7 +227,7 @@ export function DramaVideoGenOptionsBar({
       ) : null}
 
       {open === 'model' ? (
-        <div className="fc-gen-opt-panel" role="dialog" aria-label="视频模型">
+        <div className="fc-gen-opt-panel" role="dialog" aria-label="วิดีโอ模型">
           <div className="fc-gen-opt-panel-title">模型</div>
           <DramaMediaModelPicker
             models={videoModels}
@@ -260,8 +260,8 @@ export function DramaVideoGenOptionsBar({
       ) : null}
 
       {open === 'duration' ? (
-        <div className="fc-gen-opt-panel" role="dialog" aria-label="视频时长">
-          <div className="fc-gen-opt-panel-title">时长</div>
+        <div className="fc-gen-opt-panel" role="dialog" aria-label="วิดีโอความยาว">
+          <div className="fc-gen-opt-panel-title">ความยาว</div>
           <div className="fc-gen-chip-row">
             {durationPresets.map((sec) => (
               <button
@@ -281,7 +281,7 @@ export function DramaVideoGenOptionsBar({
             ))}
           </div>
           <label className="fc-gen-duration-custom">
-            自定义（{durationBounds.min}–{durationBounds.max}s）
+            กำหนดเอง（{durationBounds.min}–{durationBounds.max}s）
             <input
               type="number"
               inputMode="numeric"
@@ -292,7 +292,7 @@ export function DramaVideoGenOptionsBar({
               disabled={disabled}
               onFocus={() => setDurationDraft(String(value.duration_sec))}
               onChange={(e) => {
-                // 允许清空/多位数中间态，失焦或回车再 clamp
+                // 允许ล้างข้อมูล/多位数中间态，失焦或回车再 clamp
                 const next = e.target.value
                 if (next !== '' && !/^\d{0,3}$/.test(next)) return
                 setDurationDraft(next)
@@ -311,8 +311,8 @@ export function DramaVideoGenOptionsBar({
       ) : null}
 
       {open === 'output' ? (
-        <div className="fc-gen-opt-panel" role="dialog" aria-label="画幅与清晰度">
-          <div className="fc-gen-opt-panel-title">比例</div>
+        <div className="fc-gen-opt-panel" role="dialog" aria-label="画幅与ความคมชัด">
+          <div className="fc-gen-opt-panel-title">อัตราส่วน</div>
           <div className="fc-gen-chip-row">
             {aspectOptions.map((ratio) => (
               <button
@@ -326,7 +326,7 @@ export function DramaVideoGenOptionsBar({
             ))}
           </div>
           <div className="fc-gen-opt-panel-title" style={{ marginTop: 10 }}>
-            清晰度
+            ความคมชัด
           </div>
           <div className="fc-gen-chip-row">
             {resolutionOptions.map((res) => (

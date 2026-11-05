@@ -10,6 +10,8 @@ import re
 from dataclasses import dataclass
 from typing import Any
 
+from app.services.drama.language import detect_content_language
+
 SEGMENT_DURATION_MIN = 3
 SEGMENT_DURATION_MAX = 12
 SHOT_DURATION_MIN = 4
@@ -26,6 +28,17 @@ VISUAL_PREFIX = "【画面·无配音仅环境音】"
 EMPTY_SHOT_PREFIX = "【空镜·可仅环境音与 BGM】"
 SUBTITLE_CUE = "【字幕：后期叠旁白字幕，简体中文逐句同步】"
 DRAMA_SUBTITLE_CUE = "【字幕：底部居中·简体中文·逐句轮换·与口播同步】"
+
+THAI_NARRATION_PREFIX = "【เสียงบรรยาย·พูดชัดจังหวะพอดี·ซิงค์คำบรรยาย】"
+THAI_NARRATION_NO_SUB_PREFIX = "【เสียงบรรยาย·พูดชัดจังหวะพอดี】"
+THAI_DIALOGUE_PREFIX = "【บทพูด·พูดชัดจังหวะพอดี·ซิงค์คำบรรยาย】"
+THAI_DIALOGUE_NO_SUB_PREFIX = "【บทพูด·พูดชัดจังหวะพอดี】"
+THAI_INNER_PREFIX = "【เสียงในใจ·ซิงค์คำบรรยาย】"
+THAI_INNER_NO_SUB_PREFIX = "【เสียงในใจ】"
+THAI_VISUAL_PREFIX = "【ภาพ·ไม่มีเสียงพูด มีเฉพาะเสียงบรรยากาศ】"
+THAI_EMPTY_SHOT_PREFIX = "【ช็อตบรรยากาศ·เฉพาะเสียงบรรยากาศและ BGM】"
+THAI_DRAMA_SUBTITLE_CUE = "【คำบรรยาย：แสดงคำบรรยายกึ่งกลางด้านล่าง ภาษาไทย เปลี่ยนตามประโยคที่พูด】"
+
 # 历史 cue，提交前统一替换为现行文案
 LEGACY_KEPU_SUBTITLE_CUES = (
     "【字幕：全程简体中文字幕，旁白逐句同步烧录】",
@@ -42,36 +55,46 @@ VISUAL_SHOT_LABEL_RE = re.compile(
     r"^(?:"
     r"空镜|画面|远景|近景|中景|全景|特写|大特写|"
     r"跟拍|俯拍|仰拍|航拍|推镜|拉镜|摇镜|环境|镜头|动作|转场|闪回|"
-    r"建立镜头|气氛镜头"
+    r"建立镜头|气氛镜头|"
+    r"ช็อตว่าง|ภาพ|ภาพมุมกว้าง|มุมกว้าง|ระยะไกล|ระยะกลาง|ระยะใกล้|โคลสอัป|"
+    r"ซูมอิน|ซูมเอาต์|แพนกล้อง|กล้องติดตาม|มุมสูง|มุมต่ำ|บรรยากาศ|ฉาก|การกระทำ|แฟลชแบ็ก"
     r")\s*[：:]"
 )
 VOICE_CUE_PREFIX_RE = re.compile(
-    r"^【(?:对白|旁白|内心独白)[^】]*】\s*"
+    r"^【(?:对白|旁白|内心独白|บทพูด|เสียงบรรยาย|เสียงในใจ)[^】]*】\s*"
 )
 # 角色（vo，低落）。——只有舞台指示、没有台词
 STAGE_ONLY_SPEAKER_RE = re.compile(
-    r"^(?P<speaker>[^：:\n（(\s]{1,16})"
+    r"^(?P<speaker>[^：:\n（(]{1,28}?)\s*"
     r"[（(](?P<paren>[^）)]+)[）)]\s*[。．.…]?\s*$"
 )
 # 角色：台词 / 角色（vo）：台词
 SPEAKER_DIALOGUE_RE = re.compile(
-    r"^(?P<speaker>[^：:\n（(\s]{1,16})"
+    r"^(?P<speaker>[^：:\n（(]{1,28}?)\s*"
     r"(?P<paren>[（(][^）)]+[）)])?"
     r"\s*[：:]\s*(?P<text>.+)$"
 )
-GENERIC_NARRATOR_NAMES = frozenset({"旁白", "解说", "narrator", "旁白a", "旁白b", "vo", "os"})
+GENERIC_NARRATOR_NAMES = frozenset(
+    {"旁白", "解说", "narrator", "旁白a", "旁白b", "vo", "os", "เสียงบรรยาย", "ผู้บรรยาย", "บรรยาย", "เสียงในหัว"}
+)
 _TIME_OR_DURATION_PREFIX_RE = re.compile(
     r"^(?:@duration:\d+|\d{2}:\d{2}-\d{2}:\d{2})\s*"
 )
 
 PRODUCTION_META_PREFIXES = (
     "【字幕",
+    "【คำบรรยาย",
     "【BGM",
     "【配乐",
+    "【ดนตรีประกอบ",
     "【人物介绍",
+    "【แนะนำตัวละคร",
     "【片头",
+    "【ไตเติล",
     "【背景介绍",
+    "【แนะนำภูมิหลัง",
     "【强制约束",
+    "【ข้อกำหนดบังคับ",
 )
 
 
@@ -88,12 +111,12 @@ def _strip_voice_cue_prefix(line: str) -> str:
 def is_visual_description_body(text: str) -> bool:
     # 判断正文是否为纯画面/空镜描写（不含配音意图）
     body = _strip_voice_cue_prefix(text or "").strip()
-    body = re.sub(r"^【(?:画面|空镜)[^】]*】\s*", "", body).strip()
+    body = re.sub(r"^【(?:画面|空镜|ภาพ|ช็อตบรรยากาศ)[^】]*】\s*", "", body).strip()
     if not body:
         return False
     if VISUAL_SHOT_LABEL_RE.match(body):
         return True
-    if body.startswith("空镜") or body.startswith("△") or body.startswith("Δ"):
+    if body.startswith("空镜") or body.startswith("ช็อตว่าง") or body.startswith("△") or body.startswith("Δ"):
         return True
     return False
 
@@ -169,22 +192,27 @@ def classify_voice_body(body: str) -> str:
     return "keep"
 
 
-def _dialogue_prefix_like(src_prefix: str) -> str:
+def _dialogue_prefix_like(src_prefix: str, *, is_thai: bool = False) -> str:
     """按原前缀是否含「同步字幕」生成对白 cue。"""
-    if "同步字幕" in (src_prefix or ""):
+    has_sub = "同步字幕" in (src_prefix or "") or "ซิงค์คำบรรยาย" in (src_prefix or "")
+    if is_thai:
+        return THAI_DIALOGUE_PREFIX if has_sub else THAI_DIALOGUE_NO_SUB_PREFIX
+    if has_sub:
         return DIALOGUE_PREFIX
     return "【对白·慢速清晰】"
 
 
 def rewrite_character_vo_voice_lines(content: str) -> str:
     """角色 VO 误标成旁白时改对白；纯（vo，情绪）舞台指示改画面；未打标台词补前缀。"""
+    is_thai = detect_content_language(content or "") == "th"
+    vis_pref = THAI_VISUAL_PREFIX if is_thai else VISUAL_PREFIX
     out: list[str] = []
     for raw in (content or "").replace("\r\n", "\n").split("\n"):
         line = raw.strip()
         if not line or line.startswith("@duration:") or is_production_meta_line(line):
             out.append(raw)
             continue
-        if line.startswith("【画面") or line.startswith("【空镜"):
+        if line.startswith(("【画面", "【空镜", "【ภาพ", "【ช็อตบรรยากาศ")):
             out.append(raw)
             continue
         match = VOICE_CUE_PREFIX_RE.match(line)
@@ -192,20 +220,25 @@ def rewrite_character_vo_voice_lines(content: str) -> str:
         body = line[len(prefix) :].strip() if match else line
         kind = classify_voice_body(body)
         if kind == "visual":
-            if prefix.startswith("【画面"):
+            if prefix.startswith(("【画面", "【ภาพ")):
                 out.append(raw)
             else:
-                out.append(f"{VISUAL_PREFIX}{body}")
+                out.append(f"{vis_pref}{body}")
             continue
-        if kind == "dialogue" and not prefix.startswith("【对白"):
-            out.append(f"{_dialogue_prefix_like(prefix)}{body}")
+        if kind == "dialogue" and not prefix.startswith(("【对白", "【บทพูด")):
+            out.append(f"{_dialogue_prefix_like(prefix, is_thai=is_thai)}{body}")
             continue
-        if kind == "inner" and not prefix.startswith("【内心独白"):
-            inner = "【内心独白·同步字幕】" if "同步字幕" in prefix else "【内心独白】"
+        if kind == "inner" and not prefix.startswith(("【内心独白", "【เสียงในใจ")):
+            has_sub = "同步字幕" in prefix or "ซิงค์คำบรรยาย" in prefix
+            if is_thai:
+                inner = THAI_INNER_PREFIX if has_sub else THAI_INNER_NO_SUB_PREFIX
+            else:
+                inner = "【内心独白·同步字幕】" if has_sub else "【内心独白】"
             out.append(f"{inner}{body}")
             continue
-        if kind == "narration" and not prefix.startswith("【旁白"):
-            out.append(f"【旁白·慢速清晰】{body}")
+        if kind == "narration" and not prefix.startswith(("【旁白", "【เสียงบรรยาย")):
+            narr = THAI_NARRATION_NO_SUB_PREFIX if is_thai else "【旁白·慢速清晰】"
+            out.append(f"{narr}{body}")
             continue
         out.append(raw)
     return "\n".join(out)
@@ -217,6 +250,8 @@ def rewrite_misclassified_visual_voice_lines(content: str) -> str:
     供 Seedance 提交前兜底，使旧分镜也能按画面-only 约束生成。
     """
     text = normalize_character_intro_cue(normalize_drama_subtitle_cue(content))
+    is_thai = detect_content_language(text) == "th"
+    vis_pref = THAI_VISUAL_PREFIX if is_thai else VISUAL_PREFIX
     out: list[str] = []
     for raw in text.replace("\r\n", "\n").split("\n"):
         line = raw.strip()
@@ -228,7 +263,7 @@ def rewrite_misclassified_visual_voice_lines(content: str) -> str:
             continue
         if VOICE_CUE_PREFIX_RE.match(line) and is_visual_description_body(line):
             body = _strip_voice_cue_prefix(line)
-            out.append(f"{VISUAL_PREFIX}{body}")
+            out.append(f"{vis_pref}{body}")
             continue
         out.append(raw)
     return rewrite_character_vo_voice_lines("\n".join(out))
@@ -242,7 +277,7 @@ def script_has_narration_cue(content: str) -> bool:
             continue
         if is_visual_description_body(line):
             continue
-        if NARRATION_PREFIX in line or line.startswith("【旁白"):
+        if NARRATION_PREFIX in line or line.startswith(("【旁白", "【เสียงบรรยาย")):
             return True
     return False
 
@@ -255,7 +290,7 @@ def script_has_dialogue_cue(content: str) -> bool:
             continue
         if is_visual_description_body(line):
             continue
-        if DIALOGUE_PREFIX in line or line.startswith("【对白"):
+        if DIALOGUE_PREFIX in line or line.startswith(("【对白", "【บทพูด")):
             return True
     return False
 
@@ -267,11 +302,11 @@ def script_is_drama_mixed(segment_script: str) -> bool:
         return True
     if script_has_dialogue_cue(content):
         return True
-    if DRAMA_SUBTITLE_CUE in content:
+    if DRAMA_SUBTITLE_CUE in content or THAI_DRAMA_SUBTITLE_CUE in content:
         return True
     if "仅标记段落同步" in content:
         return True
-    if "逐句轮换" in content:
+    if "逐句轮换" in content or "เปลี่ยนตามประโยคที่พูด" in content:
         return True
     if "对白旁白同步" in content:
         return True
@@ -284,9 +319,10 @@ def script_has_visual_only_cue(content: str) -> bool:
         line = raw.strip()
         if (
             line.startswith(VISUAL_PREFIX)
-            or line.startswith("【画面·")
-            or line.startswith("【空镜")
+            or line.startswith(THAI_VISUAL_PREFIX)
+            or line.startswith(("【画面·", "【ภาพ·", "【空镜", "【ช็อตบรรยากาศ"))
             or EMPTY_SHOT_PREFIX in line
+            or THAI_EMPTY_SHOT_PREFIX in line
             or is_visual_description_body(line)
         ):
             return True
@@ -412,6 +448,9 @@ _POST_SUBTITLE_PREFIX_MAP = (
     ("【旁白·慢速清晰·同步字幕】", "【旁白·慢速清晰】"),
     ("【旁白·自然语速·同步字幕】", "【旁白·自然语速】"),
     ("【内心独白·同步字幕】", "【内心独白】"),
+    (THAI_DIALOGUE_PREFIX, THAI_DIALOGUE_NO_SUB_PREFIX),
+    (THAI_NARRATION_PREFIX, THAI_NARRATION_NO_SUB_PREFIX),
+    (THAI_INNER_PREFIX, THAI_INNER_NO_SUB_PREFIX),
 )
 
 
@@ -423,7 +462,7 @@ def strip_model_burn_subtitle_cues(content: str) -> str:
         if not stripped:
             out.append(raw)
             continue
-        if stripped.startswith("【字幕"):
+        if stripped.startswith(("【字幕", "【คำบรรยาย")):
             continue
         line = stripped
         for src, dest in _POST_SUBTITLE_PREFIX_MAP:
@@ -439,7 +478,7 @@ def strip_character_intro_cues(content: str) -> str:
     out: list[str] = []
     for raw in (content or "").replace("\r\n", "\n").split("\n"):
         stripped = raw.strip()
-        if stripped.startswith("【人物介绍"):
+        if stripped.startswith(("【人物介绍", "【แนะนำตัวละคร")):
             continue
         out.append(raw)
     return "\n".join(out).replace("\n\n\n", "\n\n").strip()

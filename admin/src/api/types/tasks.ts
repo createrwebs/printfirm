@@ -36,7 +36,7 @@ export type AdminTaskRow = {
   billing_charged_fen?: number;
   billing_refunded_fen?: number;
   billing_status?: string;
-  /** 提交参数（入队 payload） */
+  /** ส่ง参数（入队 payload） */
   payload?: Record<string, unknown> | null;
   /** 执行结果 */
   result_payload?: Record<string, unknown> | null;

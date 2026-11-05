@@ -15,10 +15,10 @@ type Props = {
   onLogout: () => void
 }
 
-/** 头像展开个人入口；支持键盘、点击外部关闭及焦点返回。 */
+/** 头像ขยาย个人入口；支持键盘、点击外部ปิด及焦点กลับ。 */
 export default function AccountMenu({ user, open, marketplaceEnabled, onOpenChange, onNavigate, onLogout }: Props) {
   const { t } = useI18n()
-  /* wrapper 判断外部点击，button 负责关闭后的键盘焦点，panel 提供首个入口。 */
+  /* wrapper 判断外部点击，button 负责ปิด后的键盘焦点，panel 提供首个入口。 */
   const wrapperRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
@@ -26,11 +26,11 @@ export default function AccountMenu({ user, open, marketplaceEnabled, onOpenChan
   useEffect(() => {
     if (!open) return
     const frame = window.requestAnimationFrame(() => panelRef.current?.querySelector<HTMLElement>('a[href]')?.focus())
-    /** 外部点击保持点击目标的默认焦点。 */
+    /** 外部点击保持点击目标的ค่าเริ่มต้น焦点。 */
     function closeOutside(event: PointerEvent) {
       if (event.target instanceof Node && !wrapperRef.current?.contains(event.target)) onOpenChange(false)
     }
-    /** Escape 收起个人菜单并返回头像。 */
+    /** Escape ย่อเก็บ个人菜单并กลับ头像。 */
     function closeWithEscape(event: KeyboardEvent) {
       if (event.key !== 'Escape') return
       event.preventDefault()

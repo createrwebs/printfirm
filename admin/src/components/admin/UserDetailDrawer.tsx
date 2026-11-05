@@ -57,7 +57,7 @@ export function UserDetailDrawer({ userId, open, onOpenChange, initialUser }: Us
         setLedger(ledgerRes.items);
         setUsage(usageRes.items);
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : "加载用户明细失败");
+        toast.error(err instanceof Error ? err.message : "加载用户明细ล้มเหลว");
       } finally {
         setLoading(false);
       }
@@ -74,7 +74,7 @@ export function UserDetailDrawer({ userId, open, onOpenChange, initialUser }: Us
         user
           ? `${user.email} · ID：${formatAccountId(user.id)}`
           : loading
-            ? "加载中…"
+            ? "กำลังโหลด…"
             : "—"
       }
       bodyClassName="!pt-2"
@@ -85,7 +85,7 @@ export function UserDetailDrawer({ userId, open, onOpenChange, initialUser }: Us
             <TabsTrigger value="info">基本信息</TabsTrigger>
             <TabsTrigger value="orders">最近订单</TabsTrigger>
             <TabsTrigger value="ledger">钱包流水</TabsTrigger>
-            <TabsTrigger value="usage">用量摘要</TabsTrigger>
+            <TabsTrigger value="usage">用量เรื่องย่อ</TabsTrigger>
           </TabsList>
           <TabsContent value="info">
             <AdminDetailSection>
@@ -93,11 +93,11 @@ export function UserDetailDrawer({ userId, open, onOpenChange, initialUser }: Us
                 items={[
                   { label: "昵称", value: user.nickname || "—" },
                   { label: "手机", value: user.phone || "—" },
-                  { label: "角色", value: user.role },
+                  { label: "ตัวละคร", value: user.role },
                   { label: "余额", value: `¥${fenToYuan(user.balance_fen)}` },
                   { label: "冻结", value: `¥${fenToYuan(user.frozen_fen)}` },
                   {
-                    label: "注册时间",
+                    label: "注册เวลา",
                     value: user.created_at ? new Date(user.created_at).toLocaleString() : "—",
                     full: true,
                   },
@@ -112,8 +112,8 @@ export function UserDetailDrawer({ userId, open, onOpenChange, initialUser }: Us
                   <tr>
                     <th>单号</th>
                     <th>金额</th>
-                    <th>状态</th>
-                    <th>时间</th>
+                    <th>สถานะ</th>
+                    <th>เวลา</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -142,7 +142,7 @@ export function UserDetailDrawer({ userId, open, onOpenChange, initialUser }: Us
               <table>
                 <thead>
                   <tr>
-                    <th>类型</th>
+                    <th>ประเภท</th>
                     <th>变动</th>
                     <th>余额后</th>
                     <th>备注</th>
@@ -174,7 +174,7 @@ export function UserDetailDrawer({ userId, open, onOpenChange, initialUser }: Us
               <table>
                 <thead>
                   <tr>
-                    <th>时间</th>
+                    <th>เวลา</th>
                     <th>能力</th>
                     <th>扣费</th>
                     <th>任务</th>
@@ -211,7 +211,7 @@ export function UserDetailDrawer({ userId, open, onOpenChange, initialUser }: Us
           </TabsContent>
         </Tabs>
       ) : loading ? (
-        <div className="py-10 text-center text-sm text-[var(--admin-muted)]">加载中…</div>
+        <div className="py-10 text-center text-sm text-[var(--admin-muted)]">กำลังโหลด…</div>
       ) : null}
     </AdminModal>
   );

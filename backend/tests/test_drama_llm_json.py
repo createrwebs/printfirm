@@ -5,7 +5,12 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from app.services.drama.llm import _ensure_json_word_in_prompt, _extract_json, drama_chat_json
+from app.services.drama.llm import (
+    DramaLlmJsonError,
+    _ensure_json_word_in_prompt,
+    _extract_json,
+    drama_chat_json,
+)
 
 
 def test_extract_json_plain_object():
@@ -65,3 +70,15 @@ async def test_drama_chat_json_injects_json_before_response_format():
     assert data == {"ok": True}
     assert "json" in f"{captured['system']}\n{captured['user']}".lower()
     assert captured["response_format"] == {"type": "json_object"}
+
+
+@pytest.mark.asyncio
+async def test_drama_chat_json_does_not_retry_plain_prose_response():
+    """整段解释性文本不是可修复 JSON，不应再发一次昂贵的长请求。"""
+    chat = AsyncMock(return_value="我已经理解你的创意，但请先告诉我需要输出什么格式。")
+
+    with patch("app.services.drama.llm.chat_completions", new=chat):
+        with pytest.raises(DramaLlmJsonError, match="未按要求返回 JSON"):
+            await drama_chat_json("你是编剧", "请输出剧本摘要 JSON")
+
+    chat.assert_awaited_once()

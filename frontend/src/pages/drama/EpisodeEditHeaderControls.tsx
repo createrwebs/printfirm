@@ -1,4 +1,4 @@
-/** 分集编辑顶栏：画幅/清晰度 / 视频风格 / 字幕 / 人物介绍 / 模型 / 镜间衔接 */
+/** 分 ตอนแก้ไข顶栏：画幅/ความคมชัด / วิดีโอสไตล์ / คำบรรยาย (ซับไตเติล) / 人物介绍 / 模型 / 镜间衔接 */
 
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type MouseEvent } from 'react'
 
@@ -50,7 +50,7 @@ type Props = {
   onSubtitleModeChange: (mode: DramaSubtitleMode) => void
   onCharacterIntroModeChange: (mode: DramaCharacterIntroMode) => void
   disabled?: boolean
-  /** 风格/字幕/介绍/衔接为项目全局，分镜页只展示不可改；画幅/清晰度仍可改（随模型过滤） */
+  /** สไตล์/คำบรรยาย (ซับไตเติล)/介绍/衔接为โปรเจกต์ทั่วไป，分镜页只展示不可改；画幅/ความคมชัด仍可改（随模型过滤） */
   globalSettingsReadOnly?: boolean
 }
 
@@ -58,7 +58,7 @@ type OpenPanel = 'style' | 'model' | 'link' | 'subtitle' | 'intro' | null
 
 const STYLE_PANEL_WIDTH = 420
 
-// 渲染顶栏生成参数控件
+// เรนเดอร์顶栏生成参数控件
 export function EpisodeEditHeaderControls({
   styleId,
   modelId,
@@ -87,7 +87,7 @@ export function EpisodeEditHeaderControls({
       setPanelStyle(null)
       return
     }
-    // 固定定位下拉面板，避免与 top/bottom 冲突导致高度被压扁
+    // 固定定位下拉面板，避免与 top/bottom ความขัดแย้ง导致高度被压扁
     function updatePanelPosition() {
       const root = rootRef.current
       if (!root) return
@@ -134,11 +134,11 @@ export function EpisodeEditHeaderControls({
   const stop = (e: MouseEvent) => {
     e.stopPropagation()
   }
-  const styleLabel = getImageStyleLabel(styleId) || '视频风格'
-  const modelLabel = catalogModelLabel(modelId, videoModels, '视频模型')
-  const subtitleLabel = subtitleMode === 'model' ? '模型字幕' : '后期字幕'
+  const styleLabel = getImageStyleLabel(styleId) || 'สไตล์วิดีโอ'
+  const modelLabel = catalogModelLabel(modelId, videoModels, 'โมเดลวิดีโอ')
+  const subtitleLabel = subtitleMode === 'model' ? 'ซับไตเติลจากโมเดล' : 'ซับไตเติลตัดต่อภายหลัง'
   const subtitleUsesModel = subtitleModeUsesModelOutput(subtitleMode)
-  const introLabel = characterIntroMode === 'model' ? '人物介绍' : '无介绍叠字'
+  const introLabel = characterIntroMode === 'model' ? 'แนะนำตัวละคร' : 'ไม่แสดงตัวอักษรแนะนำ'
   const introEnabled = characterIntroModeEnabled(characterIntroMode)
   const globalLocked = disabled || globalSettingsReadOnly
   return (
@@ -166,7 +166,7 @@ export function EpisodeEditHeaderControls({
             if (globalSettingsReadOnly) return
             setOpen((c) => (c === 'style' ? null : 'style'))
           }}
-          title={globalSettingsReadOnly ? `${styleLabel}（项目设置，分镜只读）` : styleLabel}
+          title={globalSettingsReadOnly ? `${styleLabel} (การตั้งค่าโปรเจกต์ อ่านอย่างเดียว)` : styleLabel}
         >
           <Smile size={14} strokeWidth={1.8} />
           <span className="fc-gen-opt-label">{styleLabel}</span>
@@ -180,7 +180,7 @@ export function EpisodeEditHeaderControls({
             if (globalSettingsReadOnly) return
             setOpen((c) => (c === 'subtitle' ? null : 'subtitle'))
           }}
-          title={globalSettingsReadOnly ? `${subtitleLabel}（项目设置，分镜只读）` : '字幕设置'}
+          title={globalSettingsReadOnly ? `${subtitleLabel} (การตั้งค่าโปรเจกต์ อ่านอย่างเดียว)` : 'ตั้งค่าซับไตเติล'}
         >
           <Type size={14} strokeWidth={1.8} />
           <span className="fc-gen-opt-label">{subtitleLabel}</span>
@@ -194,7 +194,7 @@ export function EpisodeEditHeaderControls({
             if (globalSettingsReadOnly) return
             setOpen((c) => (c === 'intro' ? null : 'intro'))
           }}
-          title={globalSettingsReadOnly ? `${introLabel}（项目设置，分镜只读）` : '人物介绍叠字'}
+          title={globalSettingsReadOnly ? `${introLabel} (การตั้งค่าโปรเจกต์ อ่านอย่างเดียว)` : 'ตัวอักษรแนะนำตัวละคร'}
         >
           <Users size={14} strokeWidth={1.8} />
           <span className="fc-gen-opt-label">{introLabel}</span>
@@ -218,18 +218,18 @@ export function EpisodeEditHeaderControls({
             if (globalSettingsReadOnly) return
             setOpen((c) => (c === 'link' ? null : 'link'))
           }}
-          title={globalSettingsReadOnly ? `${linkLastFrame ? '尾帧衔接' : '并发生成'}（项目设置，分镜只读）` : '镜间尾帧衔接'}
+          title={globalSettingsReadOnly ? `${linkLastFrame ? 'เชื่อมเฟรมท้าย' : 'สร้างพร้อมกัน'} (การตั้งค่าโปรเจกต์ อ่านอย่างเดียว)` : 'เชื่อมต่อเฟรมท้ายระหว่างช็อต'}
         >
           <Link2 size={14} strokeWidth={1.8} />
-          <span className="fc-gen-opt-label">{linkLastFrame ? '尾帧衔接' : '并发生成'}</span>
+          <span className="fc-gen-opt-label">{linkLastFrame ? 'เชื่อมเฟรมท้าย' : 'สร้างพร้อมกัน'}</span>
           {!globalSettingsReadOnly ? <ChevronDown size={12} strokeWidth={2} /> : null}
         </button>
         <button
           type="button"
           className="fc-gen-opt-btn drama-seedance-help-btn"
           disabled={disabled}
-          title="Seedance 传值与使用规则"
-          aria-label="Seedance 传值与使用规则"
+          title="กฎการส่งค่าและการใช้งาน Seedance"
+          aria-label="กฎการส่งค่าและการใช้งาน Seedance"
           onClick={() => setRulesOpen(true)}
         >
           <CircleHelp size={14} strokeWidth={1.8} />
@@ -244,9 +244,9 @@ export function EpisodeEditHeaderControls({
                   className="fc-gen-opt-panel fc-gen-style-panel drama-ep-opt-panel fc-gen-opt-panel--portal"
                   style={panelStyle}
                   role="dialog"
-                  aria-label="视频风格"
+                  aria-label="สไตล์วิดีโอ"
                 >
-                  <div className="fc-gen-opt-panel-title">视频风格</div>
+                  <div className="fc-gen-opt-panel-title">สไตล์วิดีโอ</div>
                   <div className="fc-gen-style-grid">
                     {IMAGE_STYLE_OPTIONS.map((opt) => {
                       const selected = styleId === opt.id
@@ -274,13 +274,13 @@ export function EpisodeEditHeaderControls({
                   className="fc-gen-opt-panel drama-ep-opt-panel fc-gen-opt-panel--portal"
                   style={panelStyle}
                   role="dialog"
-                  aria-label="视频模型"
+                  aria-label="โมเดลวิดีโอ"
                 >
-                  <div className="fc-gen-opt-panel-title">视频模型</div>
+                  <div className="fc-gen-opt-panel-title">โมเดลวิดีโอ</div>
                   <DramaMediaModelPicker
                     models={videoModels}
                     selectedId={modelId}
-                    emptyHint="请先在管理后台「模型」保存预设默认模型"
+                    emptyHint="กรุณาตั้งค่าโมเดลเริ่มต้นในระบบจัดการก่อน"
                     onSelect={(opt) => {
                       onModelChange(opt.id)
                       setOpen(null)
@@ -293,9 +293,9 @@ export function EpisodeEditHeaderControls({
                   className="fc-gen-opt-panel drama-ep-opt-panel fc-gen-opt-panel--portal"
                   style={panelStyle}
                   role="dialog"
-                  aria-label="镜间衔接"
+                  aria-label="การเชื่อมต่อระหว่างช็อต"
                 >
-                  <div className="fc-gen-opt-panel-title">镜间衔接</div>
+                  <div className="fc-gen-opt-panel-title">การเชื่อมต่อระหว่างช็อต</div>
                   <label className="drama-ep-link-last-frame">
                     <input
                       type="checkbox"
@@ -304,10 +304,9 @@ export function EpisodeEditHeaderControls({
                       onChange={(e) => onLinkLastFrameChange(e.target.checked)}
                     />
                     <span>
-                      用上一镜尾帧衔接
+                      เชื่อมต่อด้วยเฟรมท้ายของช็อตก่อนหน้า
                       <em>
-                        默认开启。按镜序生成，可提前提交下一镜并在队列中等待上一镜完成；关闭后默认并发生成。切换时会立刻重排未开始的任务。有角色/场景参考时以参考图附带尾帧（不可与
-                        first_frame 混用）
+                        เปิดใช้งานเป็นค่าเริ่มต้น สร้างตามลำดับช็อต สามารถส่งช็อตถัดไปล่วงหน้าและรอในคิวจนช็อตก่อนหน้าเสร็จสิ้น หากปิดจะสร้างแบบขนานพร้อมกันทันที เมื่อสลับการตั้งค่าจะจัดลำดับงานที่ยังไม่เริ่มใหม่ทันที หากมีตัวละคร/ฉากอ้างอิงจะแนบภาพเฟรมท้ายเป็นภาพอ้างอิง (ห้ามใช้ปนกับ first_frame)
                       </em>
                     </span>
                   </label>
@@ -318,9 +317,9 @@ export function EpisodeEditHeaderControls({
                   className="fc-gen-opt-panel drama-ep-opt-panel fc-gen-opt-panel--portal"
                   style={panelStyle}
                   role="dialog"
-                  aria-label="字幕设置"
+                  aria-label="ตั้งค่าซับไตเติล"
                 >
-                  <div className="fc-gen-opt-panel-title">字幕设置</div>
+                  <div className="fc-gen-opt-panel-title">ตั้งค่าซับไตเติล</div>
                   <label className="drama-ep-link-last-frame">
                     <input
                       type="radio"
@@ -330,9 +329,9 @@ export function EpisodeEditHeaderControls({
                       onChange={() => onSubtitleModeChange('model')}
                     />
                     <span>
-                      模型自出字幕
+                      โมเดลสร้างซับไตเติลโดยตรง
                       <em>
-                        切换后会立刻在当前分镜正文里补回「同步字幕 / 字幕 cue」提示词，生成时由模型直接出字幕。
+                        เมื่อสลับจะเพิ่มคำสั่งพร้อมท์ «ซิงค์ซับไตเติล / คำบอกบท» ในช็อตปัจจุบันทันที โมเดลจะใส่ซับไตเติลลงในวิดีโอโดยตรงขณะสร้าง
                       </em>
                     </span>
                   </label>
@@ -345,9 +344,9 @@ export function EpisodeEditHeaderControls({
                       onChange={() => onSubtitleModeChange('post')}
                     />
                     <span>
-                      后期拼接字幕
+                      ใส่ซับไตเติลในขั้นตอนตัดต่อภายหลัง
                       <em>
-                        切换后会立刻去掉当前分镜里的字幕提示词，字幕可在后期剪辑时添加。
+                        เมื่อสลับจะตัดคำสั่งซับไตเติลออกจากช็อตปัจจุบันทันที เพื่อนำไปใส่ซับไตเติลในโปรแกรมตัดต่อวิดีโอภายหลัง
                       </em>
                     </span>
                   </label>
@@ -358,9 +357,9 @@ export function EpisodeEditHeaderControls({
                   className="fc-gen-opt-panel drama-ep-opt-panel fc-gen-opt-panel--portal"
                   style={panelStyle}
                   role="dialog"
-                  aria-label="人物介绍"
+                  aria-label="ตัวอักษรแนะนำตัวละคร"
                 >
-                  <div className="fc-gen-opt-panel-title">人物介绍叠字</div>
+                  <div className="fc-gen-opt-panel-title">ตัวอักษรแนะนำตัวละคร</div>
                   <label className="drama-ep-link-last-frame">
                     <input
                       type="radio"
@@ -370,9 +369,9 @@ export function EpisodeEditHeaderControls({
                       onChange={() => onCharacterIntroModeChange('model')}
                     />
                     <span>
-                      模型叠字介绍
+                      ซ้อนตัวอักษรแนะนำจากโมเดล
                       <em>
-                        开启后，重新规划分镜时会为首次出场重要角色写入「人物介绍·画面叠字·角色身旁」；生成时由模型把介绍贴在角色身旁。
+                        เมื่อเปิดใช้งาน เมื่อแบ่งสตอรี่บอร์ดใหม่จะใส่คำสั่ง «แนะนำตัวละคร · ข้อความซ้อน · ข้างตัวละคร» สำหรับตัวละครสำคัญที่ปรากฏตัวครั้งแรก โมเดลจะแสดงตัวอักษรแนะนำข้างตัวละครขณะสร้าง
                       </em>
                     </span>
                   </label>
@@ -385,9 +384,9 @@ export function EpisodeEditHeaderControls({
                       onChange={() => onCharacterIntroModeChange('off')}
                     />
                     <span>
-                      关闭人物介绍
+                      ปิดตัวอักษรแนะนำตัวละคร
                       <em>
-                        切换后会立刻去掉当前分镜里的人物介绍叠字行；生成时禁止画面内介绍字卡。已去掉的介绍需重新分镜才会回来。
+                        เมื่อสลับจะนำบรรทัดข้อความแนะนำตัวละครออกจากช็อตปัจจุบันทันที และห้ามแสดงการ์ดข้อความในภาพ หากต้องการนำกลับมาต้องแบ่งสตอรี่บอร์ดใหม่
                       </em>
                     </span>
                   </label>

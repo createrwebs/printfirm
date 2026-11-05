@@ -1,4 +1,4 @@
-/** 漫剧画面风格预览图：按 jpg → png → 后端 static → svg 依次回退 */
+/** ละครซีรีส์สไตล์ภาพดูตัวอย่าง图：按 jpg → png → 后端 static → svg 依次回退 */
 import { useMemo, useState } from 'react'
 import { getDramaImageStylePreviewCandidates } from '../../lib/dramaImageStylePreviews'
 import type { ImageStyleId } from '../../lib/dramaImageStyles'
@@ -10,7 +10,7 @@ type Props = {
   loading?: 'lazy' | 'eager'
 }
 
-// 渲染带多级回退的风格预览图
+// เรนเดอร์带多级回退的สไตล์ดูตัวอย่าง图
 export function DramaImageStylePreviewImg({
   styleId,
   alt = '',

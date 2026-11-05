@@ -1,4 +1,4 @@
-/** 漫剧资产生图：提交后立刻轮询，成功后用新 URL 实时回显（不排队提交） */
+/** ละครซีรีส์แอสเซท生图：ส่ง后立刻轮询，สำเร็จ后用新 URL 实时回显（不排队ส่ง） */
 import { dramaApi, type DramaAsset } from '../api/drama'
 import type { ImageGenerationOptions } from './dramaGenerationOptions'
 import { syncImageJobToUnified } from './dramaGenQueue'
@@ -28,7 +28,7 @@ type EnqueueInput = {
   options?: Partial<ImageGenerationOptions>
   /** 仅恢复轮询（后端已在 generating，不再重复 POST） */
   resumeOnly?: boolean
-  /** 入队/状态变化时回写资产（用于 UI 即时显示 generating / 新图） */
+  /** 入队/สถานะ变化时回写แอสเซท（用于 UI 即时显示 generating / 新图） */
   onAssetUpdate?: (asset: DramaAsset) => void
 }
 
@@ -41,7 +41,7 @@ type InternalJob = DramaImageGenJob & {
   reject: (err: Error) => void
 }
 
-/* 轮询可多路并行；提交不再限流排队，点了就 POST */
+/* 轮询可多路并行；ส่ง不再限流排队，点了就 POST */
 const MAX_POLL_CONCURRENT = 12
 const DONE_RETENTION_MS = 45_000
 const POLL_INTERVAL_MS = 1500
@@ -100,7 +100,7 @@ function snapshotsEqual(a: DramaImageGenJob[], b: DramaImageGenJob[]): boolean {
   return true
 }
 
-// 清理过期完成项
+// 清理过期เสร็จสิ้น项
 function pruneFinished() {
   const now = Date.now()
   jobs = jobs.filter((job) => {
@@ -144,7 +144,7 @@ export function getDramaImageGenQueue(): DramaImageGenJob[] {
   return cachedSnapshot
 }
 
-// 某资产是否忙
+// 某แอสเซท是否忙
 export function isDramaAssetImageBusy(assetId: number): boolean {
   return jobs.some(
     (job) =>
@@ -170,21 +170,21 @@ function makeJobId() {
   return `img-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 }
 
-// 读取资产 generation 状态
+// 读取แอสเซท generation สถานะ
 function readGenerationStatus(asset: DramaAsset): string {
   const gen = (asset.params || {}).generation as { status?: string } | undefined
   return String(gen?.status || '')
 }
 
-// 资产当前预览 URL
+// แอสเซท当前ดูตัวอย่าง URL
 function assetMediaUrl(asset: DramaAsset): string {
   return String(asset.url || asset.cover || '').trim()
 }
 
 /**
  * 轮询直到本次生图真正结束。
- * 有旧图时必须见到 queued/generating，或 URL 相对基线变化，避免秒回旧图当成功。
- * 必须先判 failed/cancelled：重试失败时旧 url/cover 仍在，不能当成功。
+ * 有旧图时必须见到 queued/generating，或 URL 相对基线变化，避免วินาที回旧图当สำเร็จ。
+ * 必须先判 failed/cancelled：ลองใหม่ล้มเหลว时旧 url/cover 仍在，不能当สำเร็จ。
  */
 async function waitForAssetImage(
   projectId: number,
@@ -200,7 +200,7 @@ async function waitForAssetImage(
   while (Date.now() - started < POLL_TIMEOUT_MS) {
     const list = await dramaApi.listAssets(projectId)
     const latest = list.find((a) => a.id === assetId)
-    if (!latest) throw new Error('资产不存在')
+    if (!latest) throw new Error('ไม่พบแอสเซท')
 
     const status = readGenerationStatus(latest)
     const currentUrl = assetMediaUrl(latest)
@@ -219,7 +219,7 @@ async function waitForAssetImage(
     if (status === 'failed' || status === 'cancelled') {
       const gen = (latest.params || {}).generation as { error?: string } | undefined
       const raw = String(gen?.error || '').trim()
-      throw new Error(raw || (status === 'cancelled' ? '生图已取消' : '生图失败'))
+      throw new Error(raw || (status === 'cancelled' ? 'การสร้างรูปภาพถูกยกเลิกแล้ว' : 'สร้างรูปภาพไม่สำเร็จ'))
     }
 
     const urlChanged = Boolean(currentUrl) && currentUrl !== baselineUrl
@@ -233,10 +233,10 @@ async function waitForAssetImage(
       return latest
     }
 
-    // 仍是旧图且未进入过 in-flight：继续等（POST 后状态可能尚未可见）
+    // 仍是旧图且未进入过 in-flight：继续等（POST 后สถานะ可能尚未可见）
     await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS))
   }
-  throw new Error('生图超时，请刷新后重试')
+  throw new Error('สร้างรูปภาพเกินเวลาที่กำหนด กรุณารีเฟรชแล้วลองใหม่อีกครั้ง')
 }
 
 const waitingPoll: InternalJob[] = []
@@ -266,7 +266,7 @@ async function pollJob(job: InternalJob) {
     emit()
     job.resolve(asset)
   } catch (err) {
-    const message = err instanceof Error ? err.message : '生图失败'
+    const message = err instanceof Error ? err.message : 'สร้างรูปภาพไม่สำเร็จ'
     job.status = 'failed'
     job.error = message
     job.finishedAt = Date.now()
@@ -322,7 +322,7 @@ async function submitJob(job: InternalJob) {
     waitingPoll.push(job)
     pumpPoll()
   } catch (err) {
-    const message = err instanceof Error ? err.message : '生图失败'
+    const message = err instanceof Error ? err.message : 'สร้างรูปภาพไม่สำเร็จ'
     job.status = 'failed'
     job.error = message
     job.finishedAt = Date.now()
@@ -334,8 +334,8 @@ async function submitJob(job: InternalJob) {
 }
 
 /**
- * 将资产生图加入队列：立刻 POST 到后端，再本地轮询结果。
- * 同资产已在排队/生成中时复用同一 Promise（避免重复打上游）。
+ * 将แอสเซท生图加入队列：立刻 POST 到后端，再本地轮询结果。
+ * 同แอสเซท已在排队/กำลังสร้าง时复用同一 Promise（避免重复打上游）。
  */
 export function enqueueDramaImageGen(input: EnqueueInput): Promise<DramaAsset> {
   const existing = jobs.find(
@@ -370,7 +370,7 @@ export function enqueueDramaImageGen(input: EnqueueInput): Promise<DramaAsset> {
       id: makeJobId(),
       projectId: input.projectId,
       assetId: input.assetId,
-      assetName: (input.assetName || '').trim() || `资产 ${input.assetId}`,
+      assetName: (input.assetName || '').trim() || `แอสเซท ${input.assetId}`,
       assetType: input.assetType || 'character',
       prompt: input.prompt,
       options: input.options || {},
@@ -384,7 +384,7 @@ export function enqueueDramaImageGen(input: EnqueueInput): Promise<DramaAsset> {
     }
     jobs = [...jobs, job]
     emit()
-    // 先拉一次当前图作基线，再提交/轮询，避免旧图被当成成功
+    // 先拉一次当前图作基线，再ส่ง/轮询，避免旧图被当成สำเร็จ
     void (async () => {
       try {
         const list = await dramaApi.listAssets(input.projectId)
@@ -404,7 +404,7 @@ export function enqueueDramaImageGen(input: EnqueueInput): Promise<DramaAsset> {
 }
 
 /**
- * 从资产列表恢复「后端仍在 generating」的任务（刷新页面后调用）。
+ * 从แอสเซท列表恢复「后端仍在 generating」的任务（รีเฟรช页面后调用）。
  * 不再重复 POST，只接上轮询与队列 UI。
  */
 export function resumeDramaImageGensFromAssets(
@@ -414,7 +414,7 @@ export function resumeDramaImageGensFromAssets(
 ): void {
   for (const asset of assets) {
     if (asset.project_id !== projectId) continue
-    /* 视频资产走 Seedance 队列，避免刷新后误 POST 生图 */
+    /* วิดีโอแอสเซท走 Seedance 队列，避免รีเฟรช后误 POST 生图 */
     if ((asset.type || '').toLowerCase() === 'video') continue
     const status = readGenerationStatus(asset)
     if (status !== 'generating' && status !== 'queued') continue
@@ -428,12 +428,12 @@ export function resumeDramaImageGensFromAssets(
       resumeOnly: true,
       onAssetUpdate,
     }).catch(() => {
-      /* 面板会显示失败；页面层可再 toast */
+      /* 面板会显示ล้มเหลว；页面层可再 toast */
     })
   }
 }
 
-// 清空已结束项
+// ล้างข้อมูล已结束项
 export function clearFinishedDramaImageGenJobs() {
   jobs = jobs.filter((job) => job.status === 'queued' || job.status === 'running')
   emit()

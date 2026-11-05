@@ -1,6 +1,6 @@
 /** Compact JSON preview for admin task list / tooltips. */
 
-// 将对象压成单行摘要；空值返回 —
+// 将对象压成单行摘要；空值กลับ —
 export function compactJsonPreview(value: unknown, maxLen = 96): string {
   if (value == null) return "—";
   if (typeof value === "string") {
@@ -23,7 +23,7 @@ export function compactJsonPreview(value: unknown, maxLen = 96): string {
   }
 }
 
-// 美化多行 JSON（详情弹窗）
+// 美化多行 JSON（รายละเอียด弹窗）
 export function prettyJson(value: unknown): string {
   if (value == null) return "—";
   try {

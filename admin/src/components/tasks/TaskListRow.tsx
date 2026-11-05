@@ -28,15 +28,15 @@ type TaskListRowProps = {
   onCancel: (task: AdminTaskRow) => void;
 };
 
-// 待处理任务细分为待激活 / 延时等待 / 待调度
+// รอดำเนินการ任务细分为待激活 / 延时等待 / 待调度
 function queueStatusLabel(task: AdminTaskRow): string {
   if (task.status !== "pending") return taskStatusLabel(task.status);
-  if (task.next_action_at === undefined) return "待处理";
+  if (task.next_action_at === undefined) return "รอดำเนินการ";
   if (task.next_action_at === null) return "待激活";
   return new Date(task.next_action_at).getTime() > Date.now() ? "延时等待" : "待调度";
 }
 
-// 列表内只显示月日时分，完整时间放 title
+// 列表内只显示月日时分，完整เวลา放 title
 function shortTime(value: string | null | undefined): string {
   if (!value) return "—";
   return new Date(value).toLocaleString(undefined, { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
@@ -46,18 +46,18 @@ function money(value: number | null | undefined): string {
   return value == null ? "—" : `¥${fenToYuan(value)}`;
 }
 
-// 阻止冒泡到行 onClick，避免链接跳转时同时打开详情
+// 阻止冒泡到行 onClick，避免链接跳转时同时打开รายละเอียด
 function stopRowClick(e: { stopPropagation: () => void }) {
   e.stopPropagation();
 }
 
-// 关联实体：项目 / 资产链接 + 分集分镜编号
+// 关联实体：โปรเจกต์ / แอสเซท链接 + 分 ตอน分镜编号
 function scopeLinks(task: AdminTaskRow): ReactNode {
   const parts: ReactNode[] = [];
   if (task.drama_project_id) parts.push(<AdminEntityLink key="drama" kind="drama" id={task.drama_project_id} />);
   if (task.project_id) parts.push(<AdminEntityLink key="project" kind="project" id={task.project_id} />);
   if (task.asset_id) parts.push(<AdminEntityLink key="asset" kind="drama_asset" id={task.asset_id} />);
-  if (task.episode_id) parts.push(<span key="ep">分集#{task.episode_id}</span>);
+  if (task.episode_id) parts.push(<span key="ep">分 ตอน#{task.episode_id}</span>);
   if (task.fragment_id) parts.push(<span key="frag">分镜#{task.fragment_id}</span>);
   if (parts.length === 0) return null;
   return <div className="task-cell-sub flex flex-wrap gap-x-2" onClick={stopRowClick}>{parts}</div>;
@@ -81,7 +81,7 @@ function BillingCell({ billing }: { billing: ReturnType<typeof taskBilling> }) {
   );
 }
 
-// 任务中心列表行：每格「主值 + 次要信息」两层，完整内容进详情
+// 任务中心列表行：每格「主值 + 次要信息」两层，完整内容进รายละเอียด
 export function TaskListRow({ task, upstream, billing, now, cancelling, onOpen, onCancel }: TaskListRowProps) {
   const tone = taskStatusTone(task.status);
   const duration = taskDurations(task, now);
@@ -94,12 +94,12 @@ export function TaskListRow({ task, upstream, billing, now, cancelling, onOpen, 
       <td className="min-w-[200px]">
         <div className="flex items-baseline gap-2">
           <span className="font-mono text-xs font-semibold">#{task.id}</span>
-          {task.execution_mode === "direct" ? <Badge variant="secondary">????</Badge> : task.queue_type ? <Badge variant="secondary">{{ text: "文字", image: "图片", video: "视频" }[task.queue_type]}队列</Badge> : null}
+          {task.execution_mode === "direct" ? <Badge variant="secondary">????</Badge> : task.queue_type ? <Badge variant="secondary">{{ text: "文字", image: "รูปภาพ", video: "วิดีโอ" }[task.queue_type]}队列</Badge> : null}
           <span className="task-cell-main">{taskDomainLabel(task.domain)} · {taskTypeLabel(task.task_type)}</span>
         </div>
         <div
           className="task-model-chip"
-          title={upstream.modelFromRequest ? `实际请求模型${upstream.provider ? ` · ${upstream.provider}` : ""}` : "任务选择模型"}
+          title={upstream.modelFromRequest ? `实际请求模型${upstream.provider ? ` · ${upstream.provider}` : ""}` : "任务เลือก模型"}
         >
           {upstream.model || "模型未记录"}
         </div>
@@ -150,15 +150,15 @@ export function TaskListRow({ task, upstream, billing, now, cancelling, onOpen, 
           <AdminEntityLink kind="user" id={task.requested_by} label={task.user_email ?? undefined} className="text-xs" />
         </div>
         {scopeLinks(task)}
-        <div className="task-cell-sub" title={task.created_at ? new Date(task.created_at).toLocaleString() : undefined}>创建 {shortTime(task.created_at)}</div>
+        <div className="task-cell-sub" title={task.created_at ? new Date(task.created_at).toLocaleString() : undefined}>สร้าง {shortTime(task.created_at)}</div>
       </td>
       <td className="text-right" onClick={stopRowClick}>
         <div className="inline-flex gap-1">
-          <button type="button" className="task-icon-btn" title="详情" aria-label="详情" onClick={() => onOpen(task.id)}>
+          <button type="button" className="task-icon-btn" title="รายละเอียด" aria-label="รายละเอียด" onClick={() => onOpen(task.id)}>
             <Eye className="h-4 w-4" />
           </button>
           {canCancelTask(task) ? (
-            <button type="button" className="task-icon-btn is-danger" title="取消任务" aria-label="取消任务" disabled={cancelling} onClick={() => onCancel(task)}>
+            <button type="button" className="task-icon-btn is-danger" title="ยกเลิก任务" aria-label="ยกเลิก任务" disabled={cancelling} onClick={() => onCancel(task)}>
               {cancelling ? <Loader2 className="h-4 w-4 animate-spin" /> : <Ban className="h-4 w-4" />}
             </button>
           ) : null}

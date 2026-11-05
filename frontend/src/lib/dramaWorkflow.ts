@@ -3,7 +3,7 @@ import type { DramaProject, DramaProjectListItem } from '../api/drama'
 export type DramaWorkflow = 'script' | 'canvas'
 export type DramaProjectFilter = 'all' | 'running' | 'done' | 'draft'
 
-const CANVAS_SOURCE_MARKER = '自由画布创作项目'
+const CANVAS_SOURCE_MARKER = '自由画布创作โปรเจกต์'
 const CANVAS_TITLE_MARKER = '自由画布'
 
 type WorkflowSource = {
@@ -13,7 +13,7 @@ type WorkflowSource = {
   script?: { source?: string | null } | null
 }
 
-/** 解析漫剧工作流：canvas=自由画布；script=大纲分集 */
+/** 解析ละครซีรีส์工作流：canvas=自由画布；script=大纲分集 */
 export function resolveDramaWorkflow(item: WorkflowSource | null | undefined): DramaWorkflow {
   const raw = String(item?.workflow || item?.params?.workflow || '')
     .trim()
@@ -29,14 +29,14 @@ export function resolveDramaWorkflow(item: WorkflowSource | null | undefined): D
   return 'script'
 }
 
-/** 是否自由画布项目 */
+/** 是否自由画布โปรเจกต์ */
 export function isCanvasWorkflow(
   item: DramaProject | DramaProjectListItem | WorkflowSource | null | undefined,
 ): boolean {
   return resolveDramaWorkflow(item) === 'canvas'
 }
 
-/** 项目入口路径：画布仅进 canvas，普通进工作台 */
+/** โปรเจกต์入口路径：画布仅进 canvas，普通进เวิร์กสเตชัน */
 export function dramaProjectEntryPath(
   item: DramaProject | DramaProjectListItem | WorkflowSource,
 ): string {
@@ -49,10 +49,10 @@ export function dramaProjectEntryPath(
 /** 列表卡片 meta 文案 */
 export function formatDramaCardMeta(item: DramaProjectListItem): string {
   if (isCanvasWorkflow(item)) {
-    return `自由画布 · ${item.asset_count || 0} 节点资产`
+    return `自由画布 · ${item.asset_count || 0} 节点แอสเซท`
   }
   if (item.has_script) {
-    return `已写剧本 · ${item.episode_count || 0} 集 · ${item.asset_count || 0} 资产`
+    return `已写剧本 · ${item.episode_count || 0} 集 · ${item.asset_count || 0} แอสเซท`
   }
-  return `草稿 · 待写剧本 · ${item.asset_count || 0} 资产`
+  return `ฉบับร่าง · 待写剧本 · ${item.asset_count || 0} แอสเซท`
 }

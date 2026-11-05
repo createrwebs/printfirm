@@ -1,4 +1,4 @@
-/** 分集 / 项目画幅与清晰度设置（写入 episode.params 或 project.params） */
+/** 分 ตอน / โปรเจกต์画幅与ความคมชัดตั้งค่า（写入 episode.params 或 project.params） */
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type MouseEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { ChevronDown, RectangleVertical } from 'lucide-react'
@@ -23,12 +23,12 @@ import './drama.css'
 
 type Props = {
   params: Record<string, unknown>
-  /** 分集模式下用于展示继承的项目默认 */
+  /** 分 ตอน模式下用于展示继承的โปรเจกต์ค่าเริ่มต้น */
   fallbackParams?: Record<string, unknown>
   scope?: 'episode' | 'project'
   disabled?: boolean
   compact?: boolean
-  /** 当前视频模型；用于过滤清晰度 / 比例 */
+  /** 当前วิดีโอ模型；用于过滤ความคมชัด / อัตราส่วน */
   videoModelId?: string
   onChange: (
     nextParams: Record<string, unknown>,
@@ -36,7 +36,7 @@ type Props = {
   ) => void | Promise<void>
 }
 
-/** 渲染输出规格控件 */
+/** เรนเดอร์输出规格控件 */
 export function DramaProjectOutputSettings({
   params,
   fallbackParams = {},
@@ -76,12 +76,12 @@ export function DramaProjectOutputSettings({
     videoModels,
   ) as DramaResolution
   const outputLabel = formatProjectOutputLabel(clampedAspect, clampedResolution)
-  const scopeHint = scope === 'episode' ? '本集' : '项目统一'
-  const panelTitle = scope === 'episode' ? '分集画幅' : '项目画幅'
+  const scopeHint = scope === 'episode' ? '本 ตอน' : 'โปรเจกต์统一'
+  const panelTitle = scope === 'episode' ? '分 ตอน画幅' : 'โปรเจกต์画幅'
   const panelNote =
     scope === 'episode'
-      ? '仅本集分镜使用；未单独设置时继承项目默认。比例与清晰度随当前视频模型过滤，可点选修改。'
-      : '全部分集共用同一规格；比例与清晰度随当前视频模型过滤。'
+      ? '仅本 ตอน分镜使用；未单独ตั้งค่า时继承โปรเจกต์ค่าเริ่มต้น。อัตราส่วน与ความคมชัด随当前วิดีโอ模型过滤，可点选修改。'
+      : 'ทุกตอน共用同一规格；อัตราส่วน与ความคมชัด随当前วิดีโอ模型过滤。'
 
   /* 仅在目录已匹配到模型白名单时静默钳制回写，避免 catalog/modelId 未就绪时把 1080p 写成 720p */
   useEffect(() => {
@@ -172,8 +172,8 @@ export function DramaProjectOutputSettings({
         disabled={disabled || saving}
         title={
           scope === 'episode'
-            ? '本集画幅与清晰度；各镜生成后可直接拼接'
-            : '全项目统一画幅与清晰度，各分镜生成后可直接拼接'
+            ? '本 ตอน画幅与ความคมชัด；各镜生成后可直接拼接'
+            : '全โปรเจกต์统一画幅与ความคมชัด，各分镜生成后可直接拼接'
         }
         onClick={() => setOpen((c) => !c)}
       >
@@ -189,7 +189,7 @@ export function DramaProjectOutputSettings({
               className="fc-gen-opt-panel drama-ep-opt-panel fc-gen-opt-panel--portal"
               style={panelStyle}
               role="dialog"
-              aria-label={scope === 'episode' ? '分集画幅与清晰度' : '项目画幅与清晰度'}
+              aria-label={scope === 'episode' ? '分 ตอน画幅与ความคมชัด' : 'โปรเจกต์画幅与ความคมชัด'}
             >
               <div className="fc-gen-opt-panel-title">{panelTitle}</div>
               <p className="drama-project-output-note">{panelNote}</p>
@@ -208,7 +208,7 @@ export function DramaProjectOutputSettings({
                 ))}
               </div>
               <div className="fc-gen-opt-panel-title" style={{ marginTop: 12 }}>
-                清晰度
+                ความคมชัด
               </div>
               <div className="fc-gen-chip-row">
                 {resolutionOptions.map((r) => (

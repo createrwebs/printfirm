@@ -1,4 +1,4 @@
-/** 分集任务以集号独立记录，兼容个人历史的单槽状态字段。 */
+/** 分集任务以集号独立记录，兼容个人历史的单槽สถานะ字段。 */
 export function readEpisodeJob(script: { params?: Record<string, unknown> | null } | null, number: number): { status: string; mode: string; error: string; assetsCreated: number } {
   const params = script?.params || {}
   const jobs = params.episode_jobs

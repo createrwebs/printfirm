@@ -28,9 +28,9 @@ export const DRAMA_NARRATION_PREFIX = '【旁白·慢速清晰·同步字幕】'
 
 // 空镜 / 景别冒号标签（与后端 VISUAL_SHOT_LABEL_RE 对齐）
 const VISUAL_SHOT_LABEL_RE =
-  /^(?:空镜|画面|远景|近景|中景|全景|特写|大特写|跟拍|俯拍|仰拍|航拍|推镜|拉镜|摇镜|环境|镜头|动作|转场|闪回|建立镜头|气氛镜头)\s*[：:]/
+  /^(?:空镜|画面|远景|近景|中景|全景|特写|大特写|跟拍|俯拍|仰拍|航拍|推镜|拉镜|摇镜|环境|镜头|动作|转场|闪回|建立镜头|气氛镜头|ช็อตว่าง|ภาพ|ภาพระยะไกล|ภาพระยะใกล้|ภาพระยะกลาง|ภาพมุมกว้าง|โคลสอัป|โคลสอัปพิเศษ|กล้องตาม|มุมสูง|มุมต่ำ|บรรยากาศ|การกระทำ|ฉาก|สถานที่)\s*[：:]/
 
-const VOICE_CUE_PREFIX_RE = /^【(?:对白|旁白|内心独白)[^】]*】\s*/
+const VOICE_CUE_PREFIX_RE = /^【(?:对白|旁白|内心独白|บทพูด|เสียงบรรยาย|เสียงในใจ)[^】]*】\s*/
 
 export type DramaScriptIssue = {
   level: 'error' | 'warn'
@@ -90,10 +90,10 @@ function listFragmentAssetIds(frag: DramaFragment): number[] {
 // 判断正文是否为纯画面 / 空镜描写
 export function isVisualDescriptionBody(text: string): boolean {
   let body = stripVoiceCuePrefix((text || '').trim())
-  body = body.replace(/^【(?:画面|空镜)[^】]*】\s*/, '').trim()
+  body = body.replace(/^【(?:画面|空镜|ภาพ|ช็อตว่าง)[^】]*】\s*/, '').trim()
   if (!body) return false
   if (VISUAL_SHOT_LABEL_RE.test(body)) return true
-  if (body.startsWith('空镜') || body.startsWith('△') || body.startsWith('Δ')) return true
+  if (body.startsWith('空镜') || body.startsWith('ช็อตว่าง') || body.startsWith('△') || body.startsWith('Δ')) return true
   return false
 }
 
@@ -104,19 +104,30 @@ function scriptLikelyNeedsVoice(content: string): boolean {
     if (!line || line.startsWith('@duration:')) continue
     if (
       line.startsWith('【字幕') ||
+      line.startsWith('【คำบรรยาย') ||
       line.startsWith('【BGM') ||
       line.startsWith('【人物介绍') ||
+      line.startsWith('【แนะนำตัวละคร') ||
       line.startsWith('【片头') ||
-      line.startsWith('【背景介绍')
+      line.startsWith('【ไตเติล') ||
+      line.startsWith('【背景介绍') ||
+      line.startsWith('【ปูพื้นเรื่อง')
     ) {
       continue
     }
-    if (line.startsWith('【对白') || line.startsWith('【旁白') || line.startsWith('【内心独白')) {
+    if (
+      line.startsWith('【对白') ||
+      line.startsWith('【旁白') ||
+      line.startsWith('【内心独白') ||
+      line.startsWith('【บทพูด') ||
+      line.startsWith('【เสียงบรรยาย') ||
+      line.startsWith('【เสียงในใจ')
+    ) {
       if (!isVisualDescriptionBody(line)) return true
       continue
     }
     if (isVisualDescriptionBody(line)) continue
-    if (/^[^：:\n]{1,16}[：:]/.test(line) && !VISUAL_SHOT_LABEL_RE.test(line)) {
+    if (/^[^：:\n]{1,32}[：:]/.test(line) && !VISUAL_SHOT_LABEL_RE.test(line)) {
       return true
     }
   }
@@ -138,38 +149,44 @@ export function validateDramaFragmentScript(content: string): DramaScriptIssue[]
   if (badSegment != null) {
     issues.push({
       level: 'error',
-      message: `单个 @duration 需在 ${DRAMA_SEGMENT_DURATION_MIN}–${DRAMA_SEGMENT_DURATION_HARD_MAX} 秒之间`,
+      message: `แต่ละ @duration ต้องอยู่ระหว่าง ${DRAMA_SEGMENT_DURATION_MIN}–${DRAMA_SEGMENT_DURATION_HARD_MAX} วินาที`,
     })
   } else if (durations.some((value) => value > DRAMA_SEGMENT_DURATION_MAX)) {
     issues.push({
       level: 'warn',
-      message: `部分 @duration 超过新分镜建议 ${DRAMA_SEGMENT_DURATION_MAX}s，旧稿可继续生成`,
+      message: `บาง @duration เกินค่าแนะนำ ${DRAMA_SEGMENT_DURATION_MAX} วินาที (ยังสามารถสร้างต่อได้)`,
     })
   }
 
   if (total > DRAMA_SHOT_DURATION_HARD_MAX) {
     issues.push({
       level: 'error',
-      message: `本镜 @duration 合计 ${total}s，超过 Seedance 上限 ${DRAMA_SHOT_DURATION_HARD_MAX}s`,
+      message: `@duration รวมของช็อตนี้คือ ${total} วินาที เกินขีดจำกัดสูงสุด ${DRAMA_SHOT_DURATION_HARD_MAX} วินาที`,
     })
   } else if (total > FRAGMENT_CONTENT_DURATION_MAX) {
     issues.push({
       level: 'warn',
-      message: `本镜 @duration 合计 ${total}s，超过新分镜建议 ${FRAGMENT_CONTENT_DURATION_MAX}s（旧稿可继续生成）`,
+      message: `@duration รวมของช็อตนี้คือ ${total} วินาที เกินค่าแนะนำ ${FRAGMENT_CONTENT_DURATION_MAX} วินาที (ยังสามารถสร้างต่อได้)`,
     })
   }
 
   for (const raw of (content || '').replace(/\r\n/g, '\n').split('\n')) {
     const line = raw.trim()
     if (!line || line.startsWith('@duration:')) continue
-    if (line.startsWith('【字幕') || line.startsWith('【BGM') || line.startsWith('【人物介绍')) {
+    if (
+      line.startsWith('【字幕') ||
+      line.startsWith('【คำบรรยาย') ||
+      line.startsWith('【BGM') ||
+      line.startsWith('【人物介绍') ||
+      line.startsWith('【แนะนำตัวละคร')
+    ) {
       continue
     }
     if (VOICE_CUE_PREFIX_RE.test(line) && isVisualDescriptionBody(line)) {
       issues.push({
         level: 'error',
         message:
-          '检测到「空镜/景别」被标成对白或旁白（会口播并烧字幕）。请改为「【画面·无配音仅环境音】」或「空镜：…」纯画面行',
+          'ตรวจพบบรรทัดภาพ/ช็อตว่างถูกระบุเป็นบทพูดหรือเสียงบรรยาย โปรดเปลี่ยนเป็น「【ภาพ·ไม่มีเสียงพูดมีเฉพาะเสียงบรรยากาศ】」',
       })
       break
     }
@@ -211,14 +228,14 @@ export function validateDramaFragmentAssets(
   if (missingImage.length > 0) {
     issues.push({
       level: 'error',
-      message: `以下关联资产缺少参考图，请先生成或上传后再生成视频：${missingImage.slice(0, 5).join('、')}${missingImage.length > 5 ? '…' : ''}`,
+      message: `แอสเซทที่เชื่อมโยงต่อไปนี้ยังไม่มีภาพอ้างอิง โปรดสร้างหรืออัปโหลดภาพก่อนสร้างวิดีโอ: ${missingImage.slice(0, 5).join(', ')}${missingImage.length > 5 ? '…' : ''}`,
     })
   }
 
   if (missingVoice.length > 0) {
     issues.push({
       level: 'warn',
-      message: `脚本含对白，但以下角色尚未绑定音色：${missingVoice.slice(0, 5).join('、')}${missingVoice.length > 5 ? '…' : ''}`,
+      message: `สคริปต์มีบทพูด แต่ตัวละครต่อไปนี้ยังไม่ได้ผูกเสียง: ${missingVoice.slice(0, 5).join(', ')}${missingVoice.length > 5 ? '…' : ''}`,
     })
   }
 
@@ -247,10 +264,10 @@ export function formatDramaGateMessage(
 ): string {
   const parts = [baseMessage]
   if (blocking.length > 0) {
-    parts.push('', '【须先修复】', ...blocking.map((i) => `· ${i.message}`))
+    parts.push('', '【ต้องแก้ไขก่อน】', ...blocking.map((i) => `· ${i.message}`))
   }
   if (warnings.length > 0) {
-    parts.push('', '【建议处理，仍可继续】', ...warnings.map((i) => `· ${i.message}`))
+    parts.push('', '【คำแนะนำ (ดำเนินการต่อได้)】', ...warnings.map((i) => `· ${i.message}`))
   }
   return parts.join('\n')
 }

@@ -12,6 +12,7 @@ import {
 import type { AdminUsageBucket } from "@/api/client";
 import { fenToYuan } from "@/lib/utils";
 import type { DashboardMetric } from "./DashboardFilters";
+import { useI18n } from "@/i18n";
 
 const CHART_COLORS = [
   "var(--admin-forest)",
@@ -50,6 +51,7 @@ export function UsageDistributionChart({
   chartHeight = 220,
   yAxisWidth = 72,
 }: UsageDistributionChartProps) {
+  const { locale } = useI18n();
   const chartData = data
     .map((row) => ({
       key: row.key,
@@ -59,7 +61,11 @@ export function UsageDistributionChart({
     .filter((row) => row.value > 0);
 
   if (chartData.length === 0) {
-    return <div className="admin-chart-empty">暂无分布数据</div>;
+    return (
+      <div className="admin-chart-empty">
+        {locale === "th" ? "ไม่มีข้อมูลการกระจายตัว" : locale === "en" ? "No distribution data" : "暂无分布数据"}
+      </div>
+    );
   }
 
   if (variant === "donut") {
@@ -102,7 +108,6 @@ export function UsageDistributionChart({
                 style={{ background: CHART_COLORS[idx % CHART_COLORS.length] }}
               />
               <span className="admin-chart-legend-label">{row.name}</span>
-              <span className="admin-chart-legend-value">{formatMetric(row.value, metric)}</span>
             </div>
           ))}
         </div>
@@ -111,29 +116,40 @@ export function UsageDistributionChart({
   }
 
   return (
-    <div className="admin-chart-wrap admin-chart-wrap--compact">
-      <ResponsiveContainer width="100%" height={chartHeight}>
-        <BarChart data={chartData} layout="vertical" margin={{ top: 0, right: 8, left: 0, bottom: 0 }}>
-          <XAxis type="number" hide />
+    <div className="admin-chart-wrap" style={{ height: chartHeight }}>
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart
+          data={chartData}
+          layout="vertical"
+          margin={{ top: 8, right: 16, bottom: 8, left: 8 }}
+        >
+          <XAxis
+            type="number"
+            stroke="var(--admin-muted)"
+            fontSize={11}
+            tickLine={false}
+            axisLine={false}
+            tickFormatter={(v) => formatMetric(v, metric)}
+          />
           <YAxis
             type="category"
             dataKey="name"
-            width={yAxisWidth}
-            tick={{ fill: "var(--admin-muted)", fontSize: 11 }}
-            axisLine={false}
+            stroke="var(--admin-muted)"
+            fontSize={12}
             tickLine={false}
+            axisLine={false}
+            width={yAxisWidth}
           />
           <Tooltip
-            cursor={{ fill: "var(--admin-accent-soft)" }}
             contentStyle={{
               background: "var(--admin-card)",
               border: "1px solid var(--admin-border)",
               borderRadius: "10px",
               fontSize: "12px",
             }}
-            formatter={(value) => [formatMetric(Number(value ?? 0), metric), "数值"]}
+            formatter={(value) => [formatMetric(Number(value ?? 0), metric), ""]}
           />
-          <Bar dataKey="value" radius={[0, 6, 6, 0]} maxBarSize={18}>
+          <Bar dataKey="value" fill="var(--admin-forest)" radius={[0, 6, 6, 0]} barSize={16}>
             {chartData.map((row, idx) => (
               <Cell key={row.key} fill={CHART_COLORS[idx % CHART_COLORS.length]} />
             ))}

@@ -35,14 +35,14 @@ export function SecretField({
 }: SecretFieldProps) {
   const [visible, setVisible] = useState(false);
   const hasDraft = value.trim().length > 0;
-  const status = clearPending ? "保存后清除" : hasDraft ? "新凭证待保存" : configured ? "已配置" : "未配置";
+  const status = clearPending ? "บันทึก后清除" : hasDraft ? "新凭证待บันทึก" : configured ? "已配置" : "未配置";
   const inputRequired = required && !configured && !clearPending;
   const fieldError = error ?? (value.length > 0 && !hasDraft && !clearPending ? "凭证不能只包含空格。" : undefined);
   const guidance = clearPending
-    ? "当前只是标记清除，保存后生效；可撤销清除。"
+    ? "当前只是标记清除，บันทึก后生效；可撤销清除。"
     : configured
-      ? "已有凭证不会回显；留空保留，输入新值后保存以替换。"
-      : "填写新凭证后保存；显示按钮仅展示本次输入。";
+      ? "已有凭证不会回显；留空保留，输入新值后บันทึก以替换。"
+      : "填写新凭证后บันทึก；显示按钮仅展示本次输入。";
   return (
     <LabeledControl
       label={label}

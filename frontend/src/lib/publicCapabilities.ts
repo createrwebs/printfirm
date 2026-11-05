@@ -1,6 +1,6 @@
 export type PublicCapabilities = { drama_voice_generation_enabled: boolean }
 
-export const VOICE_GENERATION_DISABLED_MESSAGE = '音色生成暂时停用，可选择已有音色或上传音频。'
+export const VOICE_GENERATION_DISABLED_MESSAGE = 'การสร้างเสียงพูดถูกปิดใช้งานชั่วคราว สามารถเลือกเสียงที่มีอยู่หรืออัปโหลดไฟล์เสียงได้'
 
 export function characterVoiceGenerationEnabled(value: unknown): boolean {
   return value !== null && typeof value === 'object' &&

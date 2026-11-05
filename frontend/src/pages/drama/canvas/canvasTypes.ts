@@ -1,4 +1,4 @@
-/** 画布节点类型与选择器选项定义 */
+/** 画布节点ประเภท与เลือก器选项定义 */
 import type { LucideIcon } from 'lucide-react'
 import {
   AudioLines,
@@ -24,14 +24,14 @@ export type CanvasAssetNodeData = {
   mediaUrl?: string | null
   textContent?: string
   generating?: boolean
-  /** 视频节点 Seedance 生成参数 */
+  /** วิดีโอ节点 Seedance 生成参数 */
   videoOptions?: Record<string, unknown>
-  /** 角色/场景/图片节点生图参数（模型/比例/清晰度） */
+  /** ตัวละคร/ฉาก/รูปภาพ节点生图参数（模型/อัตราส่วน/ความคมชัด） */
   imageOptions?: Record<string, unknown>
   [key: string]: unknown
 }
 
-/** 支持本地媒体上传的节点类型 */
+/** 支持本地媒体อัปโหลด的节点ประเภท */
 export const CANVAS_UPLOADABLE_KINDS = new Set<CanvasNodeKind>([
   'character',
   'scene',
@@ -40,7 +40,7 @@ export const CANVAS_UPLOADABLE_KINDS = new Set<CanvasNodeKind>([
   'audio',
 ])
 
-/** 支持提示词 + AI 生成的节点类型 */
+/** 支持คำแนะนำ词 + AI 生成的节点ประเภท */
 export const CANVAS_GENERATABLE_KINDS = new Set<CanvasNodeKind>([
   'character',
   'scene',
@@ -48,7 +48,7 @@ export const CANVAS_GENERATABLE_KINDS = new Set<CanvasNodeKind>([
   'video',
 ])
 
-/** 节点类型对应的 Drama asset_type */
+/** 节点ประเภท对应的 Drama asset_type */
 export function canvasKindToAssetType(kind: CanvasNodeKind): string {
   if (kind === 'video') return 'video'
   if (kind === 'audio') return 'audio'
@@ -56,43 +56,43 @@ export function canvasKindToAssetType(kind: CanvasNodeKind): string {
   return 'image'
 }
 
-/** 空画布居中快速新建选项（顺序与设计稿一致） */
+/** 空画布居中ความเร็วสูงสร้างใหม่选项（顺序与设计稿一致） */
 export const CANVAS_NODE_OPTIONS: CanvasNodeOption[] = [
-  { id: 'character', label: '角色', icon: UserRound },
-  { id: 'scene', label: '场景', icon: Landmark },
-  { id: 'video', label: '视频', icon: PlaySquare },
-  { id: 'image', label: '图片', icon: ImageIcon },
+  { id: 'character', label: 'ตัวละคร', icon: UserRound },
+  { id: 'scene', label: 'ฉาก', icon: Landmark },
+  { id: 'video', label: 'วิดีโอ', icon: PlaySquare },
+  { id: 'image', label: 'รูปภาพ', icon: ImageIcon },
   { id: 'text', label: '文本', icon: Text },
-  { id: 'audio', label: '音频', icon: AudioLines },
+  { id: 'audio', label: 'เสียง', icon: AudioLines },
 ]
 
-/** 左侧添加面板选项 */
+/** 左侧เพิ่ม面板选项 */
 export const ADD_NODE_OPTIONS: CanvasNodeOption[] = [
-  { id: 'character', label: '角色', icon: UserRound },
-  { id: 'scene', label: '场景', icon: Landmark },
+  { id: 'character', label: 'ตัวละคร', icon: UserRound },
+  { id: 'scene', label: 'ฉาก', icon: Landmark },
   { id: 'text', label: '文本', icon: Text },
-  { id: 'image', label: '图片', icon: ImageIcon },
-  { id: 'video', label: '视频', icon: PlaySquare },
-  { id: 'audio', label: '音频', icon: AudioLines },
+  { id: 'image', label: 'รูปภาพ', icon: ImageIcon },
+  { id: 'video', label: 'วิดีโอ', icon: PlaySquare },
+  { id: 'audio', label: 'เสียง', icon: AudioLines },
 ]
 
 export const CANVAS_NODE_OPTION_BY_KIND = Object.fromEntries(
   CANVAS_NODE_OPTIONS.map((option) => [option.id, option]),
 ) as Record<CanvasNodeKind, CanvasNodeOption>
 
-/** 各类型默认展示名 */
+/** 各ประเภทค่าเริ่มต้น展示名 */
 export const CANVAS_NODE_DEFAULT_LABEL: Record<CanvasNodeKind, string> = {
-  character: '新角色',
-  scene: '新场景',
-  video: '新视频',
-  image: '新图片',
+  character: '新ตัวละคร',
+  scene: '新ฉาก',
+  video: '新วิดีโอ',
+  image: '新รูปภาพ',
   text: '文本',
-  audio: '新音频',
+  audio: '新เสียง',
 }
 
 /**
- * 为新建画布节点生成不与现有节点冲突的名称。
- * 后端同类型同名会去重复用资产，导致 asset-{id} 冲突并覆盖旧节点。
+ * 为สร้างใหม่画布节点生成不与现有节点ความขัดแย้ง的名称。
+ * 后端同ประเภท同名会去重复用แอสเซท，导致 asset-{id} ความขัดแย้ง并覆盖旧节点。
  */
 export function nextCanvasNodeLabel(
   kind: CanvasNodeKind,
@@ -120,7 +120,7 @@ export const CANVAS_NODE_SIZE: Record<CanvasNodeKind, { width: number; height: n
   audio: { width: 240, height: 120 },
 }
 
-/** 预览区默认尺寸（不含页脚；无媒体时用竖屏占位） */
+/** ดูตัวอย่าง区ค่าเริ่มต้น尺寸（不含页脚；无媒体时用แนวตั้ง (9:16)占位） */
 export const CANVAS_MEDIA_BODY_SIZE: Record<
   Exclude<CanvasNodeKind, 'text' | 'audio'>,
   { width: number; height: number }
@@ -132,7 +132,7 @@ export const CANVAS_MEDIA_BODY_SIZE: Record<
 }
 
 /**
- * 按媒体宽高比计算预览框尺寸：横屏变宽、竖屏保持竖向。
+ * 按媒体宽高比计算ดูตัวอย่าง框尺寸：แนวนอน (16:9)变宽、แนวตั้ง (9:16)保持竖向。
  * aspect = naturalWidth / naturalHeight
  */
 export function canvasMediaFrameSize(
@@ -149,12 +149,12 @@ export function canvasMediaFrameSize(
   const maxLong = kind === 'character' || kind === 'scene' ? 320 : 280
 
   if (a >= 1) {
-    // 横屏 / 正方形：以短边为高
+    // แนวนอน (16:9) / 正สี่เหลี่ยมจัตุรัส (1:1)：以短边为高
     const height = shortSide
     const width = Math.min(maxLong, Math.round(height * a))
     return { width, height: Math.max(120, Math.round(width / a)) }
   }
-  // 竖屏：以短边为宽
+  // แนวตั้ง (9:16)：以短边为宽
   const width = shortSide
   const height = Math.min(maxLong, Math.round(width / a))
   return { width, height: Math.max(140, height) }
@@ -163,7 +163,7 @@ export function canvasMediaFrameSize(
 /** 网格吸附步长 */
 export const CANVAS_SNAP_GRID: [number, number] = [20, 20]
 
-/** 自动保存防抖毫秒 */
+/** 自动บันทึก防抖毫วินาที */
 export const CANVAS_AUTO_SAVE_MS = 2000
 
 /** 历史栈最大深度 */

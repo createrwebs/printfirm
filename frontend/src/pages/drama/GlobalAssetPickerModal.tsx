@@ -1,4 +1,4 @@
-/** 全局资产库选择弹窗：跨项目挑选图片资产（导入或应用到节点） */
+/** ทั่วไปแอสเซท库เลือก弹窗：跨โปรเจกต์挑选รูปภาพแอสเซท（导入或应用到节点） */
 import { useEffect, useMemo, useState } from 'react'
 import { dramaApi, type DramaAsset } from '../../api/drama'
 import { filterDramaLibraryAssets, isDramaLibraryAsset } from '../../lib/dramaLibraryAssets'
@@ -16,11 +16,11 @@ export type GlobalAssetTabKey = 'character' | 'scene' | 'prop' | 'voice' | 'all'
 type Props = {
   open: boolean
   onClose: () => void
-  /** 当前项目 ID，用于标注来源与可选排除本项 */
+  /** 当前โปรเจกต์ ID，用于标注ที่มา与可选排除本项 */
   projectId: number
-  /** 默认 Tab；canvas 场景可传 all */
+  /** ค่าเริ่มต้น Tab；canvas ฉาก可传 all */
   defaultTab?: GlobalAssetTabKey
-  /** 限定可选资产 type 列表；不传则按 Tab 筛选 */
+  /** 限定可选แอสเซท type 列表；不传则按 Tab ตัวกรอง */
   allowedTypes?: string[]
   /** 标题 */
   title?: string
@@ -30,13 +30,13 @@ type Props = {
 }
 
 const TABS: Array<{ key: GlobalAssetTabKey; label: string }> = [
-  { key: 'character', label: '角色' },
-  { key: 'scene', label: '场景' },
-  { key: 'prop', label: '道具' },
-  ...(DRAMA_VOICE_BINDING_ENABLED ? [{ key: 'voice' as const, label: '音色' }] : []),
+  { key: 'character', label: 'ตัวละคร' },
+  { key: 'scene', label: 'ฉาก' },
+  { key: 'prop', label: 'อุปกรณ์/พร็อพ' },
+  ...(DRAMA_VOICE_BINDING_ENABLED ? [{ key: 'voice' as const, label: 'น้ำเสียง' }] : []),
 ]
 
-// 资产是否匹配 Tab
+// แอสเซท是否匹配 Tab
 function matchAssetTab(asset: DramaAsset, tab: GlobalAssetTabKey): boolean {
   if (!isDramaLibraryAsset(asset)) return false
   if (tab === 'all') return true
@@ -52,24 +52,24 @@ function hasMedia(asset: DramaAsset): boolean {
   return Boolean(asset.url || asset.cover)
 }
 
-// 渲染全局资产库选择弹窗（使用全局 Modal）
+// เรนเดอร์ทั่วไปแอสเซท库เลือก弹窗（使用ทั่วไป Modal）
 export function GlobalAssetPickerModal({
   open,
   onClose,
   projectId,
   defaultTab = 'character',
   allowedTypes,
-  title = '从资产库选择',
-  confirmLabel = '确认使用',
+  title = 'เลือกจากคลังแอสเซท',
+  confirmLabel = 'ยืนยันการใช้งาน',
   onPick,
 }: Props) {
   /*
-   * allAssets 用户全部项目资产
+   * allAssets 用户全部โปรเจกต์แอสเซท
    * tab 当前分类
-   * query 搜索词
-   * selectedId 选中资产
-   * loading 加载中
-   * busy 提交中
+   * query ค้นหา词
+   * selectedId 选中แอสเซท
+   * loading กำลังโหลด
+   * busy ส่ง中
    * error 错误文案
    */
   const [allAssets, setAllAssets] = useState<DramaAsset[]>([])
@@ -107,7 +107,7 @@ export function GlobalAssetPickerModal({
         const kind = allowedTypesKey && !allowedTypesKey.includes(',') ? allowedTypesKey : tab === 'all' ? undefined : tab
         const result = await teamsApi.assets(String(teamId), { page, page_size: 12, q: query, type: kind }, controller.signal)
         if (active) { setAllAssets(result.items.map((asset) => ({ id: Number(asset.id), name: asset.name, type: asset.type, asset_type: asset.type === 'voice' ? 'audio' : 'image', url: asset.url, cover: asset.cover, project_id: Number(asset.projectId) }))); setTotal(result.meta.total) }
-      }).catch((cause) => { if (active) setError(cause instanceof Error ? cause.message : '资产库加载失败') }).finally(() => { if (active) setLoading(false) })
+      }).catch((cause) => { if (active) setError(cause instanceof Error ? cause.message : 'โหลดคลังแอสเซทไม่สำเร็จ') }).finally(() => { if (active) setLoading(false) })
     }, 180)
     return () => { active = false; controller.abort(); window.clearTimeout(timer) }
   }, [open, projectId, query, tab, page, allowedTypesKey])
@@ -130,7 +130,7 @@ export function GlobalAssetPickerModal({
     })
   }, [allAssets, allowedTypes, query, tab])
 
-  // 确认选用资产
+  // 确认选用แอสเซท
   async function handleConfirm() {
     const picked = allAssets.find((a) => a.id === selectedId)
     if (!picked || busy) return
@@ -140,7 +140,7 @@ export function GlobalAssetPickerModal({
       await onPick(picked)
       onClose()
     } catch (err) {
-      setError(err instanceof Error ? err.message : '应用失败')
+      setError(err instanceof Error ? err.message : 'นำไปใช้ไม่สำเร็จ')
     } finally {
       setBusy(false)
     }
@@ -159,7 +159,7 @@ export function GlobalAssetPickerModal({
       footer={
         <>
           <button type="button" className="pf-btn" onClick={onClose} disabled={busy}>
-            取消
+            ยกเลิก
           </button>
           <button
             type="button"
@@ -167,50 +167,50 @@ export function GlobalAssetPickerModal({
             disabled={!selectedId || busy}
             onClick={() => void handleConfirm()}
           >
-            {busy ? '处理中…' : confirmLabel}
+            {busy ? 'กำลังประมวลผล…' : confirmLabel}
           </button>
         </>
       }
     >
-      <AssetBanner>展示当前空间内的可用资产，跨项目复用会复制到当前项目。</AssetBanner>
+      <AssetBanner>แสดงแอสเซทที่ใช้งานได้ในพื้นที่ทำงานปัจจุบัน การใช้งานข้ามโปรเจกต์จะคัดลอกมายังโปรเจกต์ปัจจุบัน</AssetBanner>
       <div className="pf-library-toolbar">
         {showTabs && <AssetTypeFilter options={TABS.map((item) => ({ value: item.key, label: item.label }))} value={tab} onChange={(value) => { setTab(value); setPage(1); setSelectedId(null) }} />}
-        <AssetSearch value={query} onChange={(value) => { setQuery(value); setPage(1); setSelectedId(null) }} placeholder="搜索名称或项目 ID" />
+        <AssetSearch value={query} onChange={(value) => { setQuery(value); setPage(1); setSelectedId(null) }} placeholder="ค้นหาชื่อหรือรหัสโปรเจกต์" />
       </div>
 
       {error ? <BillingErrorNotice message={error} className="drama-error" /> : null}
-      {loading ? <p className="drama-muted">加载资产库…</p> : null}
+      {loading ? <p className="drama-muted">กำลังโหลดคลังแอสเซท…</p> : null}
 
       <AssetGrid picker>
         {filtered.map((asset) => <AssetCard
           key={asset.id}
           asset={asset}
           selected={selectedId === asset.id}
-          subtitle={asset.project_id === projectId ? '本项目' : `项目 #${asset.project_id}`}
-          footer={asset.type === 'voice' ? asset.url ? '已合成音色' : '未合成音色' : '可复制到当前项目'}
+          subtitle={asset.project_id === projectId ? 'โปรเจกต์นี้' : `โปรเจกต์ #${asset.project_id}`}
+          footer={asset.type === 'voice' ? asset.url ? 'สังเคราะห์เสียงแล้ว' : 'ยังไม่ได้สังเคราะห์เสียง' : 'สามารถคัดลอกมายังโปรเจกต์นี้'}
           onOpen={() => setSelectedId(asset.id)}
         />)}
       </AssetGrid>
       <TeamPagination page={page} total={total} onChange={setPage} />
       {!loading && filtered.length === 0 ? (
-        <AssetEmpty>当前分类下暂无可用媒体，请先在项目中生成资产。</AssetEmpty>
+        <AssetEmpty>ยังไม่มีสื่อที่ใช้งานได้ในหมวดหมู่นี้ กรุณาสร้างแอสเซทในโปรเจกต์ก่อน</AssetEmpty>
       ) : null}
     </Modal>
   )
 }
 
-// 将外部资产复制到当前项目（导入）
+// 将外部แอสเซทคัดลอก到当前โปรเจกต์（导入）
 export async function importGlobalAssetToProject(
   projectId: number,
   source: DramaAsset,
 ): Promise<DramaAsset> {
   if (!source.url && !source.cover) {
-    throw new Error('所选资产没有可用图片')
+    throw new Error('แอสเซทที่เลือกไม่มีรูปภาพที่ใช้งานได้')
   }
   return dramaApi.copyAsset(source, projectId)
 }
 
-// 画布 kind → 资产 type 筛选
+// 画布 kind → แอสเซท type ตัวกรอง
 export function canvasKindToLibraryTypes(kind: string): string[] {
   if (kind === 'character') return ['character']
   if (kind === 'scene') return ['scene']

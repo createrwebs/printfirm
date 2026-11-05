@@ -20,7 +20,7 @@ export type ProjectCardProps = {
   className?: string
 }
 
-/** 所有创作空间使用同一卡片。打开、菜单及选择分别是独立控件。 */
+/** 所有创作空间使用同一卡片。打开、菜单及เลือก分别是独立控件。 */
 export function ProjectCard({ title, coverUrl, kind, category, status, description, progress, meta, footer, actions, menu, selection, onOpen, openLabel, className = '' }: ProjectCardProps) {
   const Mark = kind === 'canvas' ? LayoutGrid : Clapperboard
   const ratio = progress && progress.total > 0 ? Math.max(0, Math.min(100, progress.value / progress.total * 100)) : 0

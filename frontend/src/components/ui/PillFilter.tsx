@@ -13,7 +13,7 @@ type Props<T extends string> = {
   className?: string
 }
 
-/** 统一胶囊筛选（分类 Tab） */
+/** 统一胶囊ตัวกรอง（分类 Tab） */
 export default function PillFilter<T extends string>({
   options,
   value,

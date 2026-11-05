@@ -8,7 +8,7 @@ type Status = { template: { version: string; title: string; notices: string[]; b
 type Point = [number, number]
 type Preview = { url: string; image: boolean }
 
-/** 账号签署一次。条款在页面内阅读，已签署文件默认在线预览，点下载才保存。 */
+/** 账号签署一次。条款在页面内阅读，已签署文件ค่าเริ่มต้น在线ดูตัวอย่าง，点ดาวน์โหลด才บันทึก。 */
 export default function AuthorizationPanel({ onSigned }: { onSigned?: () => void }) {
   const [status, setStatus] = useState<Status | null>(null)
   const [error, setError] = useState('')
@@ -102,23 +102,23 @@ export default function AuthorizationPanel({ onSigned }: { onSigned?: () => void
       <ol className="pf-market-letter-notices">{status.template.notices.map(item => <li key={item}>{item}</li>)}</ol>
       <div className="pf-market-letter">{status.template.body}</div>
       {status.current ? <>
-        <p className="pf-market-notice">已签署：{status.current.signer_name} · {date(status.current.created_at)}。可点击预览或下载已签署授权函。</p>
-        <div className="pf-market-letter-actions"><button type="button" onClick={() => { void openPreview() }} disabled={previewBusy}>{previewBusy ? '正在打开…' : '预览授权函'}</button><button type="button" onClick={() => { void downloadLetter() }} disabled={previewBusy}>{previewBusy ? '处理中…' : '下载授权函'}</button></div>
-        <Modal open={previewOpen} onClose={() => setPreviewOpen(false)} title="授权函预览" size="xl" className="pf-market-letter-modal">
+        <p className="pf-market-notice">已签署：{status.current.signer_name} · {date(status.current.created_at)}。可点击ดูตัวอย่าง或ดาวน์โหลด已签署授权函。</p>
+        <div className="pf-market-letter-actions"><button type="button" onClick={() => { void openPreview() }} disabled={previewBusy}>{previewBusy ? '正在打开…' : 'ดูตัวอย่าง授权函'}</button><button type="button" onClick={() => { void downloadLetter() }} disabled={previewBusy}>{previewBusy ? 'กำลังประมวลผล…' : 'ดาวน์โหลด授权函'}</button></div>
+        <Modal open={previewOpen} onClose={() => setPreviewOpen(false)} title="授权函ดูตัวอย่าง" size="xl" className="pf-market-letter-modal">
           <div className="pf-market-letter-modal-summary">
             <div className="pf-market-letter-modal-summary-top">
-              <span className="pf-market-letter-modal-eyebrow"><ShieldCheck size={14} /> PRINTFILM · 数字资产市场</span>
+              <span className="pf-market-letter-modal-eyebrow"><ShieldCheck size={14} /> PRINTFILM · ตลาดดิจิทัลแอสเซท</span>
               <span className="pf-market-letter-modal-status"><FileCheck2 size={13} /> 已签署</span>
             </div>
             <strong>账号授权函</strong>
             <span className="pf-market-letter-modal-meta">签署人：{status.current.signer_name} · {date(status.current.created_at)} · 条款 {status.current.template_version}</span>
-            <p>此处展示已签署的授权协议，具体授权范围以协议正文为准。在线预览不会自动下载文件。</p>
+            <p>此处展示已签署的ข้อตกลงการอนุญาตสิทธิ์，具体授权范围以协议正文为准。在线ดูตัวอย่าง不会自动ดาวน์โหลด文件。</p>
           </div>
           <div className="pf-market-letter-preview-surface">
-            <div className="pf-market-letter-preview-label"><Eye size={14} /> 文档预览</div>
-            {preview && (preview.image ? <img className="pf-market-letter-image" src={preview.url} alt="已签署授权函" /> : <iframe className="pf-market-letter-frame" src={preview.url} title="授权函预览" />)}
+            <div className="pf-market-letter-preview-label"><Eye size={14} /> เอกสารดูตัวอย่าง</div>
+            {preview && (preview.image ? <img className="pf-market-letter-image" src={preview.url} alt="已签署授权函" /> : <iframe className="pf-market-letter-frame" src={preview.url} title="授权函ดูตัวอย่าง" />)}
           </div>
-          <div className="pf-market-letter-modal-actions"><button type="button" className="pf-market-letter-modal-secondary" onClick={() => setPreviewOpen(false)}>关闭</button><button type="button" className="pf-market-letter-modal-primary" onClick={() => { void downloadLetter() }} disabled={previewBusy}><Download size={14} /> {previewBusy ? '处理中…' : '下载授权函'}</button></div>
+          <div className="pf-market-letter-modal-actions"><button type="button" className="pf-market-letter-modal-secondary" onClick={() => setPreviewOpen(false)}>ปิด</button><button type="button" className="pf-market-letter-modal-primary" onClick={() => { void downloadLetter() }} disabled={previewBusy}><Download size={14} /> {previewBusy ? 'กำลังประมวลผล…' : 'ดาวน์โหลด授权函'}</button></div>
         </Modal>
       </> : <div className="pf-market-fields">
         <label>签署人真实姓名<input value={name} minLength={2} maxLength={80} onChange={e => setName(e.target.value)} disabled={busy} /></label>
@@ -128,7 +128,7 @@ export default function AuthorizationPanel({ onSigned }: { onSigned?: () => void
         <label><input type="checkbox" checked={adult} disabled={busy} onChange={e => setAdult(e.target.checked)} />我已年满十八周岁，具有完全民事行为能力，所填姓名真实。</label>
         <label><input type="checkbox" checked={readAll} disabled={busy} onChange={e => setReadAll(e.target.checked)} />我已完整阅读本协议全文。</label>
         <label><input type="checkbox" checked={acceptKey} disabled={busy} onChange={e => setAcceptKey(e.target.checked)} />我已特别阅读并同意第7、8、10、11、13、15条。</label>
-        <button type="button" disabled={busy || !ready} onClick={sign}>{busy ? '正在存档…' : '确认签署并保存授权函'}</button>
+        <button type="button" disabled={busy || !ready} onClick={sign}>{busy ? '正在存档…' : '确认签署并บันทึก授权函'}</button>
       </div>}
     </>}
     {!status && !error && <p role="status">正在读取授权条款…</p>}{error && <p role="alert">{error}</p>}

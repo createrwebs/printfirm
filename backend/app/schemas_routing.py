@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import AliasChoices, BaseModel, Field
 
 LogicalModelCapability = Literal["text", "image", "video", "audio"]
 ChannelProtocol = Literal["openai", "auto"]
@@ -37,10 +37,10 @@ class LogicalModel(BaseModel):
 class DefaultModels(BaseModel):
     """Site default logical model ids per capability."""
 
-    text_model: str = ""
-    image_model: str = ""
-    video_model: str = ""
-    audio_model: str = ""
+    text_model: str = Field(default="", validation_alias=AliasChoices("text_model", "textModel"))
+    image_model: str = Field(default="", validation_alias=AliasChoices("image_model", "imageModel"))
+    video_model: str = Field(default="", validation_alias=AliasChoices("video_model", "videoModel"))
+    audio_model: str = Field(default="", validation_alias=AliasChoices("audio_model", "audioModel"))
 
 
 class SystemChannelAdvancedConfig(BaseModel):

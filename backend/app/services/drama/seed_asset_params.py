@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from app.services.drama.generation_prompt import ensure_structure_in_prompt
+from app.services.drama.language import detect_content_language
 
 # DEFAULT_APPEARANCE_NAME 从剧本抽取角色时的默认形象名
 DEFAULT_APPEARANCE_NAME = "基础形象"
@@ -44,12 +45,14 @@ def manju_join_character_prompt(character: dict[str, Any]) -> str:
     role_type = str(character.get("roleType") or "").strip()
     core_tags = str(character.get("coreTags") or "").strip()
     personality = str(character.get("personality") or "").strip()
+    language = detect_content_language(" ".join(str(character.get(key) or "") for key in ("visualImage", "title", "roleType", "coreTags", "personality")))
+    labels = ("ตัวตน", "บทบาท", "แท็ก", "บุคลิก") if language == "th" else ("身份", "定位", "标签", "性格")
     parts = [
         visual,
-        f"身份：{title}" if title else "",
-        f"定位：{role_type}" if role_type else "",
-        f"标签：{core_tags}" if core_tags else "",
-        f"性格：{personality}" if personality else "",
+        f"{labels[0]}：{title}" if title else "",
+        f"{labels[1]}：{role_type}" if role_type else "",
+        f"{labels[2]}：{core_tags}" if core_tags else "",
+        f"{labels[3]}：{personality}" if personality else "",
     ]
     return "。".join(part for part in parts if part)
 
@@ -82,6 +85,8 @@ def build_character_params(character: dict[str, Any]) -> dict[str, Any]:
     prompt = ensure_structure_in_prompt(body, "character")
     visual = str(character.get("visualImage") or "").strip()
     visual = ensure_structure_in_prompt(visual, "character") if visual else prompt
+    is_thai = detect_content_language(f"{character.get('name', '')} {body}") == "th"
+    appearance_name = "รูปลักษณ์พื้นฐาน" if is_thai else DEFAULT_APPEARANCE_NAME
     return {
         "visualImage": visual,
         "visualPrompt": prompt,
@@ -94,7 +99,7 @@ def build_character_params(character: dict[str, Any]) -> dict[str, Any]:
         "relationships": character.get("relationships"),
         "growthArc": character.get("growthArc"),
         "canvas": {
-            "appearanceName": DEFAULT_APPEARANCE_NAME,
+            "appearanceName": appearance_name,
             "generation": {
                 "prompt": prompt,
                 **DEFAULT_IMAGE_GENERATION,
@@ -107,5 +112,8 @@ def build_character_params(character: dict[str, Any]) -> dict[str, Any]:
 # 组装场景资产 params（对齐 manju buildSceneParams）
 def build_scene_params(scene_name: str, story_type: str = "") -> dict[str, Any]:
     _ = story_type  # manju 场景 seed 未使用 storyType，保留参数供 refresh 扩展
-    prompt = f"场景：{scene_name.strip()}，影视级写实场景，构图清晰，适合短剧拍摄"
+    if detect_content_language(scene_name) == "th":
+        prompt = f"ฉาก: {scene_name.strip()} สถานที่สมจริง รายละเอียดชัดเจน เหมาะกับการถ่ายทำละครสั้น"
+    else:
+        prompt = f"场景：{scene_name.strip()}，影视级写实场景，构图清晰，适合短剧拍摄"
     return build_named_image_params(prompt, "16:9", kind="scene")

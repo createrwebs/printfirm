@@ -1,4 +1,4 @@
-// 构建带服务端分页上限与可选类型筛选的事件查询路径。
+// 构建带服务端分页上限与可选ประเภทตัวกรอง的事件查询路径。
 export function taskEventPagePath(taskId: number, page: number, pageSize: number, eventTypePrefix?: string): string {
   const currentPage = Number.isFinite(page) ? Math.max(1, Math.trunc(page)) : 1;
   const currentSize = Number.isFinite(pageSize) ? Math.min(100, Math.max(1, Math.trunc(pageSize))) : 50;

@@ -1,6 +1,6 @@
 /**
- * 旁白音色绑定：从漫剧 voice 资产选择，写入 project.params.narrationVoiceAudio
- * 供 Seedance 生成时作为全局 reference_audio 注入。
+ * เสียงบรรยายน้ำเสียง绑定：从ละครซีรีส์ voice แอสเซทเลือก，写入 project.params.narrationVoiceAudio
+ * 供 Seedance 生成时作为ทั่วไป reference_audio 注入。
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AudioLines } from 'lucide-react'
@@ -24,7 +24,7 @@ function readNarrationVoiceBinding(project: DramaProject): VoiceBinding | null {
   const data = raw as Record<string, unknown>
   const sourceAssetId = typeof data.sourceAssetId === 'number' ? data.sourceAssetId : null
   const url = typeof data.url === 'string' ? data.url : ''
-  const label = typeof data.label === 'string' ? data.label : '旁白音色'
+  const label = typeof data.label === 'string' ? data.label : 'เสียงบรรยายน้ำเสียง'
   if (!sourceAssetId || !url) return null
   return {
     sourceAssetId,
@@ -63,12 +63,12 @@ export function NarratorVoiceBindModal({ project, open, onClose, onUpdated, onEr
         const voices = list.filter((a) => (a.type || '').toLowerCase() === 'voice')
         setVoiceAssets(voices)
       })
-      .catch((err) => onError(err instanceof Error ? err.message : '加载音色资产失败'))
+      .catch((err) => onError(err instanceof Error ? err.message : '加载น้ำเสียงแอสเซทล้มเหลว'))
   }, [current?.sourceAssetId, onError, open, project.id])
 
   const handleConfirm = useCallback(async () => {
     if (!selectedVoice?.url || busy) {
-      onError('请选择已合成试听的旁白音色')
+      onError('请เลือก已合成试听的เสียงบรรยายน้ำเสียง')
       return
     }
     setBusy(true)
@@ -76,7 +76,7 @@ export function NarratorVoiceBindModal({ project, open, onClose, onUpdated, onEr
       const binding: VoiceBinding = {
         sourceAssetId: selectedVoice.id,
         url: selectedVoice.url,
-        label: selectedVoice.name || '旁白音色',
+        label: selectedVoice.name || 'เสียงบรรยายน้ำเสียง',
         // Narrator 端当前不依赖 voicePrompt；但保留字段给后续扩展
         voicePrompt:
           selectedVoice.params && typeof selectedVoice.params === 'object' && typeof (selectedVoice.params as any).voicePrompt === 'string'
@@ -91,7 +91,7 @@ export function NarratorVoiceBindModal({ project, open, onClose, onUpdated, onEr
       onUpdated(updated)
       onClose()
     } catch (err) {
-      onError(err instanceof Error ? err.message : '绑定失败')
+      onError(err instanceof Error ? err.message : '绑定ล้มเหลว')
     } finally {
       setBusy(false)
     }
@@ -107,7 +107,7 @@ export function NarratorVoiceBindModal({ project, open, onClose, onUpdated, onEr
       onUpdated(updated)
       onClose()
     } catch (err) {
-      onError(err instanceof Error ? err.message : '解绑失败')
+      onError(err instanceof Error ? err.message : '解绑ล้มเหลว')
     } finally {
       setBusy(false)
     }
@@ -119,13 +119,13 @@ export function NarratorVoiceBindModal({ project, open, onClose, onUpdated, onEr
     <Modal
       open={open}
       onClose={onClose}
-      title="绑定旁白音色"
+      title="绑定เสียงบรรยายน้ำเสียง"
       size="lg"
       dismissible={!busy}
       footer={
         <>
           <button type="button" className="pf-btn" onClick={onClose} disabled={busy}>
-            取消
+            ยกเลิก
           </button>
           {current ? (
             <button type="button" className="pf-btn" onClick={() => void handleUnbind()} disabled={busy}>
@@ -144,18 +144,18 @@ export function NarratorVoiceBindModal({ project, open, onClose, onUpdated, onEr
       }
     >
       <p className="drama-muted">
-        全局旁白音色将作为 Seedance 的 <strong>reference_audio</strong> 注入，用于所有镜头的旁白口播一致性。
+        ทั่วไปเสียงบรรยายน้ำเสียง将作为 Seedance 的 <strong>reference_audio</strong> 注入，用于所有镜头的เสียงบรรยาย口播ความต่อเนื่องสม่ำเสมอ。
       </p>
 
       <AssetGrid picker>
         {voiceAssets.length === 0 ? (
-          <AssetEmpty>暂无音色资产，请先在「音色」分类合成旁白音色。</AssetEmpty>
+          <AssetEmpty>暂无น้ำเสียงแอสเซท，请先在「น้ำเสียง」分类合成เสียงบรรยายน้ำเสียง。</AssetEmpty>
         ) : (
           voiceAssets.map((voice) => {
             const hasAudio = Boolean(voice.url)
             const selected = selectedId === voice.id
             return (
-              <AssetCard key={voice.id} asset={voice} selected={selected} subtitle={hasAudio ? '已合成' : '未合成'} footer="项目音色" onOpen={() => setSelectedId(voice.id)} />
+              <AssetCard key={voice.id} asset={voice} selected={selected} subtitle={hasAudio ? '已合成' : '未合成'} footer="โปรเจกต์น้ำเสียง" onOpen={() => setSelectedId(voice.id)} />
             )
           })
         )}

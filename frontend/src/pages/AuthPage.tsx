@@ -1,5 +1,5 @@
 import { USER_UPDATED_EVENT } from '../lib/userEvents'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { api } from '../api'
@@ -34,8 +34,8 @@ export default function AuthPage() {
   /*
    * mode 当前表单模式
    * email / password / confirmPassword / nickname 表单字段
-   * notice 成功提示（找回已发送、重置成功）
-   * error / loading 提交态
+   * notice สำเร็จคำแนะนำ（找回已发送、รีเซ็ตสำเร็จ）
+   * error / loading ส่ง态
    */
   const [mode, setMode] = useState<AuthMode>(() => modeFromParams(params))
   const [email, setEmail] = useState('')
@@ -45,7 +45,30 @@ export default function AuthPage() {
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [loading, setLoading] = useState(false)
+  const [providers, setProviders] = useState<Awaited<ReturnType<typeof api.authProviders>> | null>(null)
+  const [tokenCopied, setTokenCopied] = useState(false)
   const resetToken = (params.get('token') || '').trim()
+  const localBrowser = ['127.0.0.1', 'localhost', '[::1]'].includes(window.location.hostname)
+
+  useEffect(() => {
+    let active = true
+    void api.authProviders().then((value) => {
+      if (active) setProviders(value)
+    }).catch(() => undefined)
+
+    const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''))
+    const oauthToken = hash.get('access_token')
+    const oauthError = params.get('oauth_error')
+    if (oauthToken) {
+      localStorage.setItem('token', oauthToken)
+      window.history.replaceState({}, document.title, `${window.location.pathname}${window.location.search.replace(/([?&])oauth_error=[^&]*/g, '').replace(/[?&]$/, '')}`)
+      window.dispatchEvent(new Event(USER_UPDATED_EVENT))
+      nav(nextPath, { replace: true })
+      return () => { active = false }
+    }
+    if (oauthError) setError(oauthError)
+    return () => { active = false }
+  }, [nav, nextPath, params])
 
   // 切换模式并同步 URL（保留 next）
   function switchMode(next: AuthMode) {
@@ -228,6 +251,35 @@ export default function AuthPage() {
             {loading ? t('auth.processing') : submitLabel}
           </button>
         </form>
+        {mode === 'login' && providers?.google.enabled && (
+          <button
+            type="button"
+            className="btn"
+            onClick={() => { window.location.assign(api.googleLoginUrl(nextPath)) }}
+          >
+            Continue with Google
+          </button>
+        )}
+        {mode === 'login' && providers?.chatgpt.reason && providers.local_token_debug && localBrowser && (
+          <p className="auth-hint">ChatGPT login ยังไม่เปิดเป็น OAuth ทั่วไป จึงไม่รับหรือแสดง ChatGPT token</p>
+        )}
+        {providers?.local_token_debug && localBrowser && localStorage.getItem('token') && (
+          <details className="auth-dev-token">
+            <summary>Local API token สำหรับทดสอบ</summary>
+            <textarea readOnly rows={4} value={localStorage.getItem('token') || ''} />
+            <button
+              type="button"
+              className="linkish"
+              onClick={() => {
+                const token = localStorage.getItem('token') || ''
+                const copied = navigator.clipboard?.writeText(token)
+                if (copied) void copied.then(() => setTokenCopied(true))
+              }}
+            >
+              {tokenCopied ? 'คัดลอกแล้ว' : 'คัดลอก token'}
+            </button>
+          </details>
+        )}
         {mode === 'login' && (
           <button type="button" className="linkish" onClick={() => switchMode('forgot')}>
             {t('auth.forgotLink')}

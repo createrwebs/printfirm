@@ -1,10 +1,10 @@
-/** 大纲页：剧本按场次解析展示 / 分段编辑 / 弹窗预览 */
+/** โครงร่าง页：剧本按ลำดับฉาก解析展示 / 分段แก้ไข / 弹窗ดูตัวอย่าง */
 import { useEffect, useMemo, useState } from 'react'
 import { Pencil } from 'lucide-react'
 import Modal from '../../components/ui/Modal'
 
 export type OutlineSceneBlock = {
-  /** 原始整段（含场头行），写回时原样拼接 */
+  /** 原始整段（含ฉาก头行），写回时原样拼接 */
   raw: string
   label: string
   title: string
@@ -21,7 +21,7 @@ export type ParsedScriptLine = {
   dialogue?: string
 }
 
-/** 解析后单场统计：估时 / 对白 / 动作 / 出场 / 内外景 */
+/** 解析后单ฉาก统计：估时 / บทสนทนา / 动作 / 出ฉาก / 内外景 */
 export type OutlineSceneStats = {
   estimatedSec: number
   dialogueCount: number
@@ -40,51 +40,51 @@ export type OutlineShotDurationStats = {
 const SPEAKER_COLORS = ['#059669', '#dc2626', '#ea580c', '#2563eb', '#7c3aed', '#db2777']
 const SCENE_DURATION_MIN = 4
 const SCENE_DURATION_MAX = 120
-/** 与后端 build_fragments 行时长 clamp / 打包上限对齐 */
+/** 与后端 build_fragments 行ความยาว clamp / 打包上限对齐 */
 const LINE_DURATION_MIN = 3
 const LINE_DURATION_MAX = 15
 const FRAGMENT_SOFT_MAX = 15
 const FRAGMENT_TOTAL_MAX = 15
 
-// 角色名稳定配色
+// ตัวละคร名稳定配色
 export function speakerColor(name: string): string {
   let h = 0
   for (let i = 0; i < name.length; i += 1) h = (h * 31 + name.charCodeAt(i)) >>> 0
   return SPEAKER_COLORS[h % SPEAKER_COLORS.length]
 }
 
-// 从拍摄剧本正文拆出场次块
+// 从拍摄เนื้อหาบทละคร拆出ลำดับฉาก块
 export function parseOutlineSceneBlocks(text: string): OutlineSceneBlock[] {
   const raw = (text || '').trim()
   if (!raw) return []
-  const parts = raw.split(/(?=^#{1,3}\s*场)/m).map((p) => p.trim()).filter(Boolean)
-  if (parts.length <= 1 && !/^#{1,3}\s*场/.test(raw)) {
-    return [{ raw, label: '全文', title: '', body: raw }]
+  const parts = raw.split(/(?=^#{1,3}\s*ฉาก)/m).map((p) => p.trim()).filter(Boolean)
+  if (parts.length <= 1 && !/^#{1,3}\s*ฉาก/.test(raw)) {
+    return [{ raw, label: 'เนื้อหาทั้งหมด', title: '', body: raw }]
   }
   return parts.map((part, index) => {
     const lines = part.split(/\r?\n/)
     const head = (lines[0] || '').replace(/^#+\s*/, '').trim()
-    const labelMatch = head.match(/^场\s*([^\s：:]+)/)
-    const label = labelMatch ? `场 ${labelMatch[1]}` : `场 ${index + 1}`
-    const title = head.replace(/^场\s*[^\s：:]+[：:\s]*/, '').trim()
+    const labelMatch = head.match(/^ฉาก\s*([^\s：:]+)/)
+    const label = labelMatch ? `ฉาก ${labelMatch[1]}` : `ฉาก ${index + 1}`
+    const title = head.replace(/^ฉาก\s*[^\s：:]+[：:\s]*/, '').trim()
     const body = lines.slice(1).join('\n').trim()
     return { raw: part, label, title, body }
   })
 }
 
-// 场次块拼回完整正文
+// ลำดับฉาก块拼回完整เนื้อหาหลัก
 export function joinOutlineSceneBlocks(blocks: OutlineSceneBlock[]): string {
   return blocks.map((b) => b.raw.trim()).filter(Boolean).join('\n\n')
 }
 
-// 解析单行：动作 / 对白 / 元信息
+// 解析单行：动作 / บทสนทนา / 元信息
 export function parseScriptLine(line: string): ParsedScriptLine {
   const text = line ?? ''
   const trimmed = text.trim()
   if (!trimmed) return { kind: 'empty', text }
   if (
-    /^(出场人物|时间|地点|内外景)/.test(trimmed) ||
-    /^[日夜早晚晨黄昏傍晚凌晨清晨午晚]\s*[内外]/.test(trimmed)
+    /^(ตัวละครที่ปรากฏ|เวลา|地点|内外景|สถานที่|ภายใน\/ภายนอก|ภายใน|ภายนอก)/.test(trimmed) ||
+    /^[日夜早晚晨พลบค่ำ傍晚凌晨清晨午晚กลางวันกลางคืนเช้าเย็นค่ำ]\s*[内外ในนอก]/.test(trimmed)
   ) {
     return { kind: 'meta', text: trimmed }
   }
@@ -111,12 +111,12 @@ function compactLen(text: string): number {
   return (text || '').replace(/\s+/g, '').length
 }
 
-/** 单行粗估秒数（对齐后端 build_fragments 量级，供大纲预览） */
+/** 单行粗估วินาที数（对齐后端 build_fragments 量级，供โครงร่างดูตัวอย่าง） */
 function estimateLineSec(line: ParsedScriptLine): number {
   if (line.kind === 'empty' || line.kind === 'meta') return 0
   if (line.kind === 'action') {
     const t = line.text.trim()
-    if (t.startsWith('【空镜')) return 4
+    if (t.startsWith('【ช็อตทัศนียภาพ')) return 4
     if (t.startsWith('△') || /^[△▲]/.test(t)) return 2
     return Math.min(10, Math.max(2, Math.floor(compactLen(t) / 12)))
   }
@@ -132,7 +132,7 @@ function clampLineDuration(sec: number): number {
   return Math.min(LINE_DURATION_MAX, Math.max(LINE_DURATION_MIN, sec))
 }
 
-/** 按分镜打包规则汇总时长（避免「逐行相加」与真实镜数脱节） */
+/** 按分镜打包规则汇总ความยาว（避免「逐行相加」与真实镜数脱节） */
 function packEstimatedSec(lineSecs: number[]): number {
   let total = 0
   let used = 0
@@ -168,7 +168,7 @@ function parseCastNames(raw: string): string[] {
     .filter(Boolean)
 }
 
-/** 统计一场：估时、对白/动作数、出场人物、内外景 */
+/** 统计一ฉาก：估时、บทสนทนา/动作数、ตัวละครที่ปรากฏ、内外景 */
 export function summarizeOutlineScene(body: string): OutlineSceneStats {
   const lines = (body || '').split(/\r?\n/).map((line) => parseScriptLine(line))
   const lineSecs: number[] = []
@@ -182,10 +182,10 @@ export function summarizeOutlineScene(body: string): OutlineSceneStats {
     if (line.kind === 'dialogue') dialogueCount += 1
     if (line.kind === 'action') actionCount += 1
     if (line.kind === 'meta') {
-      const castMatch = line.text.match(/^出场人物[：:]\s*(.+)$/)
+      const castMatch = line.text.match(/^ตัวละครที่ปรากฏ[：:]\s*(.+)$/)
       if (castMatch) cast = parseCastNames(castMatch[1])
       const locMatch = line.text.match(
-        /^(?:日|夜|晨|黄昏|傍晚|凌晨|清晨|午|晚)?\s*(?:内|外|内外)\s+(.+)$/,
+        /^(?:日|夜|晨|พลบค่ำ|傍晚|凌晨|清晨|午|晚|กลางวัน|กลางคืน|เช้า|เย็น|ค่ำ)?\s*(?:内|外|内外|ภายใน|ภายนอก|ใน|นอก)\s+(.+)$/,
       )
       if (locMatch && !location) location = locMatch[1].split(/[／/]/)[0].trim()
       else if (/^[日夜早晚]/.test(line.text) && !location) location = line.text
@@ -205,15 +205,15 @@ function formatClockDuration(sec: number): string {
   if (sec < 60) return `${sec}s`
   const m = Math.floor(sec / 60)
   const s = sec % 60
-  return s ? `${m}分${s}秒` : `${m}分钟`
+  return s ? `${m} นาที ${s} วินาที` : `${m} นาที`
 }
 
 function formatEstimateDuration(sec: number): string {
-  if (sec <= 0) return '约 —'
-  return `约 ${formatClockDuration(sec)}`
+  if (sec <= 0) return 'ประมาณ —'
+  return `ประมาณ ${formatClockDuration(sec)}`
 }
 
-// 渲染解析后的剧本行
+// เรนเดอร์解析后的剧本行
 function ScriptLines({ text }: { text: string }) {
   const lines = useMemo(
     () => text.split(/\r?\n/).map((line) => parseScriptLine(line)),
@@ -259,16 +259,16 @@ function ScriptLines({ text }: { text: string }) {
   )
 }
 
-/** 场次信息条：对白 / 动作 / 内外景 / 出场 */
+/** ลำดับฉาก信息条：บทสนทนา / 动作 / 内外景 / 出ฉาก */
 function SceneStatsBar({ stats }: { stats: OutlineSceneStats }) {
   const items: string[] = []
-  if (stats.dialogueCount > 0) items.push(`${stats.dialogueCount} 句对白`)
-  if (stats.actionCount > 0) items.push(`${stats.actionCount} 段动作`)
+  if (stats.dialogueCount > 0) items.push(`บทสนทนา ${stats.dialogueCount} ประโยค`)
+  if (stats.actionCount > 0) items.push(`บทบรรยายการกระทำ ${stats.actionCount} ช่วง`)
   if (stats.location) items.push(stats.location)
   if (stats.cast.length) items.push(stats.cast.slice(0, 6).join('、'))
   if (!items.length) return null
   return (
-    <div className="drama-outline-scene-stats" aria-label="本场解析信息">
+    <div className="drama-outline-scene-stats" aria-label="ข้อมูลการวิเคราะห์ฉากนี้">
       {items.map((item) => (
         <span key={item} className="drama-outline-scene-stat">
           {item}
@@ -282,14 +282,14 @@ type OutlineScriptPreviewProps = {
   text: string
   empty: string
   busy?: boolean
-  /** 已切分分镜时优先展示镜头合计时长 */
+  /** 已切分分镜时优先展示镜头合计ความยาว */
   shotStats?: OutlineShotDurationStats | null
-  /** 分段保存：返回更新后的完整 body */
+  /** 分段บันทึก：กลับอัปเดต后的完整 body */
   onSaveScenes?: (nextBody: string) => Promise<void> | void
   onEditingChange?: (editing: boolean) => void
 }
 
-// 场次卡片列表 + 分段编辑
+// ลำดับฉาก卡片列表 + 分段แก้ไข
 export function OutlineScriptPreview({
   text,
   empty,
@@ -346,25 +346,25 @@ export function OutlineScriptPreview({
   const summaryBar =
     blocks.length > 0 ? (
       <div className="drama-outline-script-summary">
-        <span>{blocks[0].label === '全文' ? '1 段' : `${blocks.length} 场`}</span>
+        <span>{blocks[0].label === 'เนื้อหาทั้งหมด' ? '1 ช่วง' : `${blocks.length} ฉาก`}</span>
         {hasShotDuration ? (
           <span>
-            {shotStats!.fragmentCount} 镜 · 合计 {formatClockDuration(displayTotalSec)}
+            {shotStats!.fragmentCount} ช็อต · รวม {formatClockDuration(displayTotalSec)}
           </span>
         ) : displayTotalSec > 0 ? (
-          <span>合计 {formatClockDuration(displayTotalSec)}</span>
+          <span>รวม {formatClockDuration(displayTotalSec)}</span>
         ) : null}
         <span className="drama-outline-script-summary-hint">
           {hasShotDuration
-            ? '时长取自已切分镜头'
+            ? 'ความยาวอ้างอิงจากช็อตที่แบ่งแล้ว'
             : shotStats?.scriptChanged
-              ? '时长为当前剧本估算；已有分镜仍为旧稿'
-              : '时长为解析估算，进分镜后以镜头为准'}
+              ? 'ความยาวประมาณการจากบทปัจจุบัน (สตอรี่บอร์ดเดิมยังเป็นฉบับเก่า)'
+              : 'ความยาวประมาณการจากการวิเคราะห์ เมื่อเข้าสู่สตอรี่บอร์ดจะยึดตามช็อตจริง'}
         </span>
       </div>
     ) : null
 
-  if (blocks.length === 1 && blocks[0].label === '全文') {
+  if (blocks.length === 1 && blocks[0].label === 'เนื้อหาทั้งหมด') {
     return (
       <div className="drama-outline-scene">
         {summaryBar}
@@ -377,7 +377,7 @@ export function OutlineScriptPreview({
               onClick={() => startEdit(0)}
             >
               <Pencil size={13} />
-              编辑本段
+              แก้ไขช่วงนี้
             </button>
           ) : null}
         </div>
@@ -420,7 +420,7 @@ export function OutlineScriptPreview({
                 onClick={() => startEdit(i)}
               >
                 <Pencil size={13} />
-                编辑本场
+                แก้ไขฉากนี้
               </button>
             ) : null}
           </header>
@@ -468,17 +468,17 @@ function SceneEditBox({
       />
       <div className="drama-ep-section-edit-actions">
         <button type="button" className="drama-btn-ghost" disabled={saving} onClick={onCancel}>
-          取消
+          ยกเลิก
         </button>
         <button type="button" className="drama-btn-primary" disabled={saving} onClick={onSave}>
-          {saving ? '保存中…' : '保存本段'}
+          {saving ? 'กำลังบันทึก…' : 'บันทึกช่วงนี้'}
         </button>
       </div>
     </div>
   )
 }
 
-/** 仅弹窗解析预览 */
+/** 仅弹窗解析ดูตัวอย่าง */
 export function OutlineScriptParseModal({
   open,
   onClose,
@@ -493,7 +493,7 @@ export function OutlineScriptParseModal({
   return (
     <Modal open={open} onClose={onClose} title={title} size="xl" className="drama-outline-script-modal">
       <div className="drama-outline-script-modal-body">
-        <OutlineScriptPreview text={text} empty="暂无剧本内容" />
+        <OutlineScriptPreview text={text} empty="ยังไม่มีเนื้อหาบทละคร" />
       </div>
     </Modal>
   )

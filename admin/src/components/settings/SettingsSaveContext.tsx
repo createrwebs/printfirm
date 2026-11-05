@@ -22,7 +22,7 @@ type SettingsSaveContextValue = {
 
 const SettingsSaveContext = createContext<SettingsSaveContextValue | null>(null);
 
-// 设置页：子 Tab 注册保存动作，页头渲染统一「保存」按钮
+// ตั้งค่า页：子 Tab 注册บันทึก动作，页头เรนเดอร์统一「บันทึก」按钮
 export function SettingsSaveProvider({ children }: { children: ReactNode }) {
   const [action, setAction] = useState<SettingsSaveAction | null>(null);
   const registerSave = useCallback((next: SettingsSaveAction | null) => {
@@ -33,9 +33,9 @@ export function SettingsSaveProvider({ children }: { children: ReactNode }) {
         next &&
         prev.saving === next.saving &&
         prev.disabled === next.disabled &&
-        (prev.label ?? "保存") === (next.label ?? "保存")
+        (prev.label ?? "บันทึก") === (next.label ?? "บันทึก")
       ) {
-        // 同步最新 onSave，避免闭包过期；不触发无意义重渲染依赖
+        // 同步最新 onSave，避免闭包过期；不触发无意义重เรนเดอร์依赖
         prev.onSave = next.onSave;
         return prev;
       }
@@ -54,7 +54,7 @@ export function useSettingsSaveSlot() {
   return ctx;
 }
 
-// Tab 挂载时注册保存；卸载时清空
+// Tab 挂载时注册บันทึก；卸载时ล้างข้อมูล
 export function useRegisterSettingsSave(action: SettingsSaveAction | null) {
   const { registerSave } = useSettingsSaveSlot();
   useEffect(() => {

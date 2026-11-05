@@ -4,7 +4,7 @@ import { LocateFixed, Magnet, Map, Minus, Plus, Redo2, Scan, Undo2 } from 'lucid
 import { useOnViewportChange, useReactFlow } from '@xyflow/react'
 import { useCanvasStore } from './CanvasStore'
 
-/** 渲染画布左下角控制条 */
+/** เรนเดอร์画布左下角控制条 */
 export function CanvasBottomControls() {
   const {
     snapToGrid,
@@ -80,8 +80,8 @@ export function CanvasBottomControls() {
         <button
           type="button"
           className={`fc-icon-btn is-sm${snapToGrid ? ' is-active' : ''}`}
-          aria-label={snapToGrid ? '关闭网格吸附' : '开启网格吸附'}
-          title={snapToGrid ? '关闭网格吸附' : '开启网格吸附'}
+          aria-label={snapToGrid ? 'ปิด网格吸附' : '开启网格吸附'}
+          title={snapToGrid ? 'ปิด网格吸附' : '开启网格吸附'}
           aria-pressed={snapToGrid}
           onClick={toggleSnapToGrid}
         >
@@ -90,8 +90,8 @@ export function CanvasBottomControls() {
         <button
           type="button"
           className={`fc-icon-btn is-sm${showMinimap ? ' is-active' : ''}`}
-          aria-label={showMinimap ? '关闭小地图' : '开启小地图'}
-          title={showMinimap ? '关闭小地图' : '开启小地图'}
+          aria-label={showMinimap ? 'ปิด小地图' : '开启小地图'}
+          title={showMinimap ? 'ปิด小地图' : '开启小地图'}
           aria-pressed={showMinimap}
           onClick={toggleMinimap}
         >
@@ -112,8 +112,8 @@ export function CanvasBottomControls() {
         <button
           type="button"
           className="fc-zoom-label"
-          aria-label="重置缩放"
-          title="重置缩放"
+          aria-label="รีเซ็ต缩放"
+          title="รีเซ็ต缩放"
           onClick={handleResetZoom}
         >
           {zoomPercent}%
@@ -121,8 +121,8 @@ export function CanvasBottomControls() {
         <button
           type="button"
           className="fc-icon-btn is-sm"
-          aria-label="放大"
-          title="放大"
+          aria-label="ขยายขนาด"
+          title="ขยายขนาด"
           onClick={() => zoomIn({ duration: 150 })}
         >
           <Plus size={16} strokeWidth={1.8} />

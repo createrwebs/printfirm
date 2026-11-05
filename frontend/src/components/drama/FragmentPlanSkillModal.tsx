@@ -16,9 +16,9 @@ type FragmentPlanSkillModalProps = {
 /** 覆盖分镜前让用户勾选 Skill */
 export function FragmentPlanSkillModal({
   open,
-  title = 'AI 重新分镜',
+  title = 'AI แบ่งสตอรี่บอร์ดใหม่',
   message,
-  confirmText = '开始分镜',
+  confirmText = 'เริ่มแบ่งสตอรี่บอร์ด',
   onCancel,
   onConfirm,
 }: FragmentPlanSkillModalProps) {
@@ -67,7 +67,7 @@ export function FragmentPlanSkillModal({
           </div>
         </div>
         <div className="pf-dialog-skill-block">
-          <div className="pf-dialog-skill-label">本次使用的 Skill</div>
+          <div className="pf-dialog-skill-label">ทักษะ (Skill) ที่ใช้ในครั้งนี้</div>
           <AgentSkillPicker
             skills={skills}
             selectedIds={selectedIds}
@@ -77,12 +77,12 @@ export function FragmentPlanSkillModal({
             onUpload={(file) => void uploadSkill(file)}
             uploading={uploading}
             uploadError={uploadError}
-            emptyText="还没有 Skill，可上传 .md"
+            emptyText="ยังไม่มีทักษะ สามารถอัปโหลดไฟล์ .md ได้"
           />
         </div>
         <div className="pf-dialog-actions">
           <button type="button" className="pf-dialog-btn pf-dialog-btn-ghost" onClick={onCancel}>
-            取消
+            ยกเลิก
           </button>
           <button type="submit" className="pf-dialog-btn pf-dialog-btn-danger">
             {confirmText}

@@ -1,4 +1,4 @@
-/** 分集脚本编辑器：inline 时长/资产标签渲染与序列化 */
+/** 分集脚本แก้ไข器：inline ความยาว/แอสเซท标签渲染与序列化 */
 export type DramaMentionChipData = {
   assetId: number
   label: string
@@ -9,15 +9,15 @@ export const DURATION_CHIP_SELECTOR = '[data-duration-sec]'
 export const MENTION_CHIP_SELECTOR = "[data-mention='true']"
 export const CONTENT_TOKEN_PATTERN = /@(asset:\d+|duration:\d+)/g
 export const DURATION_PRESET_OPTIONS = [3, 4, 5, 8, 10, 12, 15] as const
-/** 新分镜建议：镜内 @duration 合计上限（秒） */
+/** 新分镜建议：镜内 @duration 合计上限（วินาที） */
 export const FRAGMENT_CONTENT_DURATION_MAX = 15
-/** Seedance 单镜/API 硬上限（秒）；旧稿可高于建议值 */
+/** Seedance 单镜/API 硬上限（วินาที）；旧稿可高于建议值 */
 export const DRAMA_SHOT_DURATION_HARD_MAX = 30
-/** 单段 @duration 下限（秒） */
+/** 单段 @duration 下限（วินาที） */
 export const DRAMA_SEGMENT_DURATION_MIN = 3
-/** 新分镜建议：单段 @duration 上限（秒） */
+/** 新分镜建议：单段 @duration 上限（วินาที） */
 export const DRAMA_SEGMENT_DURATION_MAX = 15
-/** 单段 @duration API 硬上限（秒） */
+/** 单段 @duration API 硬上限（วินาที） */
 export const DRAMA_SEGMENT_DURATION_HARD_MAX = 30
 
 const BLOCK_ELEMENT_TAGS = new Set(['DIV', 'P'])
@@ -45,7 +45,7 @@ function isInsideMentionChip(node: Node | null) {
   return Boolean(element?.closest(MENTION_CHIP_SELECTOR))
 }
 
-// 是否为资产/时长 chip 元素
+// 是否为แอสเซท/ความยาว chip 元素
 function isEditorChipElement(node: Node | null): node is HTMLElement {
   return Boolean(
     node &&
@@ -76,9 +76,9 @@ function closestEditorChip(node: Node | null, root: HTMLElement): HTMLElement | 
 }
 
 /**
- * 删除光标相邻的 contentEditable=false 标签。
- * 浏览器对不可编辑 chip 的 Backspace/Delete 常无效，需手动移除。
- * 返回 true 表示已处理。
+ * ลบ光标相邻的 contentEditable=false 标签。
+ * 浏览器对不可แก้ไข chip 的 Backspace/Delete 常无效，需手动移除。
+ * กลับ true 表示已处理。
  */
 export function deleteAdjacentEditorChip(
   root: HTMLElement,
@@ -197,7 +197,7 @@ function appendTextWithLineBreaks(root: HTMLElement, text: string) {
   })
 }
 
-// 创建 inline 资产引用标签
+// สร้าง inline แอสเซท引用标签
 export function createMentionChipElement(chip: DramaMentionChipData) {
   const chipEl = document.createElement('span')
   chipEl.className = 'drama-ep-mention-chip drama-ep-editor-chip'
@@ -226,14 +226,14 @@ export function createMentionChipElement(chip: DramaMentionChipData) {
   return chipEl
 }
 
-// 创建 inline 时长标签
+// สร้าง inline ความยาว标签
 export function createDurationChipElement(seconds: number) {
   const chipEl = document.createElement('span')
   chipEl.className = 'drama-ep-duration-chip drama-ep-editor-chip'
   chipEl.contentEditable = 'false'
   chipEl.dataset.mention = 'true'
   chipEl.dataset.durationSec = String(seconds)
-  chipEl.title = `时长 ${seconds}s，编辑时点击切换`
+  chipEl.title = `ความยาว ${seconds}s，แก้ไข时点击切换`
 
   const labelEl = document.createElement('span')
   labelEl.dataset.durationLabel = 'true'
@@ -244,15 +244,15 @@ export function createDurationChipElement(seconds: number) {
   return chipEl
 }
 
-// 更新已有时长标签秒数
+// 更新已有ความยาว标签วินาที数
 export function updateDurationChipElement(chipEl: HTMLElement, seconds: number) {
   chipEl.dataset.durationSec = String(seconds)
-  chipEl.title = `时长 ${seconds}s，编辑时点击切换`
+  chipEl.title = `ความยาว ${seconds}s，แก้ไข时点击切换`
   const labelEl = chipEl.querySelector<HTMLElement>('[data-duration-label]')
   if (labelEl) labelEl.textContent = `${seconds}s`
 }
 
-// 点击场记板时长标签时，在预设秒数间循环
+// 点击场记板ความยาว标签时，在预设วินาที数间循环
 export function nextDurationPresetSeconds(current: number) {
   const presets = DURATION_PRESET_OPTIONS
   const idx = presets.findIndex((sec) => sec === current)
@@ -263,7 +263,7 @@ export function nextDurationPresetSeconds(current: number) {
   return presets[(idx + 1) % presets.length]
 }
 
-// 在 Range 处插入时长标签
+// 在 Range 处插入ความยาว标签
 export function insertDurationChipAtRange(range: Range, seconds: number) {
   const selection = window.getSelection()
   range.deleteContents()
@@ -293,7 +293,7 @@ export function insertPlainTextAtRange(range: Range, text: string) {
   selection.addRange(caretRange)
 }
 
-// 在 Range 处插入资产标签
+// 在 Range 处插入แอสเซท标签
 export function insertMentionChipAtRange(range: Range, chip: DramaMentionChipData) {
   const selection = window.getSelection()
   range.deleteContents()
@@ -309,7 +309,7 @@ export function insertMentionChipAtRange(range: Range, chip: DramaMentionChipDat
   selection.addRange(caretRange)
 }
 
-// 将编辑器 DOM 序列化为 content 字符串
+// 将แก้ไข器 DOM 序列化为 content 字符串
 export function serializePromptEditorContent(root: HTMLElement) {
   let result = ''
 
@@ -345,7 +345,7 @@ export function serializePromptEditorContent(root: HTMLElement) {
   return result
 }
 
-// 根据 content 渲染编辑器 DOM
+// 根据 content 渲染แก้ไข器 DOM
 export function renderPromptEditorContent(
   root: HTMLElement,
   content: string,
@@ -388,7 +388,7 @@ function isCompletedContentToken(token: string) {
   return /^@(asset|duration):\d+$/.test(token)
 }
 
-// 序列化「从编辑器开头到光标」的正文（chip 仍是 @asset:id）
+// 序列化「从แก้ไข器开头到光标」的正文（chip 仍是 @asset:id）
 export function serializePromptEditorContentBeforeCaret(root: HTMLElement) {
   const selection = window.getSelection()
   if (!selection || selection.rangeCount === 0) return null
@@ -472,7 +472,7 @@ export function getCaretClientRect(): MentionCaretRect | null {
   return { top: rect.top, left: rect.left, bottom: rect.bottom }
 }
 
-// 统计 content 中 @duration 合计秒数
+// 统计 content 中 @duration 合计วินาที数
 export function sumContentDurationSeconds(content: string) {
   let total = 0
   const re = /@duration:(\d+)/g
@@ -491,7 +491,7 @@ export function resolveChipFromAsset(
 ): DramaMentionChipData {
   return {
     assetId: asset.id,
-    label: asset.name || `资产 ${asset.id}`,
+    label: asset.name || `แอสเซท ${asset.id}`,
     previewUrl: previewUrl || null,
   }
 }

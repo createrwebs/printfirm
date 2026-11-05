@@ -11,6 +11,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models_drama import DramaAsset, DramaProject
 from app.services.billing import record_llm_chat_line
 from app.services.drama.llm import drama_chat_text
+from app.services.agent.runner import run_task_text
+from app.services.drama.language import detect_content_language, has_language_violation, language_instruction
 from app.services.llm_client import LlmUnavailableError
 from app.services.drama.seed import _episode_bodies
 from app.services.drama.generation_prompt import ensure_structure_in_prompt
@@ -51,7 +53,7 @@ CHARACTER_VISUAL_SYSTEM = """你是短剧美术造型指导，为 Seedream 生�
 「男性，二十岁左右，身形清瘦，面容带有山野少年的质朴与英气，肤色健康小麦色。头发用简单木簪束起，身穿以禽羽编织的轻甲，外罩粗麻短褐，腰系兽皮绳，脚踏草编凉鞋。气质机敏幽默，眼神明亮，嘴角常带笑意，像能辨兽语的青年猎手。」
 
 输出要求：
-1. 只输出一条简体中文，150–380 字，不要 JSON、不要标题、不要引号、不要「性格：」类字段标签
+1. 只输出一条使用原始剧本语言的视觉描述，150–380 个字符，不要 JSON、不要标题、不要引号、不要字段标签
 2. 必须具体可拍：性别年龄、脸型五官、发型、体型、服饰分层（材质/颜色/纹样）、配饰道具、站姿气质、神态
 3. 把身份、性格、关系转化为可见视觉特征（如「沉稳」→ 肩背挺直、眼神低垂）
 4. 贴合故事类型与项目美学；描述须适配白底角色设定板（正/左侧/背三视图 + 面部大头 + 半身像），勿写构图指令本身
@@ -63,7 +65,7 @@ SCENE_VISUAL_SYSTEM = """你是短剧场景美术指导，为 Seedream 生图写
 「上古治水工地临时营帐区，午后偏硬的自然光。前景是泥泞夯土与散落的竹编筐、绳索，中景多顶粗麻营帐错落，帐外竖木桩挂兽皮与羽旗。背景可见疏朗山林与远处河滩反光，空气里有尘土与烟火气，色调偏土黄与灰绿，压抑中透出劳作紧迫感的横屏影视场景。」
 
 输出要求：
-1. 只输出一条简体中文，150–380 字，不要 JSON、不要标题、不要引号
+1. 只输出一条使用原始剧本语言的环境描述，150–380 个字符，不要 JSON、不要标题、不要引号
 2. 须写清：空间类型、时代感、围合与立面要素（门窗/墙面/装修）、功能分区、关键陈设、光影、色调、氛围
 3. 以环境为主体，不写人物特写；可写无人痕迹（脚印、余烬、法阵光痕）
 4. 描述须适配「平视+俯视合图、左侧多面立面、右侧 2～4 处区域细节」的设计参考图，勿写构图指令本身
@@ -73,18 +75,18 @@ SCENE_VISUAL_SYSTEM = """你是短剧场景美术指导，为 Seedream 生图写
 PROP_VISUAL_SYSTEM = """你是短剧道具美术，为 Seedream 写「道具本体视觉描述」。
 
 输出要求：
-1. 只输出一条简体中文，100–220 字，不要 JSON、不要标题、不要引号
+1. 只输出一条使用原始剧本语言的道具描述，100–220 个字符，不要 JSON、不要标题、不要引号
 2. 须写清：物件类型、整体外形与比例、材质分层、颜色、关键结构（开口/机关/铭文/纹样）、磨损做旧、戏剧符号
 3. 描述须适配白底道具设定板（正/左侧/背三视图 + 关键局部特写 + 材质结构特写），勿写构图指令本身
 4. 以物件为主体，不写人物手持或肖像；禁止空泛套话"""
 
 MATERIAL_VISUAL_SYSTEM = """你是短剧气氛美术，为 Seedream 写空镜/气氛静帧描述。
-输出 100–220 字简体中文：景别、构图、光影、色调、氛围情绪、运动暗示（烟/水/光），适合 16:9 横屏。不要人物正脸。不要 JSON。"""
+输出 100–220 个字符的原始剧本语言：景别、构图、光影、色调、氛围情绪、运动暗示（烟/水/光），适合 16:9 横屏。不要人物正脸。不要 JSON。"""
 
-IMAGE_VISUAL_SYSTEM = """你是概念图提示词助手。用户给了简短画面意图，请扩写成 Seedream 可用的中文画面描述。
+IMAGE_VISUAL_SYSTEM = """你是概念图提示词助手。用户给了简短画面意图，请使用原始剧本语言扩写成 Seedream 可用的画面描述。
 
 要求：
-1. 只输出一条 60–200 字简体中文，不要 JSON、不要标题、不要引号
+1. 只输出一条 60–200 个字符的原始剧本语言，不要 JSON、不要标题、不要引号
 2. 必须把用户指定的主体作为画面绝对中心，不得替换成无关物体（例如用户写「一头牛」就画牛，禁止画成书本/风景/人物设定板）
 3. 可补全：主体外形、材质、姿态或状态、环境、光线、色调，但不得偏离用户主体
 4. 禁止白底多视图设定板；禁止用空泛套话代替主体
@@ -288,9 +290,32 @@ async def _llm_visual_prompt(
     db: AsyncSession | None = None,
     user_id: int | None = None,
     drama_project_id: int | None = None,
+    source: str = "",
+    task: str = "character_prompt",
+    skill_ids: list[int] | None = None,
 ) -> str:
-    raw = await drama_chat_text(system, user, temperature=0.6, max_tokens=1024)
+    system_with_language = system + "\n\n" + language_instruction(source or user)
+    if db is not None and user_id is not None:
+        raw = await run_task_text(
+            db,
+            user_id,
+            task=task,
+            system=system_with_language,
+            user=user,
+            temperature=0.6,
+            max_tokens=1024,
+            skill_ids=skill_ids,
+        )
+    else:
+        raw = await drama_chat_text(
+            system_with_language,
+            user,
+            temperature=0.6,
+            max_tokens=1024,
+        )
     prompt = normalize_visual_prompt_text(raw)
+    if has_language_violation(source or user, prompt, strict=True):
+        raise RuntimeError("视觉提示词语言与原始剧本不一致")
     if db is not None and user_id is not None:
         await record_llm_chat_line(
             db,
@@ -304,6 +329,20 @@ async def _llm_visual_prompt(
 def _finalize_visual_prompt(prompt: str, kind: str) -> str:
     """解析结果写入提示词框前：挂上三视图等结构前缀（不再由提交链路静默携带）。"""
     return ensure_structure_in_prompt(normalize_visual_prompt_text(prompt), kind)
+
+
+def _localized_fallback_prompt(name: str, kind: str, source: str) -> str:
+    """Keep rule-only fallbacks in the source language when the visual LLM is unavailable."""
+    if detect_content_language(source) != "th":
+        return ""
+    subject = (name or "แอสเซท").strip()
+    if kind == "character":
+        return f"{subject} เป็นตัวละครภาษาไทย รายละเอียดใบหน้า รูปร่าง ทรงผม เสื้อผ้า สี วัสดุ เครื่องประดับ และสีหน้าให้สอดคล้องกับเรื่อง"
+    if kind == "scene":
+        return f"{subject} ฉากภาษาไทย รายละเอียดพื้นที่ องค์ประกอบ สถาปัตยกรรม แสง สี บรรยากาศ และร่องรอยการใช้งานให้ถ่ายทำได้จริง"
+    if kind in {"prop", "material", "none"}:
+        return f"{subject} วัตถุสำคัญในเรื่อง รายละเอียดรูปทรง วัสดุ สี ลวดลาย ร่องรอย และสัญลักษณ์ให้เห็นชัด"
+    return f"{subject} เป็นองค์ประกอบหลักของภาพ รายละเอียดชัดเจน ใช้ภาษาไทย และไม่เปลี่ยนเป็นวัตถุอื่น"
 
 
 async def resolve_visual_prompt_for_asset(
@@ -330,9 +369,13 @@ async def resolve_visual_prompt_for_asset(
     if project.script and isinstance(project.script.summary, dict):
         summary = project.script.summary
     bodies = _episode_bodies(project.script.episode_content) if project.script else []
+    source = str(project.script.source or "") if project.script else ""
+    stored_language_ok = not has_language_violation(source, stored, strict=True)
 
     # 用户这次点了「生成」并带了文案：以本次为准（够长直接用；偏短再补全）
     if incoming:
+        if has_language_violation(source, incoming, strict=True):
+            incoming = ""
         if not is_weak_visual_prompt(incoming, name, kind):
             return _finalize_visual_prompt(incoming, kind)
         # 未达角色 120 字门槛、但仍有实质描述时直接采用，避免被旧 visualPrompt 锁死
@@ -342,10 +385,10 @@ async def resolve_visual_prompt_for_asset(
         }:
             return _finalize_visual_prompt(incoming, kind)
         seed = incoming
-    elif not force_refresh and stored and not is_weak_visual_prompt(stored, name, kind):
+    elif not force_refresh and stored and stored_language_ok and not is_weak_visual_prompt(stored, name, kind):
         return _finalize_visual_prompt(stored, kind)
     else:
-        seed = stored
+        seed = stored if stored_language_ok else ""
 
     min_len = MIN_PROMPT_LEN.get(kind, 80)
     llm_bill = {"db": db, "user_id": project.user_id, "drama_project_id": project.id}
@@ -367,6 +410,8 @@ async def resolve_visual_prompt_for_asset(
                 CHARACTER_VISUAL_SYSTEM,
                 f"请为以下角色生成视觉形象描述：\n\n{context}",
                 min_len=80,
+                source=source,
+                task="character_prompt",
                 **llm_bill,
             )
             prompt = merge_visual_prompts(rule_prompt, llm, min_len=min_len)
@@ -380,7 +425,7 @@ async def resolve_visual_prompt_for_asset(
             if strict_llm:
                 raise RuntimeError(f"角色「{name}」AI 提示词生成失败") from exc
             logger.exception("角色视觉提示词 LLM 失败 asset_id=%s", asset.id)
-        return _finalize_visual_prompt(seed or rule_prompt, kind)
+        return _finalize_visual_prompt(seed or _localized_fallback_prompt(name, kind, source) or rule_prompt, kind)
 
     if kind == "scene":
         rule_prompt = fallback_scene_visual_prompt(asset, summary, bodies)
@@ -404,7 +449,14 @@ async def resolve_visual_prompt_for_asset(
             ]
         )
         try:
-            llm = await _llm_visual_prompt(SCENE_VISUAL_SYSTEM, user_msg, min_len=80, **llm_bill)
+            llm = await _llm_visual_prompt(
+                SCENE_VISUAL_SYSTEM,
+                user_msg,
+                min_len=80,
+                source=source,
+                task="scene_prompt",
+                **llm_bill,
+            )
             prompt = merge_visual_prompts(rule_prompt, llm, min_len=min_len)
             if len(prompt) >= min_len or len(prompt) >= 80:
                 return _finalize_visual_prompt(prompt, kind)
@@ -416,7 +468,7 @@ async def resolve_visual_prompt_for_asset(
             if strict_llm:
                 raise RuntimeError(f"场景「{name}」AI 提示词生成失败") from exc
             logger.exception("场景视觉提示词 LLM 失败 asset_id=%s", asset.id)
-        return _finalize_visual_prompt(seed or rule_prompt, kind)
+        return _finalize_visual_prompt(seed or _localized_fallback_prompt(name, kind, source) or rule_prompt, kind)
 
     if kind in {"prop", "material", "none"}:
         rule_prompt = seed or normalize_visual_prompt_text(
@@ -434,7 +486,14 @@ async def resolve_visual_prompt_for_asset(
         if excerpt:
             ctx += f"剧本相关摘录：\n{excerpt[:800]}"
         try:
-            llm = await _llm_visual_prompt(system, ctx, min_len=60, **llm_bill)
+            llm = await _llm_visual_prompt(
+                system,
+                ctx,
+                min_len=60,
+                source=source,
+                task="prop_prompt",
+                **llm_bill,
+            )
             prompt = merge_visual_prompts(rule_prompt, llm, min_len=min_len)
             if len(prompt) >= 60:
                 return _finalize_visual_prompt(prompt, kind)
@@ -446,7 +505,7 @@ async def resolve_visual_prompt_for_asset(
             if strict_llm:
                 raise RuntimeError(f"「{name}」AI 提示词生成失败") from exc
             logger.exception("%s 视觉提示词 LLM 失败 asset_id=%s", kind, asset.id)
-        return _finalize_visual_prompt(rule_prompt, kind)
+        return _finalize_visual_prompt(_localized_fallback_prompt(name, kind, source) or rule_prompt, kind)
 
     # 自由画布 image 等：短提示必须钉住用户主体，禁止回落旧 visualPrompt / 静物套话
     if kind == "image" or kind not in {"character", "scene", "prop", "material", "none"}:
@@ -456,6 +515,8 @@ async def resolve_visual_prompt_for_asset(
                     IMAGE_VISUAL_SYSTEM,
                     f"用户意图：{seed}\n资产名：{name or '（无）'}",
                     min_len=40,
+                    source=source,
+                    task="video_prompt",
                     **llm_bill,
                 )
                 if llm and _seed_tokens_preserved(seed, llm):

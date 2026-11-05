@@ -10,9 +10,9 @@ function formatTokens(n: number) {
 }
 
 type MonthlyUsageCardProps = {
-  /** compact 嵌入定价/设置卡片；panel 独立侧栏样式 */
+  /** compact 嵌入定价/ตั้งค่า卡片；panel 独立侧栏样式 */
   variant?: 'panel' | 'compact'
-  /** 是否显示「去充值」按钮（定价页已可直接充值时可关闭） */
+  /** 是否显示「去充值」按钮（定价页已可直接充值时可ปิด） */
   showTopup?: boolean
 }
 

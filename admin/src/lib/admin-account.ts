@@ -5,7 +5,7 @@ export function formatAccountId(userId: number): string {
   return String(n);
 }
 
-/** 从搜索词解析账号 ID（支持 0001 或纯数字） */
+/** 从ค้นหา词解析账号 ID（支持 0001 或纯数字） */
 export function parseAccountIdQuery(raw: string): number | null {
   const trimmed = raw.trim();
   if (!trimmed) return null;

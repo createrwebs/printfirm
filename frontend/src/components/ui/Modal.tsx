@@ -68,7 +68,7 @@ function focusInitialElement(panel: HTMLElement, preferredFocus?: HTMLElement | 
   target.focus({ preventScroll: true })
 }
 
-// 全局居中/抽屉弹层（portal 到 body，统一 pf-modal 样式）
+// ทั่วไป居中/抽屉弹层（portal 到 body，统一 pf-modal 样式）
 export default function Modal({
   open,
   onClose,

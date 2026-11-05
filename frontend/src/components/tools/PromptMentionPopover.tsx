@@ -1,4 +1,4 @@
-/** 生成页输入 @ 时弹出的提及层：从已加入的参考资料中选择并插入提及。 */
+/** 生成页输入 @ 时弹出的提及层：从已加入的参考资料中เลือก并插入提及。 */
 import { useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { AudioLines, ImagePlus, Search, Video } from 'lucide-react'
@@ -20,12 +20,12 @@ type Props = {
 
 const KIND_ICON: Record<GenerationReferenceKind, typeof ImagePlus> = { image: ImagePlus, video: Video, audio: AudioLines }
 
-/** 光标锚定的参考资料提及弹层，键盘与鼠标均可选择。 */
+/** 光标锚定的参考资料提及弹层，键盘与鼠标均可เลือก。 */
 export default function PromptMentionPopover({ open, items, anchorRect, activeIndex, onActiveIndexChange, onSelect, onClose }: Props) {
   const text = useGenerationText()
   const panelRef = useRef<HTMLDivElement>(null)
 
-  // 点击弹层外部关闭
+  // 点击弹层外部ปิด
   useEffect(() => {
     if (!open) return
     function onDoc(e: MouseEvent) {
@@ -45,7 +45,7 @@ export default function PromptMentionPopover({ open, items, anchorRect, activeIn
     <div ref={panelRef} className="gen-mention-pop" style={{ top, left }} role="listbox" aria-label={text('@ 引用参考资料', 'Mention a reference')}>
       <p className="gen-mention-pop-heading"><Search size={13} aria-hidden />{text('提及已加入的参考资料', 'Mention a reference you added')}</p>
       {items.length === 0 ? (
-        <p className="gen-mention-pop-empty">{text('没有匹配的参考资料，请先上传或从资产库选择图片、视频或音频。', 'No matching references. Add an image, video or audio first.')}</p>
+        <p className="gen-mention-pop-empty">{text('没有匹配的参考资料，请先อัปโหลด或从แอสเซท库เลือกรูปภาพ、วิดีโอ或เสียง。', 'No matching references. Add an image, video or audio first.')}</p>
       ) : (
         <div className="gen-mention-pop-list">
           {items.map((reference, index) => {
@@ -63,7 +63,7 @@ export default function PromptMentionPopover({ open, items, anchorRect, activeIn
                 <span className="gen-mention-pop-thumb">{preview ? <img src={preview} alt="" /> : <Icon size={15} aria-hidden />}</span>
                 <span className="gen-mention-pop-meta">
                   <strong>{reference.name}</strong>
-                  <em>{reference.kind === 'image' ? text('图片', 'Image') : reference.kind === 'video' ? text('视频', 'Video') : text('音频', 'Audio')}</em>
+                  <em>{reference.kind === 'image' ? text('รูปภาพ', 'Image') : reference.kind === 'video' ? text('วิดีโอ', 'Video') : text('เสียง', 'Audio')}</em>
                 </span>
               </button>
             )

@@ -17,7 +17,7 @@ function JsonRecord({ title, value, paginated = false }: { title: string; value:
   return (
     <details className="task-json-toggle">
       <summary>{title}<span>脱敏</span></summary>
-      {value === undefined ? <p className="mt-3 text-xs text-[var(--admin-muted)]">{paginated ? "本页未包含，可翻页查看历史记录" : "未记录"}</p> : <pre className="task-detail-json mt-3">{prettyJson(redactTaskData(value))}</pre>}
+      {value === undefined ? <p className="mt-3 text-xs text-[var(--admin-muted)]">{paginated ? "本页未包含，可翻页ดู历史记录" : "未记录"}</p> : <pre className="task-detail-json mt-3">{prettyJson(redactTaskData(value))}</pre>}
     </details>
   );
 }
@@ -36,13 +36,13 @@ export function TaskUpstreamPanel({ task }: { task: AdminTaskDetail }) {
           <span><span className="text-[var(--admin-muted)]">最近阶段</span> <strong>{summary.phase}</strong></span>
           <span className="text-[var(--admin-muted)]">本页 {pageRecords.length} 条 · 历史 {history.data?.total ?? task.upstream_events_total ?? "—"} 条</span>
         </div>
-        <Button variant="outline" size="sm" disabled={history.loading} onClick={history.refresh}>刷新上游记录</Button>
+        <Button variant="outline" size="sm" disabled={history.loading} onClick={history.refresh}>รีเฟรช上游记录</Button>
       </div>
-      <p className="text-[11px] leading-5 text-[var(--admin-muted)]">按事件 ID 倒序分页，本页内按请求 ID 关联提交与响应；同一请求可能跨页，查询事件可能为采样记录。</p>
-      {history.error ? <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700" role="alert">{history.error}<Button className="ml-3" variant="outline" size="sm" onClick={history.refresh}>重试</Button></div> : null}
+      <p className="text-[11px] leading-5 text-[var(--admin-muted)]">按事件 ID 倒序分页，本页内按请求 ID 关联ส่ง与响应；同一请求可能跨页，查询事件可能为采样记录。</p>
+      {history.error ? <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700" role="alert">{history.error}<Button className="ml-3" variant="outline" size="sm" onClick={history.refresh}>ลองใหม่</Button></div> : null}
 
       {history.loading ? <p className="py-8 text-center text-sm text-[var(--admin-muted)]" role="status">正在加载本页上游事件…</p> : history.error ? null : requests.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-[var(--admin-border)] px-5 py-8 text-sm text-[var(--admin-muted)]">本页未记录上游 HTTP 请求或模拟请求参数。已有上游任务 ID 或任务已完成，也不能据此还原实际请求体。</div>
+        <div className="rounded-xl border border-dashed border-[var(--admin-border)] px-5 py-8 text-sm text-[var(--admin-muted)]">本页未记录上游 HTTP 请求或模拟请求参数。已有上游任务 ID 或任务เสร็จสมบูรณ์，也不能据此还原实际请求体。</div>
       ) : requests.map((request) => {
         const failed = request.latest.phase === "failed" || (request.httpStatus ?? 0) >= 400;
         const simulated = request.latest.phase === "simulated";
@@ -77,7 +77,7 @@ export function TaskUpstreamPanel({ task }: { task: AdminTaskDetail }) {
                 ))}
               </ol>
             ) : null}
-            {simulated ? <p className="mb-3 text-sm text-[var(--admin-muted)]">{request.endpoint ? "以下为完成渠道路由、模型映射和协议转换后，准备发送的实际 URL、请求头和 JSON 请求体（凭据已脱敏）。在 HTTP 发送前拦截，使用默认媒体结果。" : "历史记录仅保存了业务输入参数，不是最终 HTTP 请求体；之后新建的模拟任务会记录最终请求参数。"}</p> : null}
+            {simulated ? <p className="mb-3 text-sm text-[var(--admin-muted)]">{request.endpoint ? "以下为เสร็จสิ้น渠道路由、模型映射和协议转换后，准备发送的实际 URL、请求头和 JSON 请求体（凭据已脱敏）。在 HTTP 发送前拦截，使用ค่าเริ่มต้น媒体结果。" : "历史记录仅บันทึก了业务输入参数，不是最终 HTTP 请求体；之后สร้างใหม่的模拟任务会记录最终请求参数。"}</p> : null}
             <div className={cn("grid items-start gap-2", !simulated && "xl:grid-cols-2")}>
               <JsonRecord title={simulated ? "模拟请求参数" : "请求"} value={request.request} paginated />
               {!simulated ? <JsonRecord title="响应" value={request.response} paginated /> : null}

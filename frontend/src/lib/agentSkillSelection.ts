@@ -1,10 +1,10 @@
-/** Agent Skill 勾选：本地缓存与默认值 */
+/** Agent Skill 勾选：本地缓存与ค่าเริ่มต้น值 */
 
 import type { AgentSkill } from '../api/agentSkills'
 
 const STORAGE_KEY = 'agentSkillIds:v1'
 
-/** 读取上次勾选的 Skill id；无缓存返回 null */
+/** 读取上次勾选的 Skill id；无缓存กลับ null */
 export function loadStoredSkillIds(): number[] | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
@@ -28,12 +28,12 @@ export function saveStoredSkillIds(ids: number[]) {
   }
 }
 
-/** 默认勾选：全部启用中的 skill */
+/** ค่าเริ่มต้น勾选：全部启用中的 skill */
 export function defaultSkillIds(skills: AgentSkill[]): number[] {
   return skills.filter((skill) => skill.is_active).map((skill) => skill.id)
 }
 
-/** 用现有列表校正缓存 id；无缓存则用默认启用项 */
+/** 用现有列表校正缓存 id；无缓存则用ค่าเริ่มต้น启用项 */
 export function resolveSelectedSkillIds(skills: AgentSkill[], stored: number[] | null): number[] {
   const valid = new Set(skills.map((skill) => skill.id))
   if (stored == null) return defaultSkillIds(skills)

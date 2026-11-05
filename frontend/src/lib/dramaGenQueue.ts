@@ -1,4 +1,4 @@
-/** 漫剧全局生成队列：图片 / 视频等任务统一展示与恢复 */
+/** ละครซีรีส์全局生成队列：รูปภาพ / วิดีโอ等任务统一展示与恢复 */
 import { useSyncExternalStore } from 'react'
 import type { DramaTaskBrief } from '../api/drama'
 import { subscribeWorkspace, workspaceScope } from '../features/teams/workspaceScope.ts'
@@ -11,13 +11,13 @@ export type DramaGenJob = {
   id: string
   kind: DramaGenJobKind
   projectId: number
-  /** 资产 id 或分镜 id */
+  /** แอสเซท id 或分镜 id */
   targetId: number
   episodeId?: number
-  /** 统一任务平台 task_runs.id，用于打开详情 */
+  /** 统一任务平台 task_runs.id，用于打开รายละเอียด */
   taskId?: number
   title: string
-  /** 子类型文案：角色 / 场景 / 分镜视频 等 */
+  /** 子ประเภท文案：ตัวละคร / ฉาก / 分镜วิดีโอ 等 */
   subtype: string
   status: DramaGenJobStatus
   message?: string
@@ -39,15 +39,15 @@ const EMPTY: DramaGenJob[] = []
 let jobs: DramaGenJob[] = []
 let cachedSnapshot: DramaGenJob[] = EMPTY
 const listeners = new Set<Listener>()
-// 用户手动清空后，不再被轮询/状态同步写回队列
+// 用户手动ล้างข้อมูล后，不再被轮询/สถานะ同步写回队列
 const dismissedJobIds = new Set<string>()
 
-// 重新入队时取消「已清空」标记
+// 重新入队时ยกเลิก「已ล้างข้อมูล」标记
 function undismissJob(jobId: string): void {
   dismissedJobIds.delete(jobId)
 }
 
-// 是否跳过把已完成项写回（未跟踪或用户已清空）
+// 是否跳过把เสร็จสมบูรณ์项写回（未跟踪或用户已ล้างข้อมูล）
 function shouldSkipFinishedResync(
   jobId: string,
   rawStatus: string,
@@ -83,7 +83,7 @@ function snapshotsEqual(a: DramaGenJob[], b: DramaGenJob[]): boolean {
   return true
 }
 
-// 清理过期完成/失败项（进行中永不清）
+// 清理过期เสร็จสิ้น/ล้มเหลว项（进行中永不清）
 function pruneFinished() {
   const now = Date.now()
   jobs = jobs.filter((job) => {
@@ -93,7 +93,7 @@ function pruneFinished() {
   })
 }
 
-// 刷新快照并通知
+// รีเฟรช快照并通知
 function emit() {
   pruneFinished()
   const next = jobs.length === 0 ? EMPTY : [...jobs]
@@ -126,7 +126,7 @@ export function useDramaGenQueue(): DramaGenJob[] {
   return useSyncExternalStore(subscribeDramaGenQueue, getDramaGenQueue, getDramaGenQueue)
 }
 
-// 活跃任务数（角标）
+// งานที่กำลังดำเนินการ数（角标）
 export function getDramaGenActiveCount(): number {
   return jobs.filter((j) => j.status === 'queued' || j.status === 'running').length
 }
@@ -195,17 +195,17 @@ export function upsertDramaGenJob(
   if (!options?.silent) emit()
 }
 
-// 图片任务 id
+// รูปภาพ任务 id
 export function imageJobId(assetId: number): string {
   return `image:${assetId}`
 }
 
-// 视频分镜任务 id
+// วิดีโอ分镜任务 id
 export function videoJobId(fragmentId: number): string {
   return `video:${fragmentId}`
 }
 
-// 同步资产生图任务到统一队列（由 dramaImageGenQueue 回调）
+// 同步แอสเซท生图任务到统一队列（由 dramaImageGenQueue 回调）
 export function syncImageJobToUnified(input: {
   assetId: number
   projectId: number
@@ -220,26 +220,26 @@ export function syncImageJobToUnified(input: {
     kind: 'image',
     projectId: input.projectId,
     targetId: input.assetId,
-    title: input.assetName || `资产 ${input.assetId}`,
+    title: input.assetName || `แอสเซท ${input.assetId}`,
     subtype: input.assetType || 'image',
     status: input.status,
     taskId: input.taskId,
     error: input.error,
     message:
       input.status === 'running'
-        ? '生图中'
+        ? 'กำลังสร้างรูปภาพ'
         : input.status === 'queued'
-          ? '排队中'
+          ? 'กำลังรอคิว'
           : undefined,
   })
 }
 
-// 画布视频资产任务 id（与分镜 video:{fragmentId} 区分）
+// 画布วิดีโอแอสเซท任务 id（与分镜 video:{fragmentId} 区分）
 export function assetVideoJobId(assetId: number): string {
   return `video-asset:${assetId}`
 }
 
-// 同步画布资产生视频到统一队列
+// 同步画布แอสเซท生วิดีโอ到统一队列
 export function syncAssetVideoJobToUnified(input: {
   assetId: number
   projectId: number
@@ -252,15 +252,15 @@ export function syncAssetVideoJobToUnified(input: {
     kind: 'video',
     projectId: input.projectId,
     targetId: input.assetId,
-    title: input.assetName || `视频 ${input.assetId}`,
-    subtype: '画布视频',
+    title: input.assetName || `วิดีโอ ${input.assetId}`,
+    subtype: 'วิดีโอแคนวาส',
     status: input.status,
     error: input.error,
     message:
       input.status === 'running'
-        ? '生视频中'
+        ? 'กำลังสร้างวิดีโอ'
         : input.status === 'queued'
-          ? '排队中'
+          ? 'กำลังรอคิว'
           : undefined,
   })
 }
@@ -275,21 +275,21 @@ type FragmentStatusItem = {
   cover?: string
 }
 
-// 根据分镜列表解析展示序号；无法可靠判断时返回 null，避免轮询把标题改成「片段 01」
+// 根据รายการสตอรี่บอร์ด解析展示序号；无法可靠判断时กลับ null，避免轮询把标题改成「片段 01」
 function resolveFragmentLabel(
   fragId: number,
   fragments: Array<{ id: number; sort_order?: number }>,
 ): string | null {
   const frag = fragments.find((f) => f.id === fragId)
   if (frag && typeof frag.sort_order === 'number' && frag.sort_order >= 0) {
-    return `片段 ${String(frag.sort_order + 1).padStart(2, '0')}`
+    return `ช็อต ${String(frag.sort_order + 1).padStart(2, '0')}`
   }
   // 仅当列表里已有可靠 sort_order 时，才允许用下标兜底（完整有序列表）
   const hasAnySortOrder = fragments.some((f) => typeof f.sort_order === 'number' && f.sort_order >= 0)
   if (!hasAnySortOrder) return null
   const idx = fragments.findIndex((f) => f.id === fragId)
   if (idx < 0) return null
-  return `片段 ${String(idx + 1).padStart(2, '0')}`
+  return `ช็อต ${String(idx + 1).padStart(2, '0')}`
 }
 
 // 组装队列标题：有可靠镜序时写入/纠正；否则保留已有标题
@@ -309,7 +309,7 @@ function resolveVideoJobTitle(
   }
   if (existing?.title) return existing.title
   const prefix = (episodeName || '').trim()
-  return prefix ? `${prefix} · 分镜视频` : '分镜视频'
+  return prefix ? `${prefix} · วิดีโอสตอรี่บอร์ด` : 'วิดีโอสตอรี่บอร์ด'
 }
 
 type FragmentTaskItem = DramaTaskBrief
@@ -334,7 +334,7 @@ export function syncEpisodeVideoJobs(input: {
   const fragLabel = (fragId: number) => resolveFragmentLabel(fragId, input.fragments)
 
   const activeTaskByFragmentId = new Map<number, FragmentTaskItem>()
-  // 每个分镜取最新一条平台任务（含失败），供队列绑定 taskId / 错误文案
+  // 每个分镜取最新一条平台任务（含ล้มเหลว），供队列绑定 taskId / 错误文案
   const latestTaskByFragmentId = new Map<number, FragmentTaskItem>()
   for (const task of input.taskItems || []) {
     if (task.task_type !== 'fragment_video') continue
@@ -359,7 +359,7 @@ export function syncEpisodeVideoJobs(input: {
     if (shouldSkipFinishedResync(jobId, raw, existing, Boolean(activeTask))) {
       continue
     }
-    // idle：服务端无任务。乐观入队后若已中断，从「生成中」清掉
+    // idle：服务端无任务。乐观入队后若已中断，从「กำลังสร้าง」清掉
     if (raw === 'idle') {
       if (activeTask) {
         upsertDramaGenJob(
@@ -371,14 +371,14 @@ export function syncEpisodeVideoJobs(input: {
             episodeId: input.episodeId,
             taskId: activeTask.id,
             title: resolveVideoJobTitle(existing, input.episodeName, fragLabel(item.fragment_id)),
-            subtype: '分镜视频',
+            subtype: 'วิดีโอสตอรี่บอร์ด',
             status: activeTask.status === 'pending' || activeTask.status === 'leased' ? 'queued' : 'running',
             message:
               activeTask.current_step_key === 'assets'
-                ? '生成参考图…'
+                ? 'กำลังสร้างภาพอ้างอิง…'
                 : activeTask.status === 'pending' || activeTask.status === 'leased'
-                  ? '排队中'
-                  : '生成中',
+                  ? 'กำลังรอคิว'
+                  : 'กำลังสร้าง',
           },
           { silent: true },
         )
@@ -396,7 +396,7 @@ export function syncEpisodeVideoJobs(input: {
             title: existing.title,
             subtype: existing.subtype,
             status: 'failed',
-            error: latestTask?.error_message || '任务已中断，请重新生成',
+            error: latestTask?.error_message || 'งานถูกขัดจังหวะ กรุณาสร้างใหม่',
           },
           { silent: true },
         )
@@ -407,7 +407,7 @@ export function syncEpisodeVideoJobs(input: {
     if (raw === 'done') status = 'done'
     else if (raw === 'failed' || raw === 'cancelled') status = 'failed'
     else if (activeTask) {
-      // 任务已提交上游时，不以分镜 params 滞后的 queued 为准
+      // 任务已ส่ง上游时，不以分镜 params 滞后的 queued 为准
       status =
         activeTask.status === 'pending' || activeTask.status === 'leased' ? 'queued' : 'running'
     } else if (raw === 'queued') status = 'queued'
@@ -418,14 +418,14 @@ export function syncEpisodeVideoJobs(input: {
       (raw === 'cancelled' || status === 'failed'
         ? latestTask?.error_message || undefined
         : undefined) ||
-      (raw === 'cancelled' ? '已取消' : undefined)
+      (raw === 'cancelled' ? 'ยกเลิกแล้ว' : undefined)
 
     const messageFromTask =
       activeTask && status === 'running'
         ? activeTask.current_step_key === 'assets'
-          ? '生成参考图…'
-          : item.message || (item.phase === 'assets' ? '生成参考图…' : '生成中')
-        : item.message || (item.phase === 'assets' ? '生成参考图…' : undefined)
+          ? 'กำลังสร้างภาพอ้างอิง…'
+          : item.message || (item.phase === 'assets' ? 'กำลังสร้างภาพอ้างอิง…' : 'กำลังสร้าง')
+        : item.message || (item.phase === 'assets' ? 'กำลังสร้างภาพอ้างอิง…' : undefined)
 
     upsertDramaGenJob(
       {
@@ -436,9 +436,9 @@ export function syncEpisodeVideoJobs(input: {
         episodeId: input.episodeId,
         taskId: boundTaskId,
         title: resolveVideoJobTitle(existing, input.episodeName, fragLabel(item.fragment_id)),
-        subtype: '分镜视频',
+        subtype: 'วิดีโอสตอรี่บอร์ด',
         status,
-        message: status === 'queued' ? item.message || '排队中' : messageFromTask,
+        message: status === 'queued' ? item.message || 'กำลังรอคิว' : messageFromTask,
         error: errText,
       },
       { silent: true },
@@ -465,7 +465,7 @@ export function enqueueEpisodeVideoJobs(input: {
     .map((f) => ({
       fragment_id: f.id,
       status: 'queued',
-      message: '已入队',
+      message: 'เข้าคิวแล้ว',
     }))
   syncEpisodeVideoJobs({
     projectId: input.projectId,
@@ -478,7 +478,7 @@ export function enqueueEpisodeVideoJobs(input: {
   ensureEpisodeVideoStatusPoll()
 }
 
-/** 分集 generate_status 轮询间隔（全局唯一，避免编辑页重复请求） */
+/** 分集 generate_status 轮询间隔（全局唯一，避免แก้ไข页重复请求） */
 export const GENERATE_STATUS_POLL_MS = 8000
 
 type GenerateStatusSubscriber = (episodeId: number, status: EpisodeGenerateStatusPayload) => void
@@ -486,7 +486,7 @@ type GenerateStatusSubscriber = (episodeId: number, status: EpisodeGenerateStatu
 /*
  * videoPollTimer 离开分集页后仍轮询 generate_status
  * videoPollInFlight 避免重叠请求
- * generateStatusSubscribers 编辑页等订阅方同步 UI
+ * generateStatusSubscribers แก้ไข页等订阅方同步 UI
  */
 let videoPollTimer = 0
 let videoPollInFlight = false
@@ -498,7 +498,7 @@ export function subscribeEpisodeGenerateStatus(listener: GenerateStatusSubscribe
   return () => generateStatusSubscribers.delete(listener)
 }
 
-// 后台轮询进行中的分镜视频（不阻塞编辑页）
+// 后台轮询进行中的分镜วิดีโอ（不阻塞แก้ไข页）
 export function ensureEpisodeVideoStatusPoll(): void {
   if (typeof window === 'undefined') return
   if (videoPollTimer) return
@@ -508,14 +508,14 @@ export function ensureEpisodeVideoStatusPoll(): void {
   void pollActiveEpisodeVideoJobs()
 }
 
-// 按分集拉取状态并写回队列
+// 按分集拉取สถานะ并写回队列
 async function pollActiveEpisodeVideoJobs(): Promise<void> {
   if (videoPollInFlight) return
   const epoch = workspaceScope.epoch
   const active = jobs.filter(
     (job) =>
       job.kind === 'video' &&
-      job.subtype === '分镜视频' &&
+      (job.subtype === '分镜วิดีโอ' || job.subtype === 'วิดีโอสตอรี่บอร์ด') &&
       (job.status === 'queued' || job.status === 'running') &&
       typeof job.episodeId === 'number',
   )
@@ -536,11 +536,11 @@ async function pollActiveEpisodeVideoJobs(): Promise<void> {
         const epJobs = active.filter((job) => job.episodeId === episodeId)
         const st = await dramaApi.generateStatus(episodeId)
         if (epoch !== workspaceScope.epoch) return
-        // 本集已在队列中的分镜（含已完成），用于保留镜序、避免轮询只带进行中子集
+        // 本集已在队列中的分镜（含เสร็จสมบูรณ์），用于保留镜序、避免轮询只带进行中子集
         const tracked = jobs.filter(
           (job) =>
             job.kind === 'video' &&
-            job.subtype === '分镜视频' &&
+            (job.subtype === '分镜วิดีโอ' || job.subtype === 'วิดีโอสตอรี่บอร์ด') &&
             job.episodeId === episodeId,
         )
         const trackedIds = new Set(tracked.map((job) => job.targetId))
@@ -566,7 +566,7 @@ async function pollActiveEpisodeVideoJobs(): Promise<void> {
       }),
     )
   } catch {
-    /* 轮询失败下一轮再试 */
+    /* 轮询ล้มเหลว下一轮再试 */
   } finally {
     videoPollInFlight = false
   }
@@ -590,8 +590,8 @@ export function getDramaGenQueueOpenRequestSeq(): number {
   return openRequestSeq
 }
 
-// 队列只显示当前空间；返回项目后由真实生成状态恢复任务。
-// 切换账号也会触发 workspace reset，避免旧身份的任务标题和详情残留。
+// 队列只显示当前空间；กลับโปรเจกต์后由真实生成สถานะ恢复任务。
+// 切换账号也会触发 workspace reset，避免旧身份的任务标题和รายละเอียด残留。
 subscribeWorkspace(() => {
   jobs = []
   dismissedJobIds.clear()
@@ -602,7 +602,7 @@ subscribeWorkspace(() => {
   emit()
 })
 
-// 清空已结束（完成+失败），并记住 id 防止轮询再次写入
+// ล้างข้อมูล已结束（เสร็จสิ้น+ล้มเหลว），并记住 id 防止轮询再次写入
 export function clearFinishedDramaGenJobs(): void {
   for (const job of jobs) {
     if (job.status === 'done' || job.status === 'failed') {
@@ -613,7 +613,7 @@ export function clearFinishedDramaGenJobs(): void {
   emit()
 }
 
-// 将进行中/排队中的视频任务标记为已取消（本地队列同步）
+// 将进行中/กำลังรอคิว的วิดีโอ任务标记为ยกเลิกแล้ว（本地队列同步）
 export function markVideoJobsCancelled(fragmentIds?: number[]): void {
   const idSet = fragmentIds ? new Set(fragmentIds.map((id) => videoJobId(id))) : null
   jobs = jobs.map((job) => {
@@ -623,7 +623,7 @@ export function markVideoJobsCancelled(fragmentIds?: number[]): void {
     return {
       ...job,
       status: 'failed' as const,
-      error: '已取消',
+      error: 'ยกเลิกแล้ว',
       finishedAt: Date.now(),
     }
   })

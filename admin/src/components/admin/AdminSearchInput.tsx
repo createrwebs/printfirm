@@ -11,11 +11,11 @@ type AdminSearchInputProps = {
   onKeyDown?: KeyboardEventHandler<HTMLInputElement>;
 };
 
-// 管理端搜索框（带图标）
+// 管理端ค้นหา框（带图标）
 export function AdminSearchInput({
   value,
   onChange,
-  placeholder = "搜索…",
+  placeholder = "ค้นหา…",
   className,
   onKeyDown,
 }: AdminSearchInputProps) {
@@ -37,7 +37,7 @@ export function AdminSearchInput({
           }
         }}
       />
-      {value ? <button type="button" className="admin-control-clear" aria-label="清除搜索" onMouseDown={(event) => event.preventDefault()} onClick={() => onChange("")}><X size={13} /></button> : null}
+      {value ? <button type="button" className="admin-control-clear" aria-label="清除ค้นหา" onMouseDown={(event) => event.preventDefault()} onClick={() => onChange("")}><X size={13} /></button> : null}
     </div>
   );
 }

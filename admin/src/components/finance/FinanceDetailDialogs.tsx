@@ -33,19 +33,19 @@ export function LedgerRefLink({ row }: { row: AdminLedger }) {
   );
 }
 
-/** 展示充值订单详情，复制单号与关闭行为由弹层管理。 */
+/** 展示充值订单รายละเอียด，คัดลอก单号与ปิด行为由弹层管理。 */
 export function OrderDetailDialog({
   orderDetail,
   open,
   onClose,
 }: { orderDetail: AdminOrder | null; open: boolean; onClose: () => void }) {
-  // 将商户单号写入剪贴板，并反馈复制结果。
+  // 将商户单号写入剪贴板，并反馈คัดลอก结果。
   async function copyText(text: string) {
     try {
       await navigator.clipboard.writeText(text);
-      toast.success("已复制");
+      toast.success("已คัดลอก");
     } catch {
-      toast.error("复制失败");
+      toast.error("คัดลอกล้มเหลว");
     }
   }
 
@@ -59,7 +59,7 @@ export function OrderDetailDialog({
       footer={
         orderDetail ? (
           <Button size="sm" variant="outline" onClick={() => void copyText(orderDetail.out_trade_no)}>
-            复制商户单号
+            คัดลอก商户单号
           </Button>
         ) : undefined
       }
@@ -83,14 +83,14 @@ export function OrderDetailDialog({
               { label: "入账（CNY）", value: `¥${fenToYuan(orderDetail.credit_fen)}` },
               ...(orderDetail.payment_currency && orderDetail.payment_currency !== "cny" ? [{ label: "订单汇率", value: `1 ${orderDetail.payment_currency.toUpperCase()} = ${orderDetail.payment_exchange_rate || "—"} CNY` }] : []),
               { label: "支付方式", value: payTypeLabel(orderDetail.pay_type) },
-              { label: "状态", value: orderStatusLabel(orderDetail.status) },
+              { label: "สถานะ", value: orderStatusLabel(orderDetail.status) },
               { label: "渠道单号", value: orderDetail.trade_no || "—" },
               {
-                label: "支付时间",
+                label: "支付เวลา",
                 value: orderDetail.paid_at ? new Date(orderDetail.paid_at).toLocaleString() : "—",
               },
               {
-                label: "创建时间",
+                label: "เวลาที่สร้าง",
                 value: new Date(orderDetail.created_at).toLocaleString(),
                 full: true,
               },
@@ -102,7 +102,7 @@ export function OrderDetailDialog({
   );
 }
 
-/** 展示钱包流水详情，复用列表中的关联对象链接。 */
+/** 展示钱包流水รายละเอียด，复用列表中的关联对象链接。 */
 export function LedgerDetailDialog({
   ledgerDetail,
   onClose,
@@ -128,13 +128,13 @@ export function LedgerDetailDialog({
                   />
                 ),
               },
-              { label: "类型", value: ledgerKindLabel(ledgerDetail.kind) },
+              { label: "ประเภท", value: ledgerKindLabel(ledgerDetail.kind) },
               { label: "变动", value: `¥${fenToYuan(ledgerDetail.delta_fen)}` },
               { label: "余额后", value: `¥${fenToYuan(ledgerDetail.balance_after)}` },
               { label: "关联", value: <LedgerRefLink row={ledgerDetail} /> },
               { label: "备注", value: ledgerDetail.note || "—" },
               {
-                label: "时间",
+                label: "เวลา",
                 value: new Date(ledgerDetail.created_at).toLocaleString(),
                 full: true,
               },

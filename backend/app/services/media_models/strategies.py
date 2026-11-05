@@ -250,6 +250,22 @@ class Seedream50FlashStrategy(ImageModelStrategy):
     model_id = "seedream-5.0-flash"
 
 
+class NanoBanana2Strategy(ImageModelStrategy):
+    model_id = "nano-banana-2"
+
+
+class QwenImage30ProStrategy(ImageModelStrategy):
+    model_id = "qwen-image-3.0-pro"
+
+
+class Flux3Strategy(ImageModelStrategy):
+    model_id = "flux-3"
+
+
+class GrokImage20Strategy(ImageModelStrategy):
+    model_id = "grok-image-2.0"
+
+
 class GptImage2Strategy(ImageModelStrategy):
     model_id = "gpt-image-2"
 
@@ -282,6 +298,31 @@ class Seedance20FastStrategy(VideoModelStrategy):
     model_id = "seedance-2.0-fast"
 
 
+class Wan27Strategy(VideoModelStrategy):
+    model_id = "wan-2.7"
+    resolutions = ("480p", "720p", "1080p")
+
+
+class Wan30Strategy(VideoModelStrategy):
+    model_id = "wan-3.0"
+    resolutions = ("480p", "720p", "1080p")
+
+
+class Kling30Strategy(VideoModelStrategy):
+    model_id = "kling-3.0"
+    resolutions = ("480p", "720p", "1080p")
+
+
+class ViduQ4Strategy(VideoModelStrategy):
+    model_id = "vidu-q4"
+    resolutions = ("480p", "720p", "1080p")
+
+
+class Hailuo23Strategy(VideoModelStrategy):
+    model_id = "hailuo-2.3"
+    resolutions = ("480p", "720p", "1080p")
+
+
 class MiniMaxH3Strategy(VideoModelStrategy):
     model_id = "MiniMax-H3"
     resolutions = ("480p", "768p")
@@ -290,8 +331,11 @@ class MiniMaxH3Strategy(VideoModelStrategy):
 
 
 _STRATEGIES = tuple(cls() for cls in (Seedream50ProStrategy, Seedream50Strategy, Seedream50FlashStrategy,
+                                    NanoBanana2Strategy, QwenImage30ProStrategy, Flux3Strategy, GrokImage20Strategy,
                                     GptImage2Strategy, GptImage25Strategy, Seedance25Strategy,
-                                    Seedance20Strategy, Seedance20FastStrategy, MiniMaxH3Strategy))
+                                    Seedance20Strategy, Seedance20FastStrategy,
+                                    Wan27Strategy, Wan30Strategy, Kling30Strategy, ViduQ4Strategy, Hailuo23Strategy,
+                                    MiniMaxH3Strategy))
 
 
 def strategies() -> tuple[MediaModelStrategy, ...]:

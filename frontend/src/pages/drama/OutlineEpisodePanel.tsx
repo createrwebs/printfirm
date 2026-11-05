@@ -1,7 +1,7 @@
 import { readEpisodeJob } from '../../lib/dramaEpisodeJobs'
 import { isRequestAborted } from '../../api/http'
 import { TeamEditingBoundary } from '../../features/teams/TeamEditingBoundary'
-/** 剧情大纲：左栏分集目录 + 右栏本集梗概/剧本与可选创作备注 */
+/** โครงเรื่องหลัก：左栏分 ตอน目录 + 右栏เรื่องย่อของตอนนี้/บทและหมายเหตุการสร้างสรรค์เพิ่มเติมที่ไม่บังคับ */
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
@@ -38,20 +38,20 @@ import DramaStatusNotice, { DramaErrorNotice } from './DramaStatusNotice'
 type SectionKey = 'creative' | 'summary' | 'body'
 
 const GENERATION_TITLES: Record<string, string> = {
-  creative: '正在生成本集创作思路',
-  summary: '正在生成本集梗概',
-  brief: '正在提取本集梗概',
-  body: '正在生成拍摄剧本',
-  full: '正在重新生成整集',
+  creative: 'กำลังสร้างแนวคิดการสร้างสรรค์ของตอนนี้',
+  summary: 'กำลังสร้างเรื่องย่อของตอนนี้',
+  brief: 'กำลังสกัดข้อมูลเรื่องย่อของตอนนี้',
+  body: 'กำลังสร้างบทถ่ายทำ',
+  full: 'กำลังสร้างใหม่ทั้งตอน',
 }
 
-/** 分集目录用的镜头合计文案 */
+/** 分 ตอนข้อความรวมช็อตสำหรับไดเรกทอรี่ */
 function formatOutlineShotDuration(sec: number): string {
   if (sec <= 0) return '—'
   if (sec < 60) return `${sec}s`
   const m = Math.floor(sec / 60)
   const s = sec % 60
-  return s ? `${m}分${s}秒` : `${m}分钟`
+  return s ? `${m} นาที ${s} วินาที` : `${m}นาที`
 }
 
 type OutlineEpisodePanelProps = {
@@ -59,12 +59,12 @@ type OutlineEpisodePanelProps = {
   script: DramaScript | null
   episodeCount: number
   summaryReady: boolean
-  /** 全剧摘要生成中（外部目录/空态需显示，不依赖弹窗） */
+  /** สรุปเรื่องย่อทั้งเรื่องกำลังสร้าง（外部目录/空态需显示，不依赖弹窗） */
   summaryGenerating?: boolean
-  /** 整剧摘要后抽取资产中 */
+  /** ทั้งเรื่องเรื่องย่อ后กำลังสกัดแอสเซท */
   assetsSeeding?: boolean
   episodeGenerating: boolean
-  /** 整剧分集剧本进度 */
+  /** ทั้งเรื่องบทละครแต่ละตอน进度 */
   episodeProgress?: { done: number; total: number }
   imageStyleLabel?: string
   storyType?: string
@@ -85,7 +85,7 @@ type SectionCardProps = {
   draft: string
   open: boolean
   busy: boolean
-  /** 禁用「生成」按钮；其他集生成中时仍可编辑本集 */
+  /** 禁用「生成」ปุ่ม；其他 ตอนกำลังสร้าง时仍可แก้ไข本 ตอน */
   generateBusy?: boolean
   placeholder: string
   regenerateLabel: string
@@ -96,11 +96,11 @@ type SectionCardProps = {
   onDraftChange: (v: string) => void
   onRegenerate?: () => void
   onCopy: () => void
-  /** 剧本区：解析预览 + 分段编辑 */
+  /** พื้นที่บทละคร：แยกวิเคราะห์ดูตัวอย่าง + แบ่งส่วนแก้ไข */
   scriptPreview?: ReactNode
 }
 
-// 分区卡片：图标标题 + 编辑/生成/复制/折叠
+// 分区卡片：图标标题 + แก้ไข/生成/คัดลอก/折叠
 function SectionCard({
   sectionKey,
   icon,
@@ -139,7 +139,7 @@ function SectionCard({
         <div className="drama-outline-section-actions">
           <button type="button" className="drama-outline-text-btn" disabled={busy} onClick={onEdit}>
             <Pencil size={14} strokeWidth={2} />
-            编辑
+            แก้ไข
           </button>
           {onRegenerate ? (
             <button type="button" className="drama-outline-text-btn" disabled={genBusy} onClick={onRegenerate}>
@@ -149,13 +149,13 @@ function SectionCard({
           ) : null}
           <button type="button" className="drama-outline-text-btn" onClick={onCopy}>
             <Copy size={14} strokeWidth={2} />
-            复制
+            คัดลอก
           </button>
           <button
             type="button"
             className="drama-outline-text-btn drama-outline-text-btn-icon"
             onClick={onToggle}
-            aria-label={sectionKey === 'body' ? '弹窗解析' : open ? '收起' : '展开'}
+            aria-label={sectionKey === 'body' ? 'วิเคราะห์หน้าต่างป๊อปอัป' : open ? 'ย่อเก็บ' : 'ขยาย'}
           >
             {sectionKey === 'body' ? (
               <Maximize2 size={14} strokeWidth={2} />
@@ -164,7 +164,7 @@ function SectionCard({
             ) : (
               <ChevronDown size={14} strokeWidth={2} />
             )}
-            {sectionKey === 'body' ? '解析预览' : open ? '收起' : '展开'}
+            {sectionKey === 'body' ? 'แยกวิเคราะห์ดูตัวอย่าง' : open ? 'ย่อเก็บ' : 'ขยาย'}
           </button>
         </div>
       </header>
@@ -182,10 +182,10 @@ function SectionCard({
               />
               <div className="drama-ep-section-edit-actions">
                 <button type="button" className="drama-btn-ghost" disabled={busy} onClick={onCancel}>
-                  取消
+                  ยกเลิก
                 </button>
                 <button type="button" className="drama-btn-primary" disabled={busy} onClick={onSave}>
-                  保存
+                  บันทึก
                 </button>
               </div>
             </>
@@ -199,7 +199,7 @@ function SectionCard({
     </article>
   )
 }
-// 分集目录 + 本集梗概、拍摄剧本、可选备注
+// 分 ตอน目录 + เรื่องย่อของตอนนี้、บทการถ่ายทำ、可选备注
 export function OutlineEpisodePanel({
   projectId,
   script,
@@ -270,7 +270,7 @@ export function OutlineEpisodePanel({
     if (!editingSection) setTitleDraft(selected?.title || '')
   }, [selected?.title, editingSection])
 
-  // 读取分集 AI 分镜状态（含自动入队）
+  // อ่านสตอรี่บอร์ด ตอน AI 分ช็อตที่ สถานะ（รวมการเข้าคิวอัตโนมัติ）
   function readPlanStatus(ep: DramaEpisode): string {
     const active = (ep.active_tasks || []).find((task) => task.task_type === 'fragment_plan')
     if (
@@ -284,7 +284,7 @@ export function OutlineEpisodePanel({
     return typeof st === 'string' ? st : ''
   }
 
-  // 从分集列表刷新封面 / 镜数 / 分镜状态
+  // 从分 ตอน列表รีเฟรช封面 / จำนวนช็อต / 分ช็อตที่ สถานะ
   function applyEpisodeRows(rows: DramaEpisode[]) {
     const map: Record<number, string> = {}
     const shotMap: Record<number, { episodeId: number; fragmentCount: number; totalSec: number; planStatus: string; scriptChanged: boolean }> =
@@ -320,7 +320,7 @@ export function OutlineEpisodePanel({
     setEpisodeShotStats(shotMap)
   }
 
-  // 只读已有分集行；勿提前规则 seed（否则会假显示「1 镜」）。分镜中持续轮询。
+  // 只读已有分 ตอน行；อย่าข้ามกฎก่อนเวลา seed（มิฉะนั้นจะแสดงเท็จ「1 ช็อตที่ 」）。ในสตอรี่บอร์ด持续轮询。
   useEffect(() => {
     let cancelled = false
     let timer: number | undefined
@@ -331,7 +331,7 @@ export function OutlineEpisodePanel({
         if (cancelled) return
         applyEpisodeRows(rows)
         const anyPlanning = rows.some((ep) => readPlanStatus(ep) === 'generating')
-        // 分集剧本还在跑时也继续刷，以便每集完成后立刻看到「AI 分镜中」
+        // บทละครแต่ละตอน还在跑时也ดำเนินต่อ刷，以便每 ตอนเสร็จสิ้นเห็นทันทีหลังจาก「AI ในสตอรี่บอร์ด」
         if (anyPlanning || episodeGenerating) {
           timer = window.setTimeout(() => {
             void refresh()
@@ -370,8 +370,8 @@ export function OutlineEpisodePanel({
     !confirming &&
     directoryEpisodes.length < 120
 
-  // 整剧批量生成时：已写完正文的集可编辑 / 进分镜 / 重生成；未完成集仍锁生成
-  // 单集任务按集号独立；只禁用当前正在生成的一集
+  // ทั้งเรื่องสร้างพร้อมกัน时：已写完เนื้อหาหลัก的 ตอน可แก้ไข / 进分ช็อตที่  / สร้างใหม่；未เสร็จสิ้น ตอน仍锁生成
+  // 单 ตอน任务按 ตอนเป็นอิสระ；只禁用ปัจจุบันกำลัง生成的一 ตอน
   const selectedBodyReady = isSubstantialEpisodeBody(selected?.body)
   const summaryGenerateMode = selectedBodyReady
     ? 'brief'
@@ -389,21 +389,21 @@ export function OutlineEpisodePanel({
       await new Promise((r) => setTimeout(r, 2000))
       let cur: DramaScript
       try { cur = await dramaApi.getScript(projectId) }
-      catch (err) { if (isRequestAborted(err)) throw err; lastErr = err instanceof Error ? err : new Error('轮询失败'); continue }
+      catch (err) { if (isRequestAborted(err)) throw err; lastErr = err instanceof Error ? err : new Error('ดึงข้อมูลสถานะล้มเหลว'); continue }
       onScriptChange(cur)
       lastErr = null
       const job = readEpisodeJob(cur, tokenEpisode)
       if (job.status === 'completed') return cur
-      if (job.status === 'failed' || job.status === 'cancelled') throw new Error(job.error || '本集生成失败或已取消')
+      if (job.status === 'failed' || job.status === 'cancelled') throw new Error(job.error || 'สร้างตอนนี้ไม่สำเร็จหรือถูกยกเลิกแล้ว')
 
     }
-    throw lastErr || new Error('生成超时，请稍后刷新')
+    throw lastErr || new Error('การสร้างหมดเวลา โปรดรีเฟรชในภายหลัง')
   }
 
   async function saveBodies(nextBodies: DramaEpisodeBody[]) {
-    if (!selected?.episodeNumber) throw new Error('请先选择分集')
+    if (!selected?.episodeNumber) throw new Error('โปรดเลือกตอนก่อน')
     const current = nextBodies.find((item) => item.episodeNumber === selected.episodeNumber)
-    if (!current) throw new Error('分集不存在，请刷新')
+    if (!current) throw new Error('ไม่พบข้อมูลตอนนี้ โปรดรีเฟรช')
     await dramaApi.updateScriptEpisode(projectId, selected.episodeNumber, { title: current.title, creative: current.creative, summary: current.summary, body: current.body, version: Number((script?.params?.episode_versions as Record<string, number> | undefined)?.[String(selected.episodeNumber)] ?? 0) })
     const updated = await dramaApi.getScript(projectId)
     onScriptChange(updated)
@@ -426,7 +426,7 @@ export function OutlineEpisodePanel({
       onOpenEpisodes()
     } catch (err) {
       if (isRequestAborted(err)) return
-      const msg = err instanceof Error ? err.message : '加集失败'
+      const msg = err instanceof Error ? err.message : 'เพิ่มตอนไม่สำเร็จ'
       setLocalError(msg)
       onError(msg)
     } finally {
@@ -450,7 +450,7 @@ export function OutlineEpisodePanel({
       setEditingSection(null)
     } catch (err) {
       if (isRequestAborted(err)) return
-      const msg = err instanceof Error ? err.message : '保存失败'
+      const msg = err instanceof Error ? err.message : 'บันทึกไม่สำเร็จ'
       setLocalError(msg)
       onError(msg)
     } finally {
@@ -461,34 +461,34 @@ export function OutlineEpisodePanel({
   async function handleGenerate(mode: 'summary' | 'body' | 'full' | 'brief') {
     if (!selected?.episodeNumber) return
     if (editingSection || sceneEditing) {
-      setLocalError('请先保存或取消正在编辑的内容，再生成。')
+      setLocalError('โปรดบันทึกหรือยกเลิกการแก้ไขเนื้อหาก่อน แล้วจึงสร้างใหม่')
       return
     }
     const creative = selected.creative || ''
     const summary = selected.summary || ''
     if (mode === 'summary' && !isSubstantialEpisodeCreative(creative)) {
-      setLocalError(`用于生成梗概的创作备注至少 ${MIN_EPISODE_CREATIVE_CHARS} 字`)
+      setLocalError(`หมายเหตุการสร้างสรรค์สำหรับสร้างเรื่องย่อต้องมีอย่างน้อย ${MIN_EPISODE_CREATIVE_CHARS} ตัวอักษร`)
       return
     }
     if (mode === 'full' && !isSubstantialEpisodeCreative(creative) && episodeBodyCharLen(summary) < 40) {
-      setLocalError(`请填写至少 40 字的本集梗概，或至少 ${MIN_EPISODE_CREATIVE_CHARS} 字的创作备注`)
+      setLocalError(`โปรดระบุเรื่องย่อของตอนนี้อย่างน้อย 40 ตัวอักษร หรือหมายเหตุการสร้างสรรค์อย่างน้อย ${MIN_EPISODE_CREATIVE_CHARS} ตัวอักษร`)
       return
     }
-    // 与后端 run_episode_body_from_brief 一致：创意≥10 或摘要≥40
+    // 与后端 run_episode_body_from_brief 一致：แนวคิด≥10 或เรื่องย่อ≥40
     if (mode === 'body' && episodeBodyCharLen(creative) < 10 && episodeBodyCharLen(summary) < 40) {
-      setLocalError('请先填写本集梗概，再生成拍摄剧本')
+      setLocalError('โปรดระบุเรื่องย่อของตอนนี้ก่อน แล้วจึงสร้างบทถ่ายทำ')
       return
     }
     if (mode === 'brief' && !isSubstantialEpisodeBody(selected.body)) {
-      setLocalError(`拍摄剧本需满 ${MIN_EPISODE_BODY_CHARS} 字后再提取本集梗概`)
+      setLocalError(`บทถ่ายทำต้องมีอย่างน้อย ${MIN_EPISODE_BODY_CHARS} ตัวอักษรก่อนจึงจะสกัดเรื่องย่อของตอนนี้ได้`)
       return
     }
     if (mode === 'full') {
       const ok = await dialog.confirm({
-        title: '重新生成整集',
+        title: 'สร้างใหม่ทั้งตอน',
         message:
-          '将优先按本集梗概重写拍摄剧本；没有梗概时使用创作备注。若本集已进入分镜，之后重新分镜会覆盖并清空已生成镜头。是否继续？',
-        confirmText: '重新生成',
+          'ระบบจะเขียนบทถ่ายทำใหม่ตามเรื่องย่อของตอนนี้ หากไม่มีเรื่องย่อจะใช้หมายเหตุการสร้างสรรค์ หากตอนนี้เคยเข้าสู่สตอรี่บอร์ดแล้ว การแบ่งสตอรี่บอร์ดใหม่จะเขียนทับและล้างข้อมูลช็อตเดิม ต้องการดำเนินการต่อหรือไม่?',
+        confirmText: 'สร้างใหม่',
         tone: 'danger',
       })
       if (!ok) return
@@ -508,11 +508,11 @@ export function OutlineEpisodePanel({
       const cur = await pollOptimize(targetEpisode)
       const created = readEpisodeJob(cur, targetEpisode).assetsCreated
       if ((mode === 'body' || mode === 'full') && created > 0) {
-        setLocalNotice(`新建 ${created} 个角色/场景，已进资产库`)
+        setLocalNotice(`สร้างตัวละคร/ฉากใหม่ ${created} รายการ บันทึกลงคลังแอสเซทแล้ว`)
       }
     } catch (err) {
       if (isRequestAborted(err)) return
-      const msg = err instanceof Error ? err.message : '生成失败'
+      const msg = err instanceof Error ? err.message : 'สร้างไม่สำเร็จ'
       setLocalError(msg)
       onError(msg)
     } finally {
@@ -523,17 +523,17 @@ export function OutlineEpisodePanel({
   async function handleConfirmEnter() {
     if (!selected?.episodeNumber) return
     if (editingSection || sceneEditing) {
-      setLocalError('请先保存或取消正在编辑的内容，再进入分镜。')
+      setLocalError('โปรดบันทึกหรือยกเลิกการแก้ไขเนื้อหาก่อน แล้วจึงเข้าสู่สตอรี่บอร์ด')
       return
     }
     if (!isSubstantialEpisodeBody(selected.body)) {
-      setLocalError(`剧本内容需满 ${MIN_EPISODE_BODY_CHARS} 字后再进入分镜`)
+      setLocalError(`เนื้อหาบทถ่ายทำต้องมีอย่างน้อย ${MIN_EPISODE_BODY_CHARS} ตัวอักษรก่อนจึงจะเข้าสู่สตอรี่บอร์ดได้`)
       return
     }
     setLocalError('')
     setConfirming(true)
     try {
-      // 已自动入队/完成 AI 分镜：直接进入编辑页（页内会轮询「AI 分镜中」）
+      // 已自动入队/เสร็จสิ้น AI 分ช็อตที่ ：直接เข้าสู่แก้ไข页（页内会轮询「AI ในสตอรี่บอร์ด」）
       const rows = await dramaApi.listEpisodes(projectId)
       const existing = rows.find(
         (ep) => Number(ep.params?.episodeNumber) === Number(selected.episodeNumber),
@@ -551,7 +551,7 @@ export function OutlineEpisodePanel({
       setEnterSkillOpen(true)
     } catch (err) {
       if (isRequestAborted(err)) return
-      const msg = err instanceof Error ? err.message : '进入分镜失败'
+      const msg = err instanceof Error ? err.message : 'เข้าสู่สตอรี่บอร์ดไม่สำเร็จ'
       setLocalError(msg)
       onError(msg)
     } finally {
@@ -559,7 +559,7 @@ export function OutlineEpisodePanel({
     }
   }
 
-  // 首次进入：确认剧本 + 按所选 Skill 做 AI 分镜
+  // 首次เข้าสู่：确认剧本 + ตามการเลือก Skill 做 AI 分ช็อตที่ 
   async function startEnterWithSkills(skillIds: number[]) {
     if (!selected?.episodeNumber) return
     setEnterSkillOpen(false)
@@ -579,12 +579,12 @@ export function OutlineEpisodePanel({
         })
       } catch (planErr) {
         if (isRequestAborted(planErr)) return
-        onError(planErr instanceof Error ? planErr.message : 'AI 分镜启动失败')
+        onError(planErr instanceof Error ? planErr.message : 'AI เริ่มสตอรี่บอร์ดล้มเหลว')
       }
       navigate(`/drama/projects/${projectId}/episodes/${episodeId}`)
     } catch (err) {
       if (isRequestAborted(err)) return
-      const msg = err instanceof Error ? err.message : '进入分镜失败'
+      const msg = err instanceof Error ? err.message : 'เข้าสู่สตอรี่บอร์ดไม่สำเร็จ'
       setLocalError(msg)
       onError(msg)
     } finally {
@@ -604,7 +604,7 @@ export function OutlineEpisodePanel({
       await saveBodies(next)
     } catch (err) {
       if (isRequestAborted(err)) return
-      const msg = err instanceof Error ? err.message : '保存失败'
+      const msg = err instanceof Error ? err.message : 'บันทึกไม่สำเร็จ'
       setLocalError(msg)
       onError(msg)
       throw err
@@ -630,7 +630,7 @@ export function OutlineEpisodePanel({
   function startEdit(section: SectionKey) {
     if (!selected) return
     if (sceneEditing) {
-      setLocalError('请先保存或取消正在编辑的场次。')
+      setLocalError('โปรดบันทึกหรือยกเลิกการแก้ไขลำดับฉากก่อน')
       return
     }
     setEditingSection(section)
@@ -648,15 +648,15 @@ export function OutlineEpisodePanel({
     try {
       await navigator.clipboard.writeText(text || '')
     } catch {
-      setLocalError('复制失败')
+      setLocalError('คัดลอกล้มเหลว')
     }
   }
 
   const metaTags = useMemo(() => {
     const tags: string[] = []
     if (storyType) tags.push(storyType)
-    if (selected?.origin === 'manual') tags.push('手动加集')
-    else if (selected?.body) tags.push('自动生成')
+    if (selected?.origin === 'manual') tags.push('เพิ่มด้วยตนเอง')
+    else if (selected?.body) tags.push('สร้างอัตโนมัติ')
     return tags
   }, [storyType, selected])
 
@@ -664,8 +664,8 @@ export function OutlineEpisodePanel({
   const selectedShot = episodeShotStats[selected?.episodeNumber || 0]
   const charHint = selected
     ? [
-        selected.summary ? `梗概 ${episodeBodyCharLen(selected.summary)} 字` : null,
-        selected.body ? `剧本 ${episodeBodyCharLen(selected.body)} 字` : null,
+        selected.summary ? `เรื่องย่อ ${episodeBodyCharLen(selected.summary)} ตัวอักษร` : null,
+        selected.body ? `บทถ่ายทำ ${episodeBodyCharLen(selected.body)} ตัวอักษร` : null,
       ]
         .filter(Boolean)
         .join(' · ')
@@ -675,8 +675,8 @@ export function OutlineEpisodePanel({
     <aside className="drama-outline-sidebar">
       <div className="drama-outline-sidebar-head">
         <div>
-          <h3>分集目录</h3>
-          <p>共 {directoryEpisodes.length} 集</p>
+          <h3>สารบัญตอน</h3>
+          <p>ทั้งหมด {directoryEpisodes.length} ตอน</p>
         </div>
         {summaryReady ? (
           <button
@@ -686,7 +686,7 @@ export function OutlineEpisodePanel({
             onClick={() => void handleAddEpisode()}
           >
             <Plus size={14} strokeWidth={2.5} />
-            {adding ? '添加中' : '加集'}
+            {adding ? 'กำลังเพิ่ม…' : 'เพิ่มตอน'}
           </button>
         ) : null}
       </div>
@@ -697,30 +697,30 @@ export function OutlineEpisodePanel({
           const active = activeEpisodeNumber === ep.episodeNumber
           const shot = episodeShotStats[ep.episodeNumber || 0]
           const statusLabel = summaryGenerating
-            ? '全剧摘要生成中…'
+            ? 'สรุปเรื่องย่อทั้งเรื่องกำลังสร้าง…'
             : assetsSeeding
-              ? '抽取资产中…'
+              ? 'กำลังสกัดแอสเซท…'
               : shot?.planStatus === 'generating'
-                ? 'AI 分镜中…'
+                ? 'AI ในสตอรี่บอร์ด…'
                 : shot?.planStatus === 'failed'
-                  ? '分镜失败'
+                  ? 'สตอรี่บอร์ดล้มเหลว'
                   : shot?.scriptChanged && shot.fragmentCount > 0
-                    ? `${shot.fragmentCount} 镜 · ${formatOutlineShotDuration(shot.totalSec)}（旧稿）`
+                    ? `${shot.fragmentCount} ช็อต · ${formatOutlineShotDuration(shot.totalSec)} (ร่างเดิม)`
                     : shot?.planStatus === 'completed' &&
                       shot.fragmentCount > 0 &&
                       shot.totalSec > 0
                     ? shot.fragmentCount <= 1 && ready
-                      ? `1 镜 · ${formatOutlineShotDuration(shot.totalSec)}（偏少）`
-                      : `${shot.fragmentCount} 镜 · ${formatOutlineShotDuration(shot.totalSec)}`
+                      ? `1 ช็อตที่  · ${formatOutlineShotDuration(shot.totalSec)}（ค่อนข้างน้อย）`
+                      : `${shot.fragmentCount} ช็อต · ${formatOutlineShotDuration(shot.totalSec)}`
                     : episodeGenerating && !ready && !body?.summary && !body?.creative
                       ? episodeProgress.total > 0
-                        ? `整剧进度 ${episodeProgress.done}/${episodeProgress.total}`
-                        : '等待生成剧本…'
+                        ? `ความคืบหน้าของเรื่อง ${episodeProgress.done}/${episodeProgress.total}`
+                        : 'รอสร้างบทถ่ายทำ…'
                       : ready
-                        ? '待 AI 分镜'
+                        ? 'รอ AI แบ่งสตอรี่บอร์ด'
                         : body?.summary || body?.creative
-                          ? '待生成剧本'
-                          : '待填写梗概'
+                          ? 'บทละครรอการสร้าง'
+                          : 'รอระบุเรื่องย่อ'
           return (
             <li key={ep.episodeNumber}>
               <button
@@ -742,8 +742,8 @@ export function OutlineEpisodePanel({
                   })()}
                 </span>
                 <span className="drama-outline-ep-meta">
-                  <strong>第 {ep.episodeNumber} 集</strong>
-                  <small>{ep.title || '未命名'}</small>
+                  <strong>ตอนที่ {ep.episodeNumber}</strong>
+                  <small>{ep.title || 'ยังไม่มีชื่อ'}</small>
                   <em
                     className={
                       summaryGenerating ||
@@ -775,12 +775,12 @@ export function OutlineEpisodePanel({
     <div className="drama-outline-detail-empty">
       <p>
         {summaryGenerating
-          ? '全剧摘要生成中，完成后会抽取资产并生成各集剧本…'
+          ? 'สรุปเรื่องย่อทั้งเรื่องกำลังสร้าง เมื่อเสร็จแล้วจะสกัดแอสเซทและสร้างบทถ่ายทำแต่ละตอน…'
           : assetsSeeding
-            ? '正在抽取资产库，随后生成各集剧本…'
+            ? 'กำลังสกัดคลังแอสเซท จากนั้นจะสร้างบทถ่ายทำแต่ละตอน…'
             : summaryReady
-              ? '暂无分集，请点击「加集」或等待自动生成。'
-              : '请先完成整剧创意与剧本摘要。'}
+              ? 'ยังไม่มีตอน โปรดคลิก "เพิ่มตอน" หรือรอสร้างอัตโนมัติ'
+              : 'โปรดระบุแนวคิดเรื่องย่อทั้งหมดและสรุปเรื่องย่อให้เสร็จก่อน'}
       </p>
     </div>
   ) : (
@@ -792,17 +792,17 @@ export function OutlineEpisodePanel({
               className="drama-title-input"
               value={titleDraft}
               onChange={(e) => setTitleDraft(e.target.value)}
-              placeholder="集名"
+              placeholder="ชื่อตอน"
             />
           ) : (
             <h2>
-              第 {selected.episodeNumber} 集
+              ตอนที่ {selected.episodeNumber}
               {selected.title ? `：${selected.title}` : ''}
             </h2>
           )}
           {imageStyleLabel ? <span className="drama-outline-style-badge">{imageStyleLabel}</span> : null}
           <div className="drama-outline-detail-meta">
-            {charHint ? <span>{charHint}</span> : <span>尚未填写本集内容</span>}
+            {charHint ? <span>{charHint}</span> : <span>ยังไม่ได้กรอกเนื้อหาของตอน</span>}
             {metaTags.map((tag) => (
               <span key={tag} className="drama-outline-tag">
                 {tag}
@@ -814,12 +814,12 @@ export function OutlineEpisodePanel({
           <span className={`drama-outline-saved${bodyReady && !editingSection && !sceneEditing && !selectedShot?.scriptChanged ? ' is-ready' : ''}`}>
             <Check size={14} strokeWidth={2.5} />
             {editingSection || sceneEditing
-              ? '编辑未保存'
+              ? 'แก้ไขยังไม่บันทึก'
               : selectedShot?.scriptChanged
-                ? '分镜待更新'
+                ? 'สตอรี่บอร์ดรออัปเดต'
                 : bodyReady
-                  ? '可进分镜'
-                  : saving ? '保存中' : '已同步'}
+                  ? 'พร้อมเข้าสู่สตอรี่บอร์ด'
+                  : saving ? 'กำลังบันทึก…' : 'ซิงค์แล้ว'}
           </span>
           {bodyReady && episodeBodyCharLen(selected.summary) < 40 ? (
             <button
@@ -828,7 +828,7 @@ export function OutlineEpisodePanel({
               disabled={generateBusy}
               onClick={() => void handleGenerate('brief')}
             >
-              {selectedGenerating && generatingMode === 'brief' ? '提取中…' : '提取本集梗概'}
+              {selectedGenerating && generatingMode === 'brief' ? 'กำลังสกัด…' : 'สกัดเรื่องย่อของตอนนี้'}
             </button>
           ) : null}
           <button
@@ -838,18 +838,18 @@ export function OutlineEpisodePanel({
             onClick={() => void handleGenerate('full')}
             title={
               batchLocksThisEpisode
-                ? '本集剧本尚未生成完，请稍候'
+                ? 'บทถ่ายทำของตอนนี้ยังสร้างไม่เสร็จ โปรดรอสักครู่'
                 : anyEpisodeGenerating
-                  ? '另有单集生成进行中'
+                  ? 'มีการสร้างตอนอื่นกำลังดำเนินการอยู่'
                   : undefined
             }
           >
             <RefreshCw size={15} strokeWidth={2.25} />
-            {selectedGenerating && generatingMode === 'full' ? '生成中…' : '重新生成整集'}
+            {selectedGenerating && generatingMode === 'full' ? 'กำลังสร้าง…' : 'สร้างใหม่ทั้งตอน'}
           </button>
           {selectedShot?.episodeId && !editingSection && !sceneEditing ? (
             <Link className="drama-btn-primary" to={`/drama/projects/${projectId}/episodes/${selectedShot.episodeId}`}>
-              进入分镜
+              เข้าสู่สตอรี่บอร์ด
             </Link>
           ) : (
           <button
@@ -857,9 +857,9 @@ export function OutlineEpisodePanel({
             className="drama-btn-primary"
             disabled={enterBusy}
             onClick={() => void handleConfirmEnter()}
-            title={!selectedBodyReady ? `剧本内容需满 ${MIN_EPISODE_BODY_CHARS} 字` : undefined}
+            title={!selectedBodyReady ? `เนื้อหาบทถ่ายทำต้องมีอย่างน้อย ${MIN_EPISODE_BODY_CHARS} ตัวอักษร` : undefined}
           >
-            {confirming ? '进入中…' : '进入分镜'}
+            {confirming ? 'กำลังเข้าสู่…' : 'เข้าสู่สตอรี่บอร์ด'}
           </button>
           )}
         </div>
@@ -869,39 +869,39 @@ export function OutlineEpisodePanel({
         {localError ? <DramaErrorNotice message={localError} onDismiss={() => setLocalError('')} /> : null}
         {localNotice ? <DramaStatusNotice tone="success" title={localNotice} onDismiss={() => setLocalNotice('')} /> : null}
         {selectedShot?.scriptChanged ? (
-          <DramaStatusNotice tone="warning" title="剧本已更新，分镜待同步">
-            现有分镜仍为旧稿，进入分镜后请重新分镜。
+          <DramaStatusNotice tone="warning" title="บทถ่ายทำอัปเดตแล้ว สตอรี่บอร์ดรอการซิงค์">
+            สตอรี่บอร์ดปัจจุบันยังเป็นร่างเดิม หลังจากเข้าสู่สตอรี่บอร์ดแล้วโปรดแบ่งสตอรี่บอร์ดใหม่
           </DramaStatusNotice>
         ) : null}
         {summaryGenerating ? (
-          <DramaStatusNotice tone="busy" title="正在生成全剧摘要">
-            完成后将抽取角色与场景资产，再生成各集剧本。
+          <DramaStatusNotice tone="busy" title="กำลังสร้างสรุปเรื่องย่อทั้งเรื่อง">
+            หลังจากเสร็จสิ้นจะสกัดตัวละครและแอสเซทฉาก แล้วจึงสร้างบทถ่ายทำของแต่ละตอน
           </DramaStatusNotice>
         ) : null}
         {assetsSeeding ? (
-          <DramaStatusNotice tone="busy" title="正在抽取角色与场景资产">
-            写入资产库后，将开始生成分集剧本。
+          <DramaStatusNotice tone="busy" title="กำลังสกัดตัวละครและแอสเซทฉาก">
+            หลังจากบันทึกลงคลังแอสเซทแล้ว จะเริ่มสร้างบทถ่ายทำแต่ละตอน
           </DramaStatusNotice>
         ) : null}
         {episodeGenerating ? (
-          <DramaStatusNotice tone="busy" title="正在生成分集剧本">
+          <DramaStatusNotice tone="busy" title="กำลังสร้างบทแต่ละตอน">
             {episodeProgress.total > 0
-              ? `已完成 ${episodeProgress.done} / ${episodeProgress.total} 集，可先浏览已完成的内容。`
-              : '可先浏览已完成的分集内容。'}
+              ? `เสร็จสมบูรณ์ ${episodeProgress.done} / ${episodeProgress.total} ตอน สามารถเปิดดูเนื้อหาที่เสร็จแล้วได้`
+              : 'สามารถเปิดดูเนื้อหาของตอนที่เสร็จแล้วได้'}
           </DramaStatusNotice>
         ) : null}
         {selectedGenerating ? (
-          <DramaStatusNotice tone="busy" title={GENERATION_TITLES[generatingMode || ''] || '正在生成本集内容'}>
-            内容生成后将自动更新，请稍候。
+          <DramaStatusNotice tone="busy" title={GENERATION_TITLES[generatingMode || ''] || 'กำลังสร้างเนื้อหาของตอนนี้'}>
+            ระบบจะอัปเดตเนื้อหาโดยอัตโนมัติหลังจากสร้างเสร็จ โปรดรอสักครู่
           </DramaStatusNotice>
         ) : anyEpisodeGenerating && generatingEpisodeNumber ? (
-          <DramaStatusNotice tone="busy" title={`第 ${generatingEpisodeNumber} 集正在生成`}>
-            可继续创作当前分集。
+          <DramaStatusNotice tone="busy" title={`ตอนที่ ${generatingEpisodeNumber} กำลังสร้าง`}>
+            คุณสามารถสร้างสรรค์เนื้อหาในตอนปัจจุบันต่อไปได้
           </DramaStatusNotice>
         ) : null}
         {selected && episodeShotStats[selected.episodeNumber || 0]?.planStatus === 'generating' ? (
-          <DramaStatusNotice tone="busy" title="正在生成本集 AI 分镜">
-            分镜完成后，可进入查看与编辑。
+          <DramaStatusNotice tone="busy" title="กำลังสร้าง AI สตอรี่บอร์ดของตอนนี้">
+            เมื่อสร้างสตอรี่บอร์ดเสร็จแล้ว สามารถเข้าไปดูและแก้ไขได้
           </DramaStatusNotice>
         ) : null}
         {selected &&
@@ -911,7 +911,7 @@ export function OutlineEpisodePanel({
         !episodeGenerating &&
         !summaryGenerating &&
         !assetsSeeding ? (
-          <DramaStatusNotice tone="busy" title="本集剧本已就绪，正在准备 AI 分镜" />
+          <DramaStatusNotice tone="busy" title="บทถ่ายทำของตอนนี้พร้อมแล้ว กำลังเตรียมสร้าง AI สตอรี่บอร์ด" />
         ) : null}
       </div>
 
@@ -919,23 +919,23 @@ export function OutlineEpisodePanel({
         <SectionCard
           sectionKey="summary"
           icon={<BookOpen size={18} strokeWidth={1.9} />}
-          title="本集梗概"
-          subtitle="本集人物、冲突、转折与结局；生成拍摄剧本的主要依据"
+          title="เรื่องย่อของตอนนี้"
+          subtitle="ตัวละคร ความขัดแย้ง จุดหักมุม และบทสรุปของตอนนี้ ข้อมูลหลักสำหรับสร้างบทถ่ายทำ"
           text={selected.summary || ''}
           editing={editingSection === 'summary'}
           draft={sectionDraft}
           open={openSections.has('summary')}
           busy={busy}
           generateBusy={generateBusy}
-          placeholder="填写本集梗概（至少 40 字），再生成拍摄剧本"
+          placeholder="ระบุเรื่องย่อของตอนนี้ (อย่างน้อย 40 ตัวอักษร) แล้วสร้างบทถ่ายทำ"
           regenerateLabel={
             selectedGenerating && generatingMode === 'brief'
-              ? '提取中…'
+              ? 'กำลังสกัด…'
               : selectedGenerating && generatingMode === 'summary'
-                ? '生成中…'
+                ? 'กำลังสร้าง…'
                 : summaryGenerateMode === 'brief'
-                  ? '从剧本提取'
-                  : '从备注生成'
+                  ? 'สกัดจากบทถ่ายทำ'
+                  : 'สร้างจากหมายเหตุ'
           }
           onToggle={() => toggleSection('summary')}
           onEdit={() => startEdit('summary')}
@@ -948,16 +948,16 @@ export function OutlineEpisodePanel({
         <SectionCard
           sectionKey="body"
           icon={<FileText size={18} strokeWidth={1.9} />}
-          title="拍摄剧本"
-          subtitle="含对白与画面描述的拍摄正文（按场次解析，可分段编辑）"
+          title="บทการถ่ายทำ"
+          subtitle="เนื้อหาบทถ่ายทำหลักประกอบด้วยบทสนทนาและคำบรรยายภาพ (แยกตามลำดับฉาก สามารถแบ่งแก้ไขได้)"
           text={selected.body || ''}
           editing={editingSection === 'body'}
           draft={sectionDraft}
           open={openSections.has('body')}
           busy={busy}
           generateBusy={generateBusy || !canGenerateBody}
-          placeholder={`拍摄剧本正文（进入分镜需满 ${MIN_EPISODE_BODY_CHARS} 字）`}
-          regenerateLabel={selectedGenerating && generatingMode === 'body' ? '生成中…' : '生成剧本'}
+          placeholder={`เนื้อหาบทถ่ายทำ (เข้าสู่สตอรี่บอร์ดต้องมีอย่างน้อย ${MIN_EPISODE_BODY_CHARS} ตัวอักษร)`}
+          regenerateLabel={selectedGenerating && generatingMode === 'body' ? 'กำลังสร้าง…' : 'สร้างบทถ่ายทำ'}
           onToggle={() => toggleSection('body')}
           onEdit={() => startEdit('body')}
           onCancel={() => setEditingSection(null)}
@@ -969,7 +969,7 @@ export function OutlineEpisodePanel({
             <OutlineScriptPreview
               key={selected.episodeNumber}
               text={selected.body || ''}
-              empty={`拍摄剧本正文（进入分镜需满 ${MIN_EPISODE_BODY_CHARS} 字）`}
+              empty={`เนื้อหาบทถ่ายทำ (เข้าสู่สตอรี่บอร์ดต้องมีอย่างน้อย ${MIN_EPISODE_BODY_CHARS} ตัวอักษร)`}
               busy={busy}
               shotStats={episodeShotStats[selected.episodeNumber || 0] || null}
               onSaveScenes={handleSaveScenes}
@@ -980,15 +980,15 @@ export function OutlineEpisodePanel({
         <SectionCard
           sectionKey="creative"
           icon={<Lightbulb size={18} strokeWidth={1.9} />}
-          title="创作备注（可选）"
-          subtitle="补充创作方向或保留早期创意；已有梗概时无需填写"
+          title="หมายเหตุการสร้างสรรค์ (ไม่บังคับ)"
+          subtitle="เสริมทิศทางการสร้างสรรค์หรือเก็บแนวคิดเริ่มต้น; ไม่จำเป็นต้องกรอกเมื่อมีร่างไว้แล้ว"
           text={selected.creative || ''}
           editing={editingSection === 'creative'}
           draft={sectionDraft}
           open={openSections.has('creative')}
           busy={busy}
-          placeholder="可选：补充人物动机、创作方向或特别要求"
-          regenerateLabel="生成梗概"
+          placeholder="ไม่บังคับ: เพิ่มเติมแรงจูงใจของตัวละคร ทิศทางการสร้างสรรค์ หรือข้อกำหนดพิเศษ"
+          regenerateLabel="สร้างเรื่องย่อ"
           onToggle={() => toggleSection('creative')}
           onEdit={() => startEdit('creative')}
           onCancel={() => setEditingSection(null)}
@@ -1000,7 +1000,7 @@ export function OutlineEpisodePanel({
       <OutlineScriptParseModal
         open={scriptModalOpen}
         onClose={() => setScriptModalOpen(false)}
-        title={`第 ${selected.episodeNumber} 集 · 剧本解析`}
+        title={`ตอนที่ ${selected.episodeNumber} · วิเคราะห์บทถ่ายทำ`}
         text={selected.body || ''}
       />
     </section>
@@ -1014,9 +1014,9 @@ export function OutlineEpisodePanel({
         {children({ directory, bodies: editableBodies })}
         <FragmentPlanSkillModal
           open={enterSkillOpen}
-          title="进入分镜"
-          message="将确认本集剧本并切分分镜。可勾选本次使用的 Skill；确认后会覆盖该集已有分镜与已生成镜头（若有）。"
-          confirmText={confirming ? '进入中…' : '开始分镜'}
+          title="เข้าสู่สตอรี่บอร์ด"
+          message="ระบบจะยืนยันบทถ่ายทำของตอนนี้และเริ่มแบ่งช็อต สามารถเลือกใช้ Skill ได้ โดยหลังจากยืนยันจะเขียนทับสตอรี่บอร์ดและช็อตเดิม (ถ้ามี)"
+          confirmText={confirming ? 'กำลังเข้าสู่…' : 'เริ่มแบ่งสตอรี่บอร์ด'}
           onCancel={() => {
             if (!confirming) setEnterSkillOpen(false)
           }}
@@ -1031,9 +1031,9 @@ export function OutlineEpisodePanel({
       <div className="drama-outline-main">{editableBodies}</div>
       <FragmentPlanSkillModal
         open={enterSkillOpen}
-        title="进入分镜"
-        message="将确认本集剧本并切分分镜。可勾选本次使用的 Skill；确认后会覆盖该集已有分镜与已生成镜头（若有）。"
-        confirmText={confirming ? '进入中…' : '开始分镜'}
+        title="เข้าสู่สตอรี่บอร์ด"
+        message="ระบบจะยืนยันบทถ่ายทำของตอนนี้และเริ่มแบ่งช็อต สามารถเลือกใช้ Skill ได้ โดยหลังจากยืนยันจะเขียนทับสตอรี่บอร์ดและช็อตเดิม (ถ้ามี)"
+        confirmText={confirming ? 'กำลังเข้าสู่…' : 'เริ่มแบ่งสตอรี่บอร์ด'}
         onCancel={() => {
           if (!confirming) setEnterSkillOpen(false)
         }}

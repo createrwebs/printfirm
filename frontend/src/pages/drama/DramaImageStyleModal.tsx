@@ -1,4 +1,4 @@
-/** 画面风格选择：触发器 + Modal 卡片网格 */
+/** สไตล์ภาพเลือก：触发器 + Modal 卡片网格 */
 import { useState } from 'react'
 import { BookOpen, ChevronDown } from 'lucide-react'
 import { DramaImageStyleCardGrid } from '../../components/drama/DramaImageStyleCardGrid'
@@ -10,9 +10,9 @@ type Props = {
   value: ImageStyleId | ''
   onChange: (id: ImageStyleId | '') => void
   disabled?: boolean
-  /** toolbar：列表页胶囊按钮；field：大纲页带缩略图字段 */
+  /** toolbar：列表页胶囊按钮；field：โครงร่าง页带缩略图字段 */
   variant?: 'toolbar' | 'field'
-  /** field 变体左侧文案，默认「项目风格」 */
+  /** field 变体左侧文案，ค่าเริ่มต้น「สไตล์ภาพของโปรเจกต์」 */
   fieldLabel?: string
   /** Modal 标题 */
   title?: string
@@ -20,22 +20,22 @@ type Props = {
   emptyLabel?: string
 }
 
-// 渲染风格库触发器与画面风格 Modal
+// เรนเดอร์สไตล์库触发器与สไตล์ภาพ Modal
 export function DramaImageStyleModal({
   value,
   onChange,
   disabled = false,
   variant = 'toolbar',
-  fieldLabel = '项目风格',
-  title = '画面风格',
+  fieldLabel = 'สไตล์ภาพของโปรเจกต์',
+  title = 'สไตล์ภาพ',
   emptyLabel,
 }: Props) {
   const [open, setOpen] = useState(false)
   const styleLabel = getImageStyleLabel(value)
-  const triggerLabel = styleLabel || emptyLabel || (variant === 'field' ? '选择风格' : '风格库')
+  const triggerLabel = styleLabel || emptyLabel || (variant === 'field' ? 'เลือกสไตล์' : 'สไตล์库')
   const active = Boolean(value) || open
 
-  // 选中风格并关闭
+  // 选中สไตล์并ปิด
   function select(id: ImageStyleId | '') {
     onChange(id)
     setOpen(false)
@@ -79,11 +79,11 @@ export function DramaImageStyleModal({
       )}
 
       <Modal open={open} onClose={() => setOpen(false)} title={title} size="md" className="drama-style-modal">
-        {/* 封面即画风参考图，避免用户以为只是缩略预览 */}
+        {/* 封面即画风ภาพอ้างอิง，避免用户以为只是缩略ดูตัวอย่าง */}
         <p className="drama-style-modal-hint">
-          封面图会作为画风参考一并提交。模型只借色调、笔触和光影，不会照抄封面里的人物或构图。
+          封面图会作为画风参考一并ส่ง。模型只借色调、笔触和光影，不会照抄封面里的人物或构图。
         </p>
-        <DramaImageStyleCardGrid value={value} onChange={select} noneLabel="无风格" />
+        <DramaImageStyleCardGrid value={value} onChange={select} noneLabel="无สไตล์" />
       </Modal>
     </>
   )

@@ -7,7 +7,7 @@ export function useCategories() {
   useEffect(() => {
     let active = true
     request<{ names: string[] }>('/categories').then(value => { if (active) setNames(value.names) })
-      .catch(e => { if (active) setError(`分类加载失败：${e.message}，请刷新重试。`) })
+      .catch(e => { if (active) setError(`分类โหลดไม่สำเร็จ：${e.message}，请รีเฟรชลองใหม่。`) })
     return () => { active = false }
   }, [])
   return { names, error }

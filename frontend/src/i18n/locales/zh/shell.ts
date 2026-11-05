@@ -82,6 +82,7 @@ export const zhShell = {
     language: '语言',
     langZh: '中',
     langEn: 'EN',
+    langTh: 'ไทย',
   },
   footer: {
     terms: '用户协议',

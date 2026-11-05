@@ -1,4 +1,4 @@
-/** 角色音色试听按钮（卡片内联播放，不弹窗） */
+/** ตัวละครน้ำเสียง试听按钮（卡片内联播放，不弹窗） */
 import { useEffect, useRef, useState } from 'react'
 import { Pause, Volume2 } from 'lucide-react'
 import { resolveDramaMediaUrl } from '../../api/drama'
@@ -16,7 +16,7 @@ type Props = {
 let sharedAudio: HTMLAudioElement | null = null
 let sharedStop: (() => void) | null = null
 
-// 点击播放已绑定音色的试听音频，再点暂停
+// 点击播放已ผูกน้ำเสียง的试听เสียง，再点暂停
 export function CharacterVoicePreviewButton({
   url,
   label,
@@ -49,7 +49,7 @@ export function CharacterVoicePreviewButton({
 
   function handlePreview() {
     if (!src) {
-      onError?.('试听地址无效')
+      onError?.('ที่อยู่ไฟล์เสียงตัวอย่างไม่ถูกต้อง')
       return
     }
     if (playing) {
@@ -67,7 +67,7 @@ export function CharacterVoicePreviewButton({
     setPlaying(true)
     void sharedAudio.play().catch(() => {
       setPlaying(false)
-      onError?.('播放失败')
+      onError?.('เล่นเสียงไม่สำเร็จ')
     })
   }
 
@@ -91,10 +91,10 @@ export function CharacterVoicePreviewButton({
         e.stopPropagation()
         handlePreview()
       }}
-      title={label ? `试听：${label}` : '试听音色'}
+      title={label ? `ทดลองฟัง: ${label}` : 'ทดลองฟังเสียง'}
     >
       {playing ? <Pause size={14} strokeWidth={1.8} aria-hidden /> : <Volume2 size={14} strokeWidth={1.8} aria-hidden />}
-      {playing ? '停止' : '试听'}
+      {playing ? 'หยุด' : 'ทดลองฟัง'}
     </button>
   )
 }

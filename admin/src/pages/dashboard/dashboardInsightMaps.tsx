@@ -17,14 +17,14 @@ import { formatDashboardMetric, readBucketMetric } from "@/pages/dashboard/dashb
 const CAPABILITY_META: Record<string, { label: string; icon: LucideIcon; tone: DashboardInsightTone }> = {
   llm: { label: "LLM 文本", icon: MessageSquareText, tone: "purple" },
   image: { label: "生图", icon: Image, tone: "blue" },
-  video: { label: "视频", icon: Video, tone: "teal" },
-  tts: { label: "配音", icon: Mic, tone: "sand" },
+  video: { label: "วิดีโอ", icon: Video, tone: "teal" },
+  tts: { label: "เสียงพากย์", icon: Mic, tone: "sand" },
   unknown: { label: "其他", icon: Wrench, tone: "slate" },
 };
 
 const DOMAIN_META: Record<string, { label: string; icon: LucideIcon; tone: DashboardInsightTone }> = {
-  drama: { label: "漫剧", icon: Film, tone: "teal" },
-  kepu: { label: "AI短视频", icon: Clapperboard, tone: "blue" },
+  drama: { label: "ละครซีรีส์", icon: Film, tone: "teal" },
+  kepu: { label: "AIวิดีโอสั้น", icon: Clapperboard, tone: "blue" },
   tools: { label: "工具", icon: Wrench, tone: "sand" },
   studio: { label: "工作室", icon: Palette, tone: "mint" },
   unknown: { label: "其他", icon: Wrench, tone: "slate" },

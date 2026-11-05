@@ -368,3 +368,38 @@ async def test_resolve_tokenfree_media_download_url_keeps_content_on_200(monkeyp
     monkeypatch.setattr(httpx, "AsyncClient", client_factory)
     got = await resolve_tokenfree_media_download_url(content, api_key="sk-test")
     assert got == content
+
+
+def test_kie_payload_and_record_info_unwrapping():
+    from app.services.tokenfree_video import _build_kie_create_payload
+
+    wrapped = wrap_seedance_payload_for_newapi(
+        {
+            "model": "seedance-2.5",
+            "content": [
+                {"type": "text", "text": "cat"},
+                {"type": "image_url", "image_url": {"url": "https://cdn.example.com/1.png"}, "role": "reference_image"},
+            ],
+            "duration": 5,
+            "ratio": "9:16",
+            "resolution": "480p",
+        }
+    )
+    kie_body = _build_kie_create_payload(wrapped)
+    assert kie_body["model"] == "bytedance/seedance-2-5"
+    assert kie_body["input"]["reference_image_urls"] == ["https://cdn.example.com/1.png"]
+    assert kie_body["input"]["aspect_ratio"] == "9:16"
+
+    res = _build_task_result_from_payload(
+        {
+            "code": 200,
+            "data": {
+                "taskId": "kie-1",
+                "state": "success",
+                "resultJson": '{"resultUrls":["https://cdn.example.com/out.mp4"],"lastFrameUrl":["https://cdn.example.com/last.jpg"]}',
+            },
+        }
+    )
+    assert res.status == "succeeded"
+    assert res.url == "https://cdn.example.com/out.mp4"
+    assert res.last_frame_url == "https://cdn.example.com/last.jpg"

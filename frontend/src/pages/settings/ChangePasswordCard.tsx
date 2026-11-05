@@ -1,4 +1,4 @@
-/** 安全页：当前密码 + 新密码确认后提交修改 */
+/** 安全页：当前密码 + 新密码确认后ส่ง修改 */
 import { useState, type FormEvent } from 'react'
 import { api } from '../../api'
 import { useI18n } from '../../i18n'
@@ -7,16 +7,16 @@ type Props = {
   email: string
 }
 
-// 渲染修改密码表单
+// เรนเดอร์修改密码表单
 export default function ChangePasswordCard({ email }: Props) {
   const { t } = useI18n()
   /*
    * currentPassword 当前密码
    * newPassword 新密码
    * confirmPassword 确认新密码
-   * busy 提交中
+   * busy ส่ง中
    * error 错误文案
-   * ok 成功提示
+   * ok สำเร็จคำแนะนำ
    */
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
@@ -32,7 +32,7 @@ export default function ChangePasswordCard({ email }: Props) {
     newPassword.length <= 64 &&
     newPassword === confirmPassword
 
-  // 校验并提交修改密码
+  // 校验并ส่ง修改密码
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     if (busy) return

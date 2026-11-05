@@ -1,4 +1,4 @@
-/** 画布布局脏标记 → 防抖自动保存 */
+/** 画布布局脏标记 → 防抖自动บันทึก */
 import { useCallback, useEffect, useRef } from 'react'
 import type { Edge, Node } from '@xyflow/react'
 import { dramaApi } from '../../../api/drama'
@@ -17,7 +17,7 @@ type UseCanvasAutoSaveArgs = {
   onStatus?: (status: CanvasSaveStatus) => void
 }
 
-/** 脏数据防抖保存到 drama canvas API；保存中再改会继续刷到最新快照 */
+/** 脏数据防抖บันทึก到 drama canvas API；กำลังบันทึก再改会继续刷到最新快照 */
 export function useCanvasAutoSave({
   projectId,
   nodes,
@@ -35,7 +35,7 @@ export function useCanvasAutoSave({
   const latestRef = useRef({ nodes, edges, projectId })
   latestRef.current = { nodes, edges, projectId }
 
-  /** 立刻保存；可传入覆盖节点/边（删除后未等一轮渲染时用） */
+  /** 立刻บันทึก；可传入覆盖节点/边（ลบ后未等一轮เรนเดอร์时用） */
   const flush = useCallback(
     async (override?: {
       nodes: Node<CanvasAssetNodeData>[]
@@ -79,8 +79,8 @@ export function useCanvasAutoSave({
         }
       } catch (err) {
         onStatus?.('error')
-        onError(err instanceof Error ? err.message : '自动保存失败')
-        // 网络闪断时保持 dirty，便于稍后自动重试 / Ctrl+S
+        onError(err instanceof Error ? err.message : '自动บันทึกไม่สำเร็จ')
+        // 网络闪断时保持 dirty，便于稍后自动ลองใหม่ / Ctrl+S
         throw err
       } finally {
         savingRef.current = false

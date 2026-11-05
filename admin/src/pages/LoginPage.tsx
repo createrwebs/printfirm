@@ -2,15 +2,14 @@ import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { loginAsAdmin } from "@/api/client";
+import { useI18n } from "@/i18n";
+import { LanguageSwitch } from "@/components/layout/LanguageSwitch";
 
 // Admin login — film-lab ops aesthetic
 export function LoginPage() {
   const navigate = useNavigate();
-  /*
-   * email login email
-   * password login password
-   * loading submit state
-   */
+  const { t } = useI18n();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -21,10 +20,10 @@ export function LoginPage() {
     setLoading(true);
     try {
       await loginAsAdmin(email.trim(), password);
-      toast.success("登录成功");
+      toast.success(t("login.success"));
       navigate("/", { replace: true });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "登录失败");
+      toast.error(err instanceof Error ? err.message : t("login.fail"));
     } finally {
       setLoading(false);
     }
@@ -33,14 +32,17 @@ export function LoginPage() {
   const sprocketOffsets = ["8%", "22%", "36%", "50%", "64%", "78%", "90%"];
 
   return (
-    <div className="login-shell">
-      <section className="login-brand" aria-label="品牌">
+    <div className="login-shell relative">
+      <div className="absolute top-4 right-4 z-50">
+        <LanguageSwitch />
+      </div>
+      <section className="login-brand" aria-label={t("login.brand")}>
         <div className="login-sprocket" aria-hidden>
           {sprocketOffsets.map((top) => (
             <span key={top} style={{ top }} />
           ))}
         </div>
-        <div className="login-eyebrow">Ops Console</div>
+        <div className="login-eyebrow">{t("login.eyebrow")}</div>
         <h1 className="login-title">
           PRINT
           <br />
@@ -50,10 +52,10 @@ export function LoginPage() {
 
       <section className="login-panel">
         <div className="login-form-wrap">
-          <h2>登录后台</h2>
+          <h2>{t("login.title")}</h2>
           <form onSubmit={onSubmit}>
             <div className="login-field">
-              <label htmlFor="email">邮箱</label>
+              <label htmlFor="email">{t("login.email")}</label>
               <input
                 id="email"
                 type="email"
@@ -64,7 +66,7 @@ export function LoginPage() {
               />
             </div>
             <div className="login-field">
-              <label htmlFor="password">密码</label>
+              <label htmlFor="password">{t("login.password")}</label>
               <input
                 id="password"
                 type="password"
@@ -75,7 +77,7 @@ export function LoginPage() {
               />
             </div>
             <button className="login-submit" type="submit" disabled={loading}>
-              {loading ? "验证中…" : "进入控制台"}
+              {loading ? t("login.submitting") : t("login.submit")}
             </button>
           </form>
         </div>

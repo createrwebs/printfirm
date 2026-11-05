@@ -1,52 +1,55 @@
 /** 浏览器语言检测、本地覆盖与 html lang 同步 */
 
-export type Locale = 'zh' | 'en'
+export type Locale = 'th' | 'en' | 'zh'
 
-export const LOCALES: Locale[] = ['zh', 'en']
+export const LOCALES: Locale[] = ['th', 'en', 'zh']
 
-export const LOCALE_STORAGE_KEY = 'printfilm.locale'
+export const LOCALE_STORAGE_KEY = 'printfilm.locale.v3'
 
 export const LOCALE_HTML: Record<Locale, string> = {
-  zh: 'zh-CN',
+  th: 'th-TH',
   en: 'en',
+  zh: 'zh-CN',
 }
 
 export const LOCALE_DATE: Record<Locale, string> = {
-  zh: 'zh-CN',
+  th: 'th-TH',
   en: 'en-US',
+  zh: 'zh-CN',
 }
 
-// 当前生效语言（供非 React 工具函数读取）
-let activeLocale: Locale = 'zh'
+// ค่าเริ่มต้นเป็นภาษาไทย
+let activeLocale: Locale = 'th'
 
-// 是否为已支持的语言代码
+// ตรวจสอบว่าเป็นภาษาที่รองรับ
 export function isLocale(value: unknown): value is Locale {
-  return value === 'zh' || value === 'en'
+  return value === 'th' || value === 'en' || value === 'zh'
 }
 
-// 从 Accept-Language / navigator 映射到 zh 或 en
+// แมปจากเบราว์เซอร์ (ค่าเริ่มต้น th)
 export function localeFromBrowser(lang?: string): Locale {
   const raw = (lang || '').trim().toLowerCase()
-  return raw.startsWith('zh') ? 'zh' : 'en'
+  if (raw.startsWith('en')) return 'en'
+  if (raw.startsWith('zh')) return 'zh'
+  return 'th'
 }
 
-// 读取用户手动选择；无记录则返回 null（跟随浏览器）
+// อ่านค่าที่เคยเลือก
 export function readStoredLocale(): Locale | null {
   try {
     const raw = localStorage.getItem(LOCALE_STORAGE_KEY)
-    return isLocale(raw) ? raw : null
+    if (isLocale(raw)) return raw
+    return null
   } catch {
     return null
   }
 }
 
-// 首次进入：有手动选择用手动，否则跟浏览器
+// เริ่มต้น: ค่าเริ่มต้นคือภาษาไทย (th)
 export function detectLocale(): Locale {
   const stored = typeof window === 'undefined' ? null : readStoredLocale()
   if (stored) return stored
-  if (typeof navigator === 'undefined') return 'zh'
-  const hint = navigator.language || navigator.languages?.[0] || 'zh'
-  return localeFromBrowser(hint)
+  return 'th'
 }
 
 export function getActiveLocale(): Locale {
@@ -68,7 +71,7 @@ export function applyLocale(locale: Locale, persist: boolean): void {
   }
 }
 
-// 日期时间按当前语言格式化
+// 日期เวลา按当前语言格式化
 export function formatDateTime(value?: string | Date | null, locale: Locale = activeLocale): string {
   if (!value) return '—'
   const d = value instanceof Date ? value : new Date(value)

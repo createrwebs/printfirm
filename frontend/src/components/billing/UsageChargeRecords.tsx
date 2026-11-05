@@ -3,7 +3,7 @@ import { api, type UsageChargeRecord } from '../../api'
 import Pagination from '../ui/Pagination'
 import { pageCountOf } from '../../lib/pagination'
 
-/** 格式化相对时间展示 */
+/** 格式化相对เวลา展示 */
 function formatWhen(iso?: string | null) {
   if (!iso) return '—'
   const d = new Date(iso)
@@ -24,18 +24,18 @@ function formatTokens(n: number) {
 }
 
 type UsageChargeRecordsProps = {
-  /** 嵌入设置页时为 compact */
+  /** 嵌入ตั้งค่า页时为 compact */
   variant?: 'panel' | 'compact'
 }
 
-/** 使用扣费记录列表：按次展示 LLM / 生图 / 生视频等计费明细 */
+/** 使用扣费记录列表：按次展示 LLM / 生图 / 生วิดีโอ等计费明细 */
 export default function UsageChargeRecords({ variant = 'compact' }: UsageChargeRecordsProps) {
   /*
    * items 当前页记录
    * page 当前页码
    * pageSize 每页条数
    * total 总条数
-   * loading 加载中
+   * loading กำลังโหลด
    * error 错误信息
    */
   const [items, setItems] = useState<UsageChargeRecord[]>([])
@@ -63,7 +63,7 @@ export default function UsageChargeRecords({ variant = 'compact' }: UsageChargeR
       setPage(nextPage)
       setItems(res.items)
     } catch (e) {
-      setError(e instanceof Error ? e.message : '加载扣费记录失败')
+      setError(e instanceof Error ? e.message : '加载扣费记录ล้มเหลว')
       setItems([])
       setTotal(0)
     } finally {
@@ -87,7 +87,7 @@ export default function UsageChargeRecords({ variant = 'compact' }: UsageChargeR
         <p className="pf-muted">每次 AI 调用的 token 用量与扣费明细</p>
       </header>
 
-      {loading ? <p className="pf-muted">加载中…</p> : null}
+      {loading ? <p className="pf-muted">กำลังโหลด…</p> : null}
       {error ? <p className="pf-error">{error}</p> : null}
 
       {!loading && !error && items.length === 0 ? (

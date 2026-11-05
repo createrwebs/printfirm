@@ -1,4 +1,4 @@
-/** 选中节点顶部：本地上传 + 从全局资产库选择 + 角色音色生成/绑定/试听 */
+/** 选中节点顶部：本地อัปโหลด + 从ทั่วไปแอสเซท库เลือก + ตัวละครน้ำเสียง生成/绑定/试听 */
 import { useCallback, useRef, useState, type ChangeEvent, type MouseEvent } from 'react'
 import { AudioLines, FolderOpen, Loader2, Upload } from 'lucide-react'
 import { dramaApi, type DramaAsset } from '../../../../api/drama'
@@ -18,9 +18,9 @@ import {
 type CanvasNodeUploadBarProps = {
   nodeId: string
   kind: CanvasNodeKind
-  /** 角色节点已绑定音色名 */
+  /** ตัวละคร节点已ผูกน้ำเสียง名 */
   voiceLabel?: string | null
-  /** 角色节点已绑定音色试听地址 */
+  /** ตัวละคร节点已ผูกน้ำเสียง试听地址 */
   voiceUrl?: string | null
 }
 
@@ -28,7 +28,7 @@ const IMAGE_ACCEPT = 'image/jpeg,image/png,image/webp,image/gif'
 const AUDIO_ACCEPT =
   'audio/mpeg,audio/mp3,audio/wav,audio/x-wav,audio/mp4,audio/m4a,audio/aac,audio/ogg,audio/webm,.mp3,.wav,.m4a,.aac,.ogg,.webm'
 
-/** 渲染选中节点的上传与资产库操作条 */
+/** เรนเดอร์选中节点的อัปโหลด与แอสเซท库การดำเนินการ条 */
 export function CanvasNodeUploadBar({
   nodeId,
   kind,
@@ -37,12 +37,12 @@ export function CanvasNodeUploadBar({
 }: CanvasNodeUploadBarProps) {
   const voiceGenerationEnabled = useCharacterVoiceGenerationEnabled()
   /*
-   * uploading 本地上传中
-   * pickerOpen 资产库弹窗
-   * voiceLoading 一键生成音色中
-   * bindOpen 绑定/更换弹窗
-   * bindAsset 弹窗用角色资产快照
-   * bindBusy 打开弹窗前拉资产中
+   * uploading 本地กำลังอัปโหลด
+   * pickerOpen แอสเซท库弹窗
+   * voiceLoading 一键生成น้ำเสียง中
+   * bindOpen 绑定/เปลี่ยน弹窗
+   * bindAsset 弹窗用แอสเซทตัวละคร快照
+   * bindBusy 打开弹窗前拉แอสเซท中
    */
   const {
     uploadNodeMedia,
@@ -69,11 +69,11 @@ export function CanvasNodeUploadBar({
   const isCharacter = kind === 'character'
   const isAudio = kind === 'audio'
   const hasVoice = Boolean(voiceUrl || voiceLabel)
-  const uploadLabel = isAudio ? '上传音频' : '上传图片'
+  const uploadLabel = isAudio ? 'อัปโหลดเสียง' : 'อัปโหลดรูปภาพ'
   const accept = isAudio ? AUDIO_ACCEPT : IMAGE_ACCEPT
   const toolbarBusy = uploading || voiceLoading || bindBusy
 
-  /** 确保角色资产存在并打开绑定弹窗 */
+  /** 确保แอสเซทตัวละคร存在并打开绑定弹窗 */
   async function openVoiceBindModal() {
     if (bindBusy || voiceLoading) return
     setBindBusy(true)
@@ -81,11 +81,11 @@ export function CanvasNodeUploadBar({
       const assetId = await ensureNodeAsset(nodeId)
       const list = await dramaApi.listAssets(projectId)
       const asset = list.find((a) => a.id === assetId)
-      if (!asset) throw new Error('角色资产不存在')
+      if (!asset) throw new Error('แอสเซทตัวละคร不存在')
       setBindAsset(asset)
       setBindOpen(true)
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : '无法打开音色绑定')
+      setErrorMessage(err instanceof Error ? err.message : '无法打开น้ำเสียง绑定')
     } finally {
       setBindBusy(false)
     }
@@ -101,31 +101,31 @@ export function CanvasNodeUploadBar({
       const okType =
         file.type.startsWith('audio/') || /\.(mp3|wav|m4a|aac|ogg|webm)$/i.test(name)
       if (!okType) {
-        setErrorMessage('请选择音频文件（MP3 / WAV / M4A 等）')
+        setErrorMessage('请เลือกเสียง文件（MP3 / WAV / M4A 等）')
         return
       }
       if (file.size > 30 * 1024 * 1024) {
-        setErrorMessage('音频不能超过 30MB')
+        setErrorMessage('เสียง不能超过 30MB')
         return
       }
     } else {
       if (!file.type.startsWith('image/')) {
-        setErrorMessage('请选择图片文件')
+        setErrorMessage('请เลือกรูปภาพ文件')
         return
       }
       if (file.size > 20 * 1024 * 1024) {
-        setErrorMessage('图片不能超过 20MB')
+        setErrorMessage('รูปภาพ不能超过 20MB')
         return
       }
     }
 
     setUploading(true)
     void uploadNodeMedia(nodeId, file)
-      .catch((err) => setErrorMessage(err instanceof Error ? err.message : '上传失败'))
+      .catch((err) => setErrorMessage(err instanceof Error ? err.message : 'อัปโหลดไม่สำเร็จ'))
       .finally(() => setUploading(false))
   }
 
-  /** 一键 AI 生成音色并绑定到角色节点 */
+  /** 一键 AI 生成น้ำเสียง并绑定到ตัวละคร节点 */
   async function handleGenerateVoice() {
     if (!voiceGenerationEnabled) { setErrorMessage(VOICE_GENERATION_DISABLED_MESSAGE); return }
     if (voiceLoading) return
@@ -134,12 +134,12 @@ export function CanvasNodeUploadBar({
       const assetId = await ensureNodeAsset(nodeId)
       const list = await dramaApi.listAssets(projectId)
       const asset = list.find((a) => a.id === assetId)
-      if (!asset) throw new Error('角色资产不存在')
+      if (!asset) throw new Error('แอสเซทตัวละคร不存在')
       const { character } = await generateAndBindCharacterVoice(projectId, asset)
-      // syncNodeFromAsset 内部 markDirty，写入 voiceLabel/voiceUrl 并触发自动保存
+      // syncNodeFromAsset 内部 markDirty，写入 voiceLabel/voiceUrl 并触发自动บันทึก
       syncNodeFromAsset(nodeId, character)
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : '音色生成失败')
+      setErrorMessage(err instanceof Error ? err.message : 'น้ำเสียงสร้างไม่สำเร็จ')
     } finally {
       setVoiceLoading(false)
     }
@@ -166,7 +166,7 @@ export function CanvasNodeUploadBar({
           onClick={() => fileInputRef.current?.click()}
         >
           {uploading ? <Loader2 size={14} className="fc-spin" /> : <Upload size={14} strokeWidth={1.8} />}
-          {uploading ? '上传中…' : uploadLabel}
+          {uploading ? 'กำลังอัปโหลด…' : uploadLabel}
         </button>
         <button
           type="button"
@@ -175,7 +175,7 @@ export function CanvasNodeUploadBar({
           onClick={() => setPickerOpen(true)}
         >
           <FolderOpen size={14} strokeWidth={1.8} />
-          从资产库选择
+          从แอสเซท库เลือก
         </button>
         {DRAMA_VOICE_BINDING_ENABLED && isCharacter ? (
           hasVoice && voiceUrl ? (
@@ -192,10 +192,10 @@ export function CanvasNodeUploadBar({
                 className="fc-toolbar-chip"
                 disabled={toolbarBusy}
                 onClick={() => void openVoiceBindModal()}
-                title="更换或解绑音色；也可改连其他音频节点"
+                title="เปลี่ยน或解绑น้ำเสียง；也可改连其他เสียง节点"
               >
                 {bindBusy ? <Loader2 size={14} className="fc-spin" /> : <AudioLines size={14} strokeWidth={1.8} />}
-                {bindBusy ? '打开中…' : '更换'}
+                {bindBusy ? '打开中…' : 'เปลี่ยน'}
               </button>
             </>
           ) : (
@@ -205,24 +205,24 @@ export function CanvasNodeUploadBar({
                 className="fc-toolbar-chip"
                 disabled={toolbarBusy}
                 onClick={() => void handleGenerateVoice()}
-                title="按角色设定 AI 生成音色"
+                title="按การตั้งค่าบทบาทตัวละคร AI 生成น้ำเสียง"
               >
                 {voiceLoading ? (
                   <Loader2 size={14} className="fc-spin" />
                 ) : (
                   <AudioLines size={14} strokeWidth={1.8} />
                 )}
-                {voiceLoading ? '生成中…' : '生成音色'}
+                {voiceLoading ? 'กำลังสร้าง…' : '生成น้ำเสียง'}
               </button>}
               <button
                 type="button"
                 className="fc-toolbar-chip"
                 disabled={toolbarBusy}
                 onClick={() => void openVoiceBindModal()}
-                title="上传/选择音色，或把「音频」节点连到本角色"
+                title="อัปโหลด/เลือกน้ำเสียง，或把「เสียง」节点连到本ตัวละคร"
               >
                 {bindBusy ? <Loader2 size={14} className="fc-spin" /> : null}
-                {bindBusy ? '打开中…' : '绑定音色'}
+                {bindBusy ? '打开中…' : 'ผูกน้ำเสียง'}
               </button>
             </>
           )
@@ -235,7 +235,7 @@ export function CanvasNodeUploadBar({
         projectId={projectId}
         defaultTab="all"
         allowedTypes={canvasKindToLibraryTypes(kind)}
-        title="从资产库选择"
+        title="从แอสเซท库เลือก"
         confirmLabel="确认使用"
         onPick={async (source) => {
           await applyLibraryMediaToNode(nodeId, source)

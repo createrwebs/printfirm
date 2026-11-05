@@ -14,7 +14,7 @@ const SIZE_CLASS = {
   xl: 'pf-user-avatar--xl',
 } as const
 
-/** 用户头像：有图显示图片，否则昵称首字母占位 */
+/** 用户头像：有图显示รูปภาพ，否则昵称首字母占位 */
 export default function UserAvatar({ user, size = 'md', className = '', title }: Props) {
   const nickname = user?.nickname || 'P'
   const initial = nickname.slice(0, 1).toUpperCase()

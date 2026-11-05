@@ -38,14 +38,14 @@ export function redactTaskData(value: unknown, depth = 0): unknown {
   }));
 }
 
-/** 任务可取消：后端允许且未进入终态 */
+/** 任务可ยกเลิก：后端允许且未进入终态 */
 export function canCancelTask(task: Pick<AdminTaskRow, "cancelable" | "status">): boolean {
   return task.cancelable && !TERMINAL.has(task.status);
 }
 
 export type TaskStatusTone = "run" | "done" | "fail" | "warn";
 
-/** 任务状态归为四种色调，列表色条、状态 pill 与详情摘要共用 */
+/** 任务สถานะ归为四种色调，列表色条、สถานะ pill 与รายละเอียด摘要共用 */
 export function taskStatusTone(status: string): TaskStatusTone {
   if (status === "running" || status === "leased" || status === "awaiting_poll") return "run";
   if (status === "succeeded") return "done";
@@ -66,8 +66,8 @@ export function shortEndpoint(endpoint: string): string {
 export function formatTaskDuration(milliseconds: number | null | undefined): string {
   if (milliseconds == null || !Number.isFinite(milliseconds)) return "未记录";
   const seconds = Math.max(0, Math.floor(milliseconds / 1000));
-  if (seconds < 60) return `${seconds}秒`;
-  if (seconds < 3600) return `${Math.floor(seconds / 60)}分${seconds % 60}秒`;
+  if (seconds < 60) return `${seconds}วินาที`;
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}分${seconds % 60}วินาที`;
   return `${Math.floor(seconds / 3600)}小时${Math.floor((seconds % 3600) / 60)}分`;
 }
 
@@ -94,7 +94,7 @@ export function taskBilling(task: Pick<AdminTaskRow, "billing_status" | "billing
   const status = task.billing_status;
   const labels: Record<string, string> = { none: "未预扣 · 尚未结算", frozen: "已冻结 · 尚未结算", settled: "已结算", skipped: "已跳过预扣 · 尚未结算" };
   return {
-    label: status ? labels[status] || status : "计费状态未记录",
+    label: status ? labels[status] || status : "计费สถานะ未记录",
     settled: status === "settled",
     estimateFen: task.billing_estimate_fen,
     frozenFen: status === "frozen" ? task.billing_estimate_fen : status ? 0 : undefined,
@@ -158,18 +158,18 @@ export function upstreamRecords(events: AdminTaskEvent[] | undefined): UpstreamR
 }
 
 export const UPSTREAM_PHASE_LABELS: Record<UpstreamPhase, string> = {
-  started: "开始请求", accepted: "上游响应", failed: "请求失败", poll: "查询结果",
+  started: "开始请求", accepted: "上游响应", failed: "请求ล้มเหลว", poll: "查询结果",
   simulated: "本地模拟 · 参数已记录",
 };
 
 export function upstreamStateLabel(status: string): string {
   const labels: Record<string, string> = {
     pending: "上游排队", queued: "上游排队", submitted: "上游排队", waiting: "上游排队",
-    running: "上游生成中", processing: "上游生成中", generating: "上游生成中", in_progress: "上游生成中",
-    succeeded: "上游完成", success: "上游完成", completed: "上游完成", done: "上游完成", finished: "上游完成",
-    failed: "上游失败", error: "上游失败", failure: "上游失败", cancelled: "上游已取消", canceled: "上游已取消",
+    running: "上游กำลังสร้าง", processing: "上游กำลังสร้าง", generating: "上游กำลังสร้าง", in_progress: "上游กำลังสร้าง",
+    succeeded: "上游เสร็จสิ้น", success: "上游เสร็จสิ้น", completed: "上游เสร็จสิ้น", done: "上游เสร็จสิ้น", finished: "上游เสร็จสิ้น",
+    failed: "上游ล้มเหลว", error: "上游ล้มเหลว", failure: "上游ล้มเหลว", cancelled: "上游ยกเลิกแล้ว", canceled: "上游ยกเลิกแล้ว",
   };
-  return labels[status.toLowerCase()] || `上游状态：${redactTaskText(status)}`;
+  return labels[status.toLowerCase()] || `上游สถานะ：${redactTaskText(status)}`;
 }
 
 export function groupUpstreamRecords(records: UpstreamRecord[]) {

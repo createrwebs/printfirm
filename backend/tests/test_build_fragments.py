@@ -21,6 +21,14 @@ def test_is_raw_screenplay_fragment_detects_scene_heading():
     assert is_raw_screenplay_fragment("出场人物：苏轼\n△ 抬头。") is True
 
 
+def test_thai_cast_marker_is_parsed_as_screenplay_structure():
+    body = "### ฉาก1-1\nกลางวัน ใน ห้องเช่า\nตัวละครที่ออกฉาก：มินแจ, ทันกุน\n△ ทั้งคู่หันมามองกัน"
+    assert is_raw_screenplay_fragment(body) is True
+    drafts = build_fragments_from_episode_body(body, [])
+    assert drafts
+    assert all("ตัวละครที่ออกฉาก" not in d["content"] for d in drafts)
+
+
 def test_is_raw_screenplay_fragment_keeps_cinematic_shots():
     # 手写分镜常无【字幕：】/@duration:，不能当场记原文
     shot = "【转入｜无｜片头直接黑起】\n【BGM｜低频太鼓】\n【场景】夜 · 内 · 大牢"

@@ -1,4 +1,4 @@
-/** 资产形象历史版本读写 */
+/** แอสเซท形象历史版本读写 */
 import { resolveDramaMediaUrl, type DramaAsset } from '../api/drama'
 
 export type AssetImageVersion = {
@@ -41,7 +41,7 @@ export function resolveAssetImageVersionUrl(version: AssetImageVersion): string 
 
 export function formatAssetImageVersionLabel(version: AssetImageVersion): string {
   const src = String(version.mediaMetadata?.source || '').toLowerCase()
-  if (src === 'upload') return '上传'
+  if (src === 'upload') return 'อัปโหลด'
   if (src === 'generated') return 'AI 生成'
   return '历史版本'
 }

@@ -55,6 +55,9 @@ def infer_model_capability(model: str) -> LogicalModelCapability:
         or "i2v" in mid
         or "minimax-h" in mid
         or "hailuo" in mid
+        or mid.startswith("wan")
+        or "kling" in mid
+        or "vidu" in mid
     ):
         return "video"
     if (
@@ -65,6 +68,9 @@ def infer_model_capability(model: str) -> LogicalModelCapability:
         or mid.startswith("gpt-image")
         or "grok-imagine" in mid
         or "image" in mid
+        or "flux" in mid
+        or mid.startswith("qwen3/")
+        or "ideogram" in mid
     ):
         return "image"
     return "text"

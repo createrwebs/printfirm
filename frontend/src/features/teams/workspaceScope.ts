@@ -1,4 +1,4 @@
-/** 当前请求空间只存在内存中，切换时取消旧请求，避免响应串入新空间。 */
+/** 当前请求空间只存在内存中，切换时ยกเลิก旧请求，避免响应串入新空间。 */
 let controller = new AbortController()
 export const workspaceScope = { teamId: null as number | null, signal: controller.signal, epoch: 0 }
 const listeners = new Set<() => void>()
@@ -12,7 +12,7 @@ export function setWorkspaceTeam(teamId: number | null, reset = false): void {
 }
 /** 订阅真实资源归属带来的空间变化。 */
 export function subscribeWorkspace(listener: () => void): () => void { listeners.add(listener); return () => { listeners.delete(listener) } }
-/** 仅为创作接口附加空间，按 ID 读取项目时由响应确认真实归属。 */
+/** 仅为创作接口附加空间，按 ID 读取โปรเจกต์时由响应确认真实归属。 */
 export function scopedRequestInit(path: string, init: RequestInit = {}): RequestInit {
   const headers = new Headers(init.headers)
   const personal = headers.get('X-Workspace-Personal') === '1'

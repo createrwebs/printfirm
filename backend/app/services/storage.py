@@ -30,6 +30,8 @@ _skip_oss_intermediates: ContextVar[bool] = ContextVar("skip_oss_intermediates",
 logger = logging.getLogger(__name__)
 
 STATIC_ROOT = Path(__file__).resolve().parents[2] / "static"
+_DEFAULT_STATIC_ROOT = STATIC_ROOT
+_kie_temp_cache: dict[tuple[str, int], str] = {}
 GENERATED_ROOT = STATIC_ROOT / "generated"
 
 
@@ -367,6 +369,44 @@ def publish_local(path: Path, *, sync: bool = False, retries: int = 2) -> str:
     except Exception as exc:  # noqa: BLE001
         logger.error("OSS sync upload failed for %s, keeping local URL: %s", path, exc)
         return local_url
+
+
+def upload_temp_public_url(path: Path) -> str | None:
+    """When OSS is disabled and public_base_url is local, upload local media to Kie temp CDN."""
+    if STATIC_ROOT != _DEFAULT_STATIC_ROOT:
+        return None
+    path = Path(path)
+    if not path.is_file():
+        return None
+    settings = get_settings()
+    if settings.ark_mock or settings.local_media_mock:
+        return None
+    key = (getattr(settings, "kie_ai_api_key", "") or "").strip()
+    if not key:
+        return None
+    cache_key = (str(path.resolve()), path.stat().st_mtime_ns)
+    if cached := _kie_temp_cache.get(cache_key):
+        return cached
+    try:
+        data_uri = file_to_data_uri(path)
+        resp = httpx.post(
+            "https://kieai.redpandaai.co/api/file-base64-upload",
+            headers={"Authorization": f"Bearer {key}"},
+            json={
+                "base64Data": data_uri,
+                "uploadPath": "media",
+                "fileName": path.name,
+            },
+            timeout=60.0,
+        )
+        body = resp.json() if resp.content else {}
+        url = ((body.get("data") or {}).get("downloadUrl") or "").strip()
+        if url.startswith("https://"):
+            _kie_temp_cache[cache_key] = url
+            return url
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Kie temp upload failed for %s: %s", path, exc)
+    return None
 
 
 def republish_url(url: str | None, *, sync: bool = True) -> str | None:

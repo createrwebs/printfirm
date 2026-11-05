@@ -1,5 +1,5 @@
 import { MediaCostNotice } from '../../../../components/billing/MediaCostNotice'
-/** 漫剧生图：风格 / 模型 / 画幅选择条（内置风格，无手填） */
+/** ละครซีรีส์生图：สไตล์ / 模型 / 画幅เลือก条（内置สไตล์，无手填） */
 import { useEffect, useRef, useState, type MouseEvent } from 'react'
 import { BarChart3, ChevronDown, RectangleVertical, Smile } from 'lucide-react'
 import {
@@ -32,13 +32,13 @@ type DramaImageGenOptionsBarProps = {
   value: ImageGenerationOptions
   onChange: (next: ImageGenerationOptions) => void
   disabled?: boolean
-  /** 是否持久化风格到项目（Assets 步骤用） */
+  /** 是否持久化สไตล์到โปรเจกต์（Assets 步骤用） */
   onStylePersist?: (styleId: string) => void | Promise<void>
 }
 
 type OpenPanel = 'style' | 'model' | 'output' | null
 
-/** 渲染生图选项条：风格 · 模型 · 比例清晰度 */
+/** เรนเดอร์生图选项条：สไตล์ · 模型 · อัตราส่วนความคมชัด */
 export function DramaImageGenOptionsBar({
   value,
   onChange,
@@ -52,7 +52,7 @@ export function DramaImageGenOptionsBar({
   const imageModels = catalogImageModels(catalog)
 
   useEffect(() => {
-    // 仅在模型为空/不在目录时补默认；用户已选合法模型时绝不覆盖。
+    // 仅在模型为空/不在目录时补ค่าเริ่มต้น；用户已选合法模型时绝不覆盖。
     // 注意：不要依赖 disabled——发送后 busy 翻转会误触发，把选项打回 Seedream/3:4。
     if (!catalog) return
     const nextModel = resolveCatalogModelSelection(catalog, 'image', value.model_id)
@@ -77,7 +77,7 @@ export function DramaImageGenOptionsBar({
   }, [catalog, value.model_id])
 
   useEffect(() => {
-    // 换模型后钳制比例/清晰度（不因 disabled 翻转重跑）
+    // 换模型后钳制อัตราส่วน/ความคมชัด（不因 disabled 翻转รันใหม่）
     if (!value.model_id || !catalog) return
     const nextRatio = clampImageAspectRatioForModel(
       value.model_id,
@@ -92,7 +92,7 @@ export function DramaImageGenOptionsBar({
       imageModels,
     )
     if (nextRatio !== value.aspect_ratio || nextRes !== value.resolution) {
-      setAdjustment('所选模型不支持原参数，已调整画幅或分辨率，请核对报价后生成。')
+      setAdjustment('所选模型不支持原参数，已调整画幅或ความละเอียด，请核对报价后生成。')
       onChange({ ...value, aspect_ratio: nextRatio, resolution: nextRes })
     }
   }, [value.model_id, catalog])
@@ -102,7 +102,7 @@ export function DramaImageGenOptionsBar({
 
   useEffect(() => {
     if (!open) return
-    // 点击外部关闭弹层
+    // 点击外部ปิด弹层
     function onDoc(e: Event) {
       const target = e.target as Node | null
       if (rootRef.current && target && !rootRef.current.contains(target)) {
@@ -117,8 +117,8 @@ export function DramaImageGenOptionsBar({
     e.stopPropagation()
   }
 
-  const styleLabel = getImageStyleLabel(value.image_style_id) || '风格'
-  const modelLabel = catalogModelLabel(value.model_id, imageModels, '图片模型')
+  const styleLabel = getImageStyleLabel(value.image_style_id) || 'สไตล์'
+  const modelLabel = catalogModelLabel(value.model_id, imageModels, 'รูปภาพ模型')
   const outputLabel = formatOutputSettingsLabel(value.aspect_ratio, value.resolution)
 
   return (
@@ -159,8 +159,8 @@ export function DramaImageGenOptionsBar({
       </div>
 
       {open === 'style' ? (
-        <div className="fc-gen-opt-panel fc-gen-style-panel" role="dialog" aria-label="图片风格">
-          <div className="fc-gen-opt-panel-title">图片风格</div>
+        <div className="fc-gen-opt-panel fc-gen-style-panel" role="dialog" aria-label="รูปภาพสไตล์">
+          <div className="fc-gen-opt-panel-title">รูปภาพสไตล์</div>
           <div className="fc-gen-style-grid">
             {IMAGE_STYLE_OPTIONS.map((opt) => {
               const selected = value.image_style_id === opt.id
@@ -206,8 +206,8 @@ export function DramaImageGenOptionsBar({
       ) : null}
 
       {open === 'output' ? (
-        <div className="fc-gen-opt-panel" role="dialog" aria-label="输出设置">
-          <div className="fc-gen-opt-panel-title">比例</div>
+        <div className="fc-gen-opt-panel" role="dialog" aria-label="输出ตั้งค่า">
+          <div className="fc-gen-opt-panel-title">อัตราส่วน</div>
           <div className="fc-gen-chip-row">
             {GENERATION_ASPECT_RATIO_OPTIONS.filter((opt) => aspectOptions.includes(opt.id)).map((opt) => (
               <button
@@ -223,7 +223,7 @@ export function DramaImageGenOptionsBar({
             ))}
           </div>
           <div className="fc-gen-opt-panel-title" style={{ marginTop: 10 }}>
-            清晰度
+            ความคมชัด
           </div>
           <div className="fc-gen-chip-row">
             {resolutionOptions.map((res) => (

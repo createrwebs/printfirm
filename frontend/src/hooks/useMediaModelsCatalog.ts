@@ -1,4 +1,4 @@
-/** 拉取并缓存前台 TokenFree 图/视频模型目录。 */
+/** 拉取并缓存前台 TokenFree 图/วิดีโอ模型目录。 */
 import { useEffect, useState } from 'react'
 import { api, type MediaModelOption, type MediaModelsCatalog } from '../api'
 export { resolveCatalogModelSelection } from '../lib/mediaCatalogSelection'
@@ -51,12 +51,12 @@ export function useMediaModelsCatalog() {
   return catalog
 }
 
-/** 当前目录下的视频模型；目录未到时为空。 */
+/** 当前目录下的วิดีโอ模型；目录未到时为空。 */
 export function catalogVideoModels(catalog: MediaModelsCatalog | null): MediaModelOption[] {
   return catalog?.video_models ?? []
 }
 
-/** 当前目录下的图片模型；目录未到时为空。 */
+/** 当前目录下的รูปภาพ模型；目录未到时为空。 */
 export function catalogImageModels(catalog: MediaModelsCatalog | null): MediaModelOption[] {
   return catalog?.image_models ?? []
 }

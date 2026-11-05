@@ -11,11 +11,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/ui/page";
 import { fenToYuan } from "@/lib/utils";
+import { useI18n } from "@/i18n";
 
 type ListRes = { items: AdminDramaProject[]; meta: PageMeta };
 
-/** 漫剧项目列表：点击进入二级详情页 */
+/** โปรเจกต์ละครซีรีส์列表 */
 export function DramaProjectsPage() {
+  const { locale } = useI18n();
   const [page, setPage] = useState(1);
   const [q, setQ] = useState("");
   const [userId, setUserId] = useState<number | null>(null);
@@ -32,7 +34,7 @@ export function DramaProjectsPage() {
       if (assetsSeedStatus.trim()) params.set("assets_seed_status", assetsSeedStatus.trim());
       setData(await api<ListRes>(`/api/admin/drama-projects?${params}`));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "加载失败");
+      toast.error(err instanceof Error ? err.message : (locale === "th" ? "โหลดข้อมูลล้มเหลว" : "Failed to load"));
     }
   }
 
@@ -43,13 +45,16 @@ export function DramaProjectsPage() {
 
   return (
     <div className="admin-list-page">
-      <PageHeader title="漫剧项目" description="漫剧项目：集数、资产、生产状态与费用；点击详情进入二级页" />
+      <PageHeader
+        title={locale === "th" ? "โปรเจกต์ละครสั้น" : "Drama Projects"}
+        description={locale === "th" ? "โปรเจกต์ละครสั้น: จำนวนตอน, แอสเซท, สถานะการผลิต และค่าใช้จ่าย" : "Drama projects: episodes, assets, production status & costs"}
+      />
       <AdminFilterBar>
-        <Input placeholder="标题 / 描述" value={q} onChange={(e) => setQ(e.target.value)} />
+        <Input placeholder={locale === "th" ? "ชื่อเรื่อง / คำอธิบาย" : "Title / description"} value={q} onChange={(e) => setQ(e.target.value)} />
         <AdminUserSearchSelect value={userId} onChange={(id) => setUserId(id)} />
-        <Input placeholder="摘要状态" value={summaryStatus} onChange={(e) => setSummaryStatus(e.target.value)} />
+        <Input placeholder={locale === "th" ? "สถานะพล็อตเรื่อง" : "Summary status"} value={summaryStatus} onChange={(e) => setSummaryStatus(e.target.value)} />
         <Input
-          placeholder="资产抽取状态"
+          placeholder={locale === "th" ? "สถานะสกัดแอสเซท" : "Assets seed status"}
           value={assetsSeedStatus}
           onChange={(e) => setAssetsSeedStatus(e.target.value)}
         />
@@ -62,7 +67,7 @@ export function DramaProjectsPage() {
             void load(1);
           }}
         >
-          筛选
+          {locale === "th" ? "กรอง" : "Filter"}
         </Button>
       </AdminFilterBar>
       <div className="admin-table-wrap">
@@ -70,14 +75,14 @@ export function DramaProjectsPage() {
           <thead>
             <tr>
               <th>ID</th>
-              <th>标题</th>
-              <th>用户</th>
-              <th>集数</th>
-              <th>资产</th>
-              <th>费用</th>
-              <th>摘要</th>
-              <th>资产抽取</th>
-              <th>更新时间</th>
+              <th>{locale === "th" ? "ชื่อเรื่อง" : "Title"}</th>
+              <th>{locale === "th" ? "ผู้ใช้" : "User"}</th>
+              <th>{locale === "th" ? "ตอน" : "Episodes"}</th>
+              <th>{locale === "th" ? "แอสเซท" : "Assets"}</th>
+              <th>{locale === "th" ? "ค่าใช้จ่าย" : "Cost"}</th>
+              <th>{locale === "th" ? "พล็อต" : "Summary"}</th>
+              <th>{locale === "th" ? "สกัดแอสเซท" : "Seed"}</th>
+              <th>{locale === "th" ? "เวลาอัปเดต" : "Updated At"}</th>
               <th></th>
             </tr>
           </thead>
@@ -103,7 +108,7 @@ export function DramaProjectsPage() {
                 </td>
                 <td>
                   <Button size="sm" variant="outline" asChild>
-                    <Link to={`/drama-projects/${row.id}`}>详情</Link>
+                    <Link to={`/drama-projects/${row.id}`}>{locale === "th" ? "รายละเอียด" : "Details"}</Link>
                   </Button>
                 </td>
               </tr>
@@ -111,7 +116,7 @@ export function DramaProjectsPage() {
             {(data?.items.length ?? 0) === 0 ? (
               <tr>
                 <td colSpan={10} className="!text-center text-[var(--admin-muted)]">
-                  暂无项目
+                  {locale === "th" ? "ไม่มีโปรเจกต์" : "No projects"}
                 </td>
               </tr>
             ) : null}

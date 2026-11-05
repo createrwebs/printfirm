@@ -1,4 +1,4 @@
-/** Agent Skill 多选列表（弹窗 / 画布下拉共用）：可预览、下载 */
+/** Agent Skill 多选列表（弹窗 / 画布下拉共用）：可ดูตัวอย่าง、ดาวน์โหลด */
 import { useRef, useState, type MouseEvent } from 'react'
 import { Download, Eye, X } from 'lucide-react'
 import type { AgentSkill } from '../../api/agentSkills'
@@ -17,7 +17,7 @@ type AgentSkillPickerProps = {
   compact?: boolean
 }
 
-/** 把 Skill 还原成可下载的 Cursor 风格 SKILL.md */
+/** 把 Skill 还原成可ดาวน์โหลด的 Cursor สไตล์ SKILL.md */
 export function skillToMarkdown(skill: AgentSkill): string {
   const tasks = Array.isArray(skill.tasks) ? skill.tasks.filter(Boolean) : []
   const taskLines =
@@ -38,7 +38,7 @@ export function skillToMarkdown(skill: AgentSkill): string {
   ].join('\n')
 }
 
-/** 下载文件名 */
+/** ดาวน์โหลด文件名 */
 function skillDownloadName(skill: AgentSkill): string {
   const base = (skill.slug || skill.name || 'skill')
     .replace(/[^\w\u4e00-\u9fff.-]+/g, '_')
@@ -46,7 +46,7 @@ function skillDownloadName(skill: AgentSkill): string {
   return `${base || 'skill'}.md`
 }
 
-/** 渲染 Skill 勾选列表，可预览 / 下载 / 上传 */
+/** เรนเดอร์ Skill 勾选列表，可ดูตัวอย่าง / ดาวน์โหลด / อัปโหลด */
 export function AgentSkillPicker({
   skills,
   selectedIds,
@@ -56,7 +56,7 @@ export function AgentSkillPicker({
   onUpload,
   uploading = false,
   uploadError = '',
-  emptyText = '暂无可用 Skill',
+  emptyText = 'ยังไม่มี Skill ที่ใช้งานได้',
   compact = false,
 }: AgentSkillPickerProps) {
   const selected = new Set(selectedIds)
@@ -64,7 +64,7 @@ export function AgentSkillPicker({
   const fileRef = useRef<HTMLInputElement>(null)
   const [previewSkill, setPreviewSkill] = useState<AgentSkill | null>(null)
 
-  // 下载单个 Skill 为 .md
+  // ดาวน์โหลด单个 Skill 为 .md
   function handleDownload(skill: AgentSkill, event: MouseEvent) {
     event.preventDefault()
     event.stopPropagation()
@@ -72,7 +72,7 @@ export function AgentSkillPicker({
     triggerBlobDownload(new Blob([markdown], { type: 'text/markdown;charset=utf-8' }), skillDownloadName(skill))
   }
 
-  // 打开预览（阻止勾选冒泡）
+  // 打开ดูตัวอย่าง（阻止勾选冒泡）
   function handlePreview(skill: AgentSkill, event: MouseEvent) {
     event.preventDefault()
     event.stopPropagation()
@@ -84,12 +84,12 @@ export function AgentSkillPicker({
       <div className={`${rootClass}-toolbar`}>
         {onSelectAll ? (
           <button type="button" className={`${rootClass}-link`} onClick={onSelectAll}>
-            全选
+            เลือกทั้งหมด
           </button>
         ) : null}
         {onSelectNone ? (
           <button type="button" className={`${rootClass}-link`} onClick={onSelectNone}>
-            不使用
+            ไม่ใช้
           </button>
         ) : null}
         {onUpload ? (
@@ -99,7 +99,7 @@ export function AgentSkillPicker({
             disabled={uploading}
             onClick={() => fileRef.current?.click()}
           >
-            {uploading ? '上传中…' : '上传 .md'}
+            {uploading ? 'กำลังอัปโหลด…' : 'อัปโหลด .md'}
           </button>
         ) : null}
       </div>
@@ -126,8 +126,8 @@ export function AgentSkillPicker({
                   <button
                     type="button"
                     className={`${rootClass}-action`}
-                    title="预览"
-                    aria-label={`预览 ${skill.name}`}
+                    title="ดูตัวอย่าง"
+                    aria-label={`ดูตัวอย่าง ${skill.name}`}
                     onClick={(event) => handlePreview(skill, event)}
                   >
                     <Eye size={14} strokeWidth={1.8} />
@@ -135,8 +135,8 @@ export function AgentSkillPicker({
                   <button
                     type="button"
                     className={`${rootClass}-action`}
-                    title="下载 .md"
-                    aria-label={`下载 ${skill.name}`}
+                    title="ดาวน์โหลด .md"
+                    aria-label={`ดาวน์โหลด ${skill.name}`}
                     onClick={(event) => handleDownload(skill, event)}
                   >
                     <Download size={14} strokeWidth={1.8} />
@@ -163,7 +163,7 @@ export function AgentSkillPicker({
       {uploadError ? <p className={`${rootClass}-error`}>{uploadError}</p> : null}
 
       {previewSkill ? (
-        <div className={`${rootClass}-preview`} role="dialog" aria-label={`预览 ${previewSkill.name}`}>
+        <div className={`${rootClass}-preview`} role="dialog" aria-label={`ดูตัวอย่าง ${previewSkill.name}`}>
           <div className={`${rootClass}-preview-head`}>
             <div>
               <strong>{previewSkill.name}</strong>
@@ -175,12 +175,12 @@ export function AgentSkillPicker({
                 className={`${rootClass}-link`}
                 onClick={(event) => handleDownload(previewSkill, event)}
               >
-                下载 .md
+                ดาวน์โหลด .md
               </button>
               <button
                 type="button"
                 className={`${rootClass}-action`}
-                aria-label="关闭预览"
+                aria-label="ปิดดูตัวอย่าง"
                 onClick={() => setPreviewSkill(null)}
               >
                 <X size={16} />

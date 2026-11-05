@@ -15,11 +15,11 @@ import './canvas.css'
 
 type CanvasWorkspaceProps = {
   projectId: number
-  /** fullscreen 独立页；embedded 嵌入分集编辑右侧 */
+  /** fullscreen 独立页；embedded 嵌入分 ตอนแก้ไข右侧 */
   variant?: 'fullscreen' | 'embedded'
 }
 
-/** 渲染画布主体与各区域 overlay */
+/** เรนเดอร์画布主体与各区域 overlay */
 function CanvasWorkspaceContent({
   projectId,
   variant = 'fullscreen',
@@ -46,7 +46,7 @@ function CanvasWorkspaceContent({
     [addNodeOfKind, screenToFlowPosition],
   )
 
-  /* Ctrl/Cmd+S 保存；Ctrl/Cmd+Z / Ctrl+Shift+Z / Ctrl+Y 撤销重做 */
+  /* Ctrl/Cmd+S บันทึก；Ctrl/Cmd+Z / Ctrl+Shift+Z / Ctrl+Y 撤销重做 */
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       const meta = event.metaKey || event.ctrlKey
@@ -90,7 +90,7 @@ function CanvasWorkspaceContent({
   )
 }
 
-/** 提供 React Flow 与画布状态上下文 */
+/** 提供 React Flow 与画布สถานะ上下文 */
 export function CanvasWorkspace({
   projectId,
   variant = 'fullscreen',

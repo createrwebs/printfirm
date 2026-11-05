@@ -41,7 +41,7 @@ export function TemplateCard({
         type="button"
         className="template-card-cover"
         onClick={() => onEdit(template)}
-        aria-label={`编辑模板 ${template.name}`}
+        aria-label={`แก้ไข模板 ${template.name}`}
       >
         {src ? (
           <img src={src} alt={template.name} loading="lazy" className="template-card-cover-img" />
@@ -60,7 +60,7 @@ export function TemplateCard({
             </span>
           ) : null}
           {!template.is_active ? (
-            <span className="template-card-badge template-card-badge--off">已下架</span>
+            <span className="template-card-badge template-card-badge--off">นำลงแล้ว</span>
           ) : null}
         </div>
       </button>
@@ -72,14 +72,14 @@ export function TemplateCard({
             <p className="template-card-id">{template.id}</p>
           </div>
           <div className="template-card-actions">
-            <button type="button" className="template-card-icon-btn" onClick={() => onEdit(template)} title="编辑">
+            <button type="button" className="template-card-icon-btn" onClick={() => onEdit(template)} title="แก้ไข">
               <Pencil className="h-4 w-4" />
             </button>
             <button
               type="button"
               className="template-card-icon-btn template-card-icon-btn--danger"
               onClick={() => onDelete(template.id)}
-              title="删除"
+              title="ลบ"
             >
               <Trash2 className="h-4 w-4" />
             </button>
@@ -89,7 +89,7 @@ export function TemplateCard({
         {template.description ? (
           <p className="template-card-desc">{template.description}</p>
         ) : (
-          <p className="template-card-desc template-card-desc--empty">暂无描述</p>
+          <p className="template-card-desc template-card-desc--empty">ไม่มีคำอธิบาย</p>
         )}
 
         <div className="template-card-tags">

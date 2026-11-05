@@ -3,7 +3,7 @@ import type { PageResult } from "./types/common";
 import type { AdminLedger, AdminOrder, AdminUsageEventListRes } from "./types/finance";
 import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 
-/** 财务列表共享分页条件；嵌入用户详情时可使用更小的 pageSize。 */
+/** 财务列表共享分页条件；嵌入用户รายละเอียด时可使用更小的 pageSize。 */
 type ListFilters = { userId?: number | null; pageSize?: number };
 type OrderFilters = ListFilters & { status?: string; outTradeNo?: string };
 type LedgerFilters = ListFilters & { kind?: string; refType?: string; dateFrom?: string; dateTo?: string };
@@ -28,13 +28,13 @@ function listParams(page: number, filters: ListFilters): URLSearchParams {
   return params;
 }
 
-/** 按上海日历日设置时间边界，避免无时区时间被当成 UTC。 */
+/** 按上海日历日ตั้งค่าเวลา边界，避免无时区เวลา被当成 UTC。 */
 function setDateRange(params: URLSearchParams, from?: string, to?: string): void {
   if (from?.trim()) params.set("created_from", `${from.trim()}T00:00:00+08:00`);
   if (to?.trim()) params.set("created_to", `${to.trim()}T23:59:59+08:00`);
 }
 
-/** 查询充值订单；商户单号筛选也供跨页深链定位使用。 */
+/** 查询充值订单；商户单号ตัวกรอง也供跨页深链定位使用。 */
 export function listAdminOrders(page = 1, filters: OrderFilters = {}): Promise<PageResult<AdminOrder>> {
   const params = listParams(page, filters);
   if (filters.status) params.set("status", filters.status);
@@ -42,7 +42,7 @@ export function listAdminOrders(page = 1, filters: OrderFilters = {}): Promise<P
   return api(`/api/admin/orders?${params}`);
 }
 
-/** 查询钱包流水，支持调账记录与用户详情复用同一接口映射。 */
+/** 查询钱包流水，支持调账记录与用户รายละเอียด复用同一接口映射。 */
 export function listAdminLedger(page = 1, filters: LedgerFilters = {}): Promise<PageResult<AdminLedger>> {
   const params = listParams(page, filters);
   if (filters.kind) params.set("kind", filters.kind);
@@ -51,7 +51,7 @@ export function listAdminLedger(page = 1, filters: LedgerFilters = {}): Promise<
   return api(`/api/admin/ledger?${params}`);
 }
 
-/** 查询 AI 用量明细，集中维护后端筛选参数与日期边界。 */
+/** 查询 AI 用量明细，集中维护后端ตัวกรอง参数与日期边界。 */
 export function listAdminUsageEvents(page = 1, filters: UsageFilters = {}): Promise<AdminUsageEventListRes> {
   const params = listParams(page, filters);
   if (filters.taskRunId) params.set("task_run_id", filters.taskRunId);

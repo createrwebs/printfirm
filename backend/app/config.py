@@ -20,6 +20,13 @@ class Settings(BaseSettings):
     sql_echo: bool = False
     secret_key: str = "dev-secret-change-me"
     access_token_expire_minutes: int = 60 * 24 * 7
+    # Optional Google OpenID Connect sign-in. Empty credentials keep the route disabled.
+    google_oauth_client_id: str = ""
+    google_oauth_client_secret: str = ""
+    google_oauth_redirect_uri: str = ""
+    auth_frontend_url: str = "http://127.0.0.1:5173"
+    # Echo the PRINTFILM JWT only when the request is local and this flag is enabled.
+    auth_local_token_debug: bool = False
 
     database_url: str = "postgresql+asyncpg://printfilm:change-me-strong-db-password@127.0.0.1:15432/printfilm"
     database_url_sync: str = "postgresql+psycopg2://printfilm:change-me-strong-db-password@127.0.0.1:15432/printfilm"
@@ -196,6 +203,10 @@ class Settings(BaseSettings):
     )
     # Comma-separated emails promoted to admin on startup (existing users only)
     admin_bootstrap_emails: str = ""
+    kie_ai_api_key: str = ""
+    kie_ai_base_url: str = "https://api.kie.ai"
+    deepseek_api_key: str = ""
+    deepseek_base_url: str = "https://api.deepseek.com/v1"
 
 
 @lru_cache

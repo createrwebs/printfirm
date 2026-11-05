@@ -12,7 +12,7 @@ import { AdminEntityLink } from "@/components/admin/AdminEntityLink";
 import { Button } from "@/components/ui/button";
 import { formatDramaGenerationStatus } from "@/lib/dramaLabels";
 
-/** 漫剧分集详情：含分镜列表 */
+/** ละครซีรีส์分 ตอนรายละเอียด：含รายการสตอรี่บอร์ด */
 export function DramaEpisodeDetailPage() {
   const { episodeId } = useParams<{ episodeId: string }>();
   const navigate = useNavigate();
@@ -29,14 +29,14 @@ export function DramaEpisodeDetailPage() {
     void api<AdminDramaEpisode>(`/api/admin/drama-episodes/${id}`)
       .then(setDetail)
       .catch((err) => {
-        toast.error(err instanceof Error ? err.message : "加载失败");
+        toast.error(err instanceof Error ? err.message : "โหลดไม่สำเร็จ");
         navigate("/drama-episodes", { replace: true });
       })
       .finally(() => setLoading(false));
   }, [id, navigate]);
 
   if (loading && !detail) {
-    return <div className="admin-detail-page-loading">加载中…</div>;
+    return <div className="admin-detail-page-loading">กำลังโหลด…</div>;
   }
   if (!detail) return null;
 
@@ -46,12 +46,12 @@ export function DramaEpisodeDetailPage() {
         <Button variant="ghost" size="sm" className="admin-detail-back" asChild>
           <Link to="/drama-episodes">
             <ArrowLeft className="h-4 w-4" />
-            返回分集列表
+            กลับ分 ตอน列表
           </Link>
         </Button>
         <div className="admin-detail-page-heading">
           <h2 className="admin-detail-page-title">
-            分集 #{detail.id} · {detail.name}
+            分 ตอน #{detail.id} · {detail.name}
           </h2>
           <p className="admin-detail-page-sub">
             <AdminEntityLink kind="drama" id={detail.project_id} label={detail.project_title ?? undefined} />
@@ -59,7 +59,7 @@ export function DramaEpisodeDetailPage() {
         </div>
         <div className="admin-detail-page-actions">
           <Button size="sm" variant="outline" asChild>
-            <Link to={`/drama-projects/${detail.project_id}?tab=episodes`}>打开项目</Link>
+            <Link to={`/drama-projects/${detail.project_id}?tab=episodes`}>打开โปรเจกต์</Link>
           </Button>
           <Button size="sm" variant="outline" asChild>
             <Link to={`/drama-fragments?episode_id=${detail.id}`}>全部分镜</Link>
@@ -79,20 +79,20 @@ export function DramaEpisodeDetailPage() {
               ),
             },
             {
-              label: "所属项目",
+              label: "所属โปรเจกต์",
               value: <AdminEntityLink kind="drama" id={detail.project_id} label={detail.project_title ?? undefined} />,
             },
             { label: "分镜数", value: detail.fragment_count },
             { label: "分镜计划", value: detail.fragment_plan_status || "—" },
             {
-              label: "更新时间",
+              label: "เวลาที่อัปเดต",
               value: detail.updated_at ? new Date(detail.updated_at).toLocaleString() : "—",
             },
           ]}
         />
       </AdminDetailSection>
 
-      <AdminDetailSection title={`分镜列表（${(detail.fragments ?? []).length}）`}>
+      <AdminDetailSection title={`รายการสตอรี่บอร์ด（${(detail.fragments ?? []).length}）`}>
         <AdminDetailTableWrap>
           <table>
             <thead>
@@ -100,9 +100,9 @@ export function DramaEpisodeDetailPage() {
                 <th>序号</th>
                 <th>ID</th>
                 <th>内容</th>
-                <th>时长</th>
+                <th>ความยาว</th>
                 <th>生成</th>
-                <th>资产引用</th>
+                <th>แอสเซท引用</th>
                 <th></th>
               </tr>
             </thead>
@@ -126,7 +126,7 @@ export function DramaEpisodeDetailPage() {
                     <td>{f.asset_ref_count}</td>
                     <td>
                       <Button size="sm" variant="outline" asChild>
-                        <Link to={`/drama-fragments/${f.id}`}>查看</Link>
+                        <Link to={`/drama-fragments/${f.id}`}>ดู</Link>
                       </Button>
                     </td>
                   </tr>

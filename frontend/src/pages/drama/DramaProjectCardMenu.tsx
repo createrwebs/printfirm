@@ -1,4 +1,4 @@
-/** 项目卡片「更多」菜单：点选项、移出或点外部即收起 */
+/** โปรเจกต์卡片「เพิ่มเติม」菜单：点选项、移出或点外部即ย่อเก็บ */
 import { useEffect, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import { MoreHorizontal } from 'lucide-react'
@@ -9,15 +9,15 @@ type Props = {
   onPublish?: () => void
 }
 
-// 鼠标离开后延迟收起，避免滑向菜单项时被立刻关掉
+// 鼠标离开后延迟ย่อเก็บ，避免滑向菜单项时被立刻关掉
 const HIDE_DELAY_MS = 120
 
-// 渲染项目卡片重命名 / 删除菜单
+// เรนเดอร์โปรเจกต์卡片重命名 / ลบ菜单
 export function DramaProjectCardMenu({ onRename, onDelete, onPublish }: Props) {
   /*
-   * open 菜单是否展开
-   * rootRef 用于点外部关闭
-   * hideTimerRef 移出后延迟收起
+   * open 菜单是否ขยาย
+   * rootRef 用于点外部ปิด
+   * hideTimerRef 移出后延迟ย่อเก็บ
    * ignoreToggleRef 挡住菜单卸掉后穿透到「⋯」的同一次 click
    */
   const [open, setOpen] = useState(false)
@@ -25,14 +25,14 @@ export function DramaProjectCardMenu({ onRename, onDelete, onPublish }: Props) {
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const ignoreToggleRef = useRef(false)
 
-  // 取消待收起
+  // ยกเลิก待ย่อเก็บ
   function cancelHide() {
     if (!hideTimerRef.current) return
     clearTimeout(hideTimerRef.current)
     hideTimerRef.current = null
   }
 
-  // 延迟收起菜单
+  // 延迟ย่อเก็บ菜单
   function scheduleHide() {
     cancelHide()
     hideTimerRef.current = setTimeout(() => {
@@ -41,7 +41,7 @@ export function DramaProjectCardMenu({ onRename, onDelete, onPublish }: Props) {
     }, HIDE_DELAY_MS)
   }
 
-  // 立刻收起后再执行操作，避免弹窗打开后菜单仍挂着
+  // 立刻ย่อเก็บ后再执行การดำเนินการ，避免弹窗打开后菜单仍挂着
   function closeThenRun(action: () => void) {
     cancelHide()
     ignoreToggleRef.current = true
@@ -54,7 +54,7 @@ export function DramaProjectCardMenu({ onRename, onDelete, onPublish }: Props) {
 
   useEffect(() => () => cancelHide(), [])
 
-  // 点外部、滚动或 Esc 时收起
+  // 点外部、滚动或 Esc 时ย่อเก็บ
   useEffect(() => {
     if (!open) return
     function onPointerDown(event: PointerEvent) {
@@ -88,7 +88,7 @@ export function DramaProjectCardMenu({ onRename, onDelete, onPublish }: Props) {
       <button
         type="button"
         className="drama-project-row-more-btn"
-        aria-label="更多操作"
+        aria-label="เพิ่มเติมการดำเนินการ"
         aria-expanded={open}
         aria-haspopup="menu"
         onClick={(event) => {
@@ -105,7 +105,7 @@ export function DramaProjectCardMenu({ onRename, onDelete, onPublish }: Props) {
           {onPublish && <button type="button" role="menuitem"
             onPointerDown={event => { event.preventDefault(); event.stopPropagation(); closeThenRun(onPublish) }}
             onClick={event => { event.stopPropagation(); if (!ignoreToggleRef.current) closeThenRun(onPublish) }}
-          >发布到数字资产市场</button>}
+          >เผยแพร่สู่ตลาดดิจิทัลแอสเซท</button>}
           <button
             type="button"
             role="menuitem"
@@ -137,7 +137,7 @@ export function DramaProjectCardMenu({ onRename, onDelete, onPublish }: Props) {
               closeThenRun(onDelete)
             }}
           >
-            删除
+            ลบ
           </button>
         </div>
       ) : null}

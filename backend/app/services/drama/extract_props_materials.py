@@ -6,22 +6,24 @@ import json
 from typing import Any
 
 from app.services.drama.llm import drama_chat_json
+from app.services.drama.language import has_language_violation, language_instruction
+from app.services.agent.runner import run_task_json
 
 SUMMARY_TEXT_MAX = 4000
 EPISODE_SAMPLE_MAX = 2500
 
-SYSTEM_PROMPT = """你是短剧美术统筹，负责从剧本摘要与分集正文中整理「道具」资产清单，供后续 AI 生图使用。
+SYSTEM_PROMPT = """You are a drama art director responsible for identifying key props from the script summary and episode text for subsequent AI image generation.
 
-道具（props）：
-- 可被角色持有、传递、特写的物件（兵器、信物、刑具、神器、文书等）
-- 只保留对剧情有辨识度的关键道具，控制在 8–20 个
-- 不要把地点、角色、天气现象、气氛空镜当成道具
+Props:
+- Objects held, passed, or given close-ups by characters (tools, tokens, weapons, magical items, documents, medical instruments).
+- Only identify key props with high story significance (4–8 items max).
+- Do not include characters, locations, or atmosphere scenery as props.
 
-输出要求：
-1. 名称简短有辨识度；visualPrompt 用简体中文，每条 90–200 字，只写道具本体外观（材质/形制、色彩、尺度、磨损或做旧、戏剧符号）
-2. 不要写「三视图 / 白底设定板 / 强制任务」等构图指令（入库时由系统统一加结构前缀）
-3. 必须输出严格 JSON 对象（不要 markdown）：{"props":[{"name":"...","visualPrompt":"..."}]}
-4. 不要输出 materials / 素材字段
+Output Requirements:
+1. Short recognizable name; concise visual prompt (30–60 words) describing appearance (material, color, scale, wear/details). Use the same language as the input script (e.g. Thai if Thai, Chinese if Chinese, English if English).
+2. Do not include camera instructions or meta tags like "concept art", "white background".
+3. Must return strictly valid JSON: {"props":[{"name":"...","visualPrompt":"..."}]}
+4. Do not output materials field.
 """
 
 
@@ -63,6 +65,10 @@ async def extract_props_materials(
     *,
     summary: dict[str, Any] | None,
     episode_bodies: list[str],
+    source: str = "",
+    db: Any | None = None,
+    user_id: int | None = None,
+    skill_ids: list[int] | None = None,
 ) -> dict[str, list[dict[str, str]]]:
     """调用 LLM 抽取道具（materials 恒为空，兼容旧调用方）。
 
@@ -78,18 +84,38 @@ async def extract_props_materials(
     else:
         episode_block = "（暂无分集正文）"
 
+    language_source = source or summary_text
     user = "\n".join(
         [
+            language_instruction(language_source),
             "【剧本摘要】",
             summary_text[:SUMMARY_TEXT_MAX],
             "",
             episode_block,
             "",
-            "请抽取 props（不要输出 materials）。",
+            "CRITICAL: Output ONLY valid JSON: {\"props\": [{\"name\": \"...\", \"visualPrompt\": \"...\"}]}. No markdown.",
         ]
     )
-    raw = await drama_chat_json(SYSTEM_PROMPT, user, max_tokens=4096)
+    if db is not None and user_id is not None:
+        raw = await run_task_json(
+            db,
+            user_id,
+            task="extract_assets",
+            system=SYSTEM_PROMPT,
+            user=user,
+            max_tokens=2048,
+            skill_ids=skill_ids,
+        )
+    else:
+        raw = await drama_chat_json(SYSTEM_PROMPT, user, max_tokens=2048)
     normalized = _normalize_payload(raw)
+    visible = "\n".join(
+        f"{item.get('name', '')} {item.get('visualPrompt', '')}"
+        for item in normalized["props"]
+        if isinstance(item, dict)
+    )
+    if has_language_violation(language_source, visible, strict=True):
+        raise ValueError("道具提取结果语言与原始剧本不一致")
     return {
         "props": _dedupe_by_name(normalized["props"]),
         "materials": [],

@@ -16,11 +16,11 @@ export default function AccountProfileCard({ user, onUserChange }: AccountProfil
   const { t } = useI18n()
   /*
    * nickname / email / phone 表单值
-   * saveBusy 保存中
-   * saveError 保存失败
-   * saveOk 保存成功提示
-   * avatarBusy 头像上传中
-   * avatarError 头像失败原因
+   * saveBusy กำลังบันทึก
+   * saveError บันทึกไม่สำเร็จ
+   * saveOk บันทึกสำเร็จคำแนะนำ
+   * avatarBusy 头像กำลังอัปโหลด
+   * avatarError 头像ล้มเหลว原因
    */
   const [nickname, setNickname] = useState('')
   const [email, setEmail] = useState('')
@@ -45,7 +45,7 @@ export default function AccountProfileCard({ user, onUserChange }: AccountProfil
       email.trim() !== (user.email || '') ||
       phone.trim() !== (user.phone || ''))
 
-  // 选择并上传头像
+  // เลือก并อัปโหลด头像
   async function handleAvatarChange(file: File | undefined) {
     if (!file || avatarBusy) return
     setAvatarError('')
@@ -62,7 +62,7 @@ export default function AccountProfileCard({ user, onUserChange }: AccountProfil
     }
   }
 
-  // 保存用户名、邮箱、手机号
+  // บันทึก用户名、邮箱、手机号
   async function handleSave() {
     if (!user || saveBusy) return
     setSaveError('')

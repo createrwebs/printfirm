@@ -38,3 +38,18 @@ def test_structure_prefix_not_duplicated():
     twice = build_named_image_params(once["visualPrompt"], "1:1", kind="prop")
     assert once["visualPrompt"].count("【强制任务：") == 1
     assert twice["visualPrompt"].count("【强制任务：") == 1
+
+
+def test_thai_character_prompt_uses_thai_structure_and_labels():
+    params = build_character_params(
+        {
+            "name": "ดันโฮ",
+            "visualImage": "ลูกแมวสีส้มอ้วน ดวงตาเศร้า ขนสีส้มอ่อน",
+            "title": "สัตว์ประจำเคส",
+            "roleType": "ตัวละครรอง",
+        }
+    )
+    prompt = params["visualPrompt"]
+    assert "คำสั่งบังคับ" in prompt
+    assert "ตัวตน：สัตว์ประจำเคส" in prompt
+    assert "身份：" not in prompt

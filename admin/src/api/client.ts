@@ -9,7 +9,7 @@ function errorMessage(data: ApiError, status: number): string {
   const detail = data?.detail;
   if (typeof detail === "string") return detail;
   if (Array.isArray(detail) && detail[0]?.msg) return detail[0].msg;
-  return `请求失败 (${status})`;
+  return `请求ล้มเหลว (${status})`;
 }
 
 // 为管理接口附加会话信息，统一处理响应与登录失效
@@ -42,7 +42,7 @@ export async function api<T>(
   return data as T;
 }
 
-// 登录后读取用户资料并验证管理员权限
+// 登录后读取用户资料并验证ผู้ดูแลระบบ (Admin)สิทธิ์
 export async function loginAsAdmin(email: string, password: string): Promise<AdminUser> {
   const tokenRes = await api<{ access_token: string }>("/api/auth/login", {
     method: "POST",
@@ -52,13 +52,13 @@ export async function loginAsAdmin(email: string, password: string): Promise<Adm
   const me = await api<AdminUser>("/api/auth/me");
   if (me.role !== "admin") {
     clearAuth();
-    throw new Error("该账号没有管理员权限");
+    throw new Error("该账号没有ผู้ดูแลระบบ (Admin)สิทธิ์");
   }
   setCachedUser(me);
   return me;
 }
 
-// 保持既有导入路径兼容，新增接口类型按领域存放在 types/。
+// 保持既有导入路径兼容，新增接口ประเภท按领域存放在 types/。
 export type * from "./types/common";
 export type * from "./types/analytics";
 export type * from "./types/finance";

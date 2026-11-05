@@ -1,7 +1,7 @@
 /** HTTP 基础能力：地址、登录态和响应解析；不依赖浏览器全局配置或业务模块。 */
 import { getMediaPriceVersion, setMediaPriceVersion } from '../lib/mediaPriceVersion.ts'
 
-/** 空间/路由切换的主动取消不属于业务失败，不能显示为红色报错。 */
+/** 空间/路由切换的主动ยกเลิก不属于业务ล้มเหลว，不能显示为红色报错。 */
 export function isRequestAborted(cause: unknown): boolean {
   return cause !== null && typeof cause === 'object' && 'name' in cause && cause.name === 'AbortError'
 }
@@ -33,10 +33,10 @@ export function resolveApiBase(
     : 'http://127.0.0.1:8000'
 }
 
-/** 不同业务沿用原有错误文案和计费提示，由调用方决定错误展示策略。 */
+/** 不同业务沿用原有错误文案和计费คำแนะนำ，由调用方决定错误展示策略。 */
 export type ApiErrorHandler = (response: Response, detail: unknown) => never
 
-/** 创建可注入登录态的 HTTP 客户端，JSON 与文件上传共用同一请求路径。 */
+/** สร้าง可注入登录态的 HTTP 客户端，JSON 与文件อัปโหลด共用同一请求路径。 */
 export function createHttpTransport(options: {
   baseUrl: string
   getToken: () => string | null
@@ -62,8 +62,8 @@ export function createHttpTransport(options: {
     try {
       result = await fetch(`${options.baseUrl}${path}`, { ...init, headers })
     } catch (cause) {
-      // 浏览器有时把中断显示为 TypeError/Failed to fetch；仍按原始取消原因处理。
-      if (init?.signal?.aborted) throw init.signal.reason || new DOMException('请求已取消', 'AbortError')
+      // 浏览器有时把中断显示为 TypeError/Failed to fetch；仍按原始ยกเลิก原因处理。
+      if (init?.signal?.aborted) throw init.signal.reason || new DOMException('请求ยกเลิกแล้ว', 'AbortError')
       throw cause
     }
     if (!result.ok) {
@@ -74,7 +74,7 @@ export function createHttpTransport(options: {
     return result
   }
 
-  /** 解析成功的 JSON 响应；下载等非 JSON 请求直接使用 response。 */
+  /** 解析สำเร็จ的 JSON 响应；ดาวน์โหลด等非 JSON 请求直接使用 response。 */
   async function json<T>(
     path: string,
     init?: RequestInit,

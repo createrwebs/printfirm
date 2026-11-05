@@ -92,6 +92,26 @@ async def test_upload_endpoint_replaces_metadata_and_archives_previous(monkeypat
 
 
 @pytest.mark.asyncio
+async def test_upload_endpoint_uses_local_storage_when_oss_is_disabled(monkeypatch, tmp_path):
+    from app.api.drama.assets import upload_asset_media
+
+    asset = media_asset()
+    monkeypatch.setattr("app.api.drama.assets.get_owned_asset", AsyncMock(return_value=asset))
+    monkeypatch.setattr("app.services.oss.oss_enabled", lambda: False)
+    monkeypatch.setattr("app.services.storage.project_dir", lambda _project_id: tmp_path)
+    monkeypatch.setattr("app.services.storage.publish_local", lambda path: f"/static/{path.name}")
+    monkeypatch.setattr("app.services.drama.generation._snapshot_version_media_url", lambda url, label: url)
+    monkeypatch.setattr("app.api.drama.assets.asset_reference_view", AsyncMock(return_value=asset))
+    file = UploadFile(BytesIO(b"image-data"), filename="upload.png", headers=Headers({"content-type": "image/png"}))
+
+    result = await upload_asset_media(1, file=file, db=AsyncMock(), user=SimpleNamespace(id=1))
+
+    assert result.url.startswith("/static/asset_1_")
+    assert result.cover == result.url
+    assert list(tmp_path.glob("asset_1_*.png"))[0].read_bytes() == b"image-data"
+
+
+@pytest.mark.asyncio
 async def test_editing_next_generation_freezes_legacy_media_options(monkeypatch):
     from app.api.drama.assets import update_asset
     from app.schemas_drama import DramaAssetUpdate

@@ -6,7 +6,7 @@ type Props = {
   page: number
   pageCount: number
   onChange: (page: number) => void
-  /** 总条数，传入后显示摘要 */
+  /** 总条数，传入后显示เรื่องย่อ */
   total?: number
   /** 当前每页条数 */
   pageSize?: number
@@ -15,7 +15,7 @@ type Props = {
   onPageSizeChange?: (pageSize: number) => void
   className?: string
   ariaLabel?: string
-  /** 是否显示「第 x / y 页 · 共 z 条」摘要 */
+  /** 是否显示「ตอนที่  x / y 页 · 共 z 条」เรื่องย่อ */
   showSummary?: boolean
 }
 
@@ -34,7 +34,7 @@ function buildPageItems(page: number, pageCount: number): Array<number | '…'> 
   return items
 }
 
-/** 统一分页控件：页码导航 + 可选每页条数 + 摘要 */
+/** 统一分页控件：页码导航 + 可选每页条数 + เรื่องย่อ */
 export default function Pagination({
   page,
   pageCount,

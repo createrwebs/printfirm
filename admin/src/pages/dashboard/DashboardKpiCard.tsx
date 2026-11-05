@@ -14,7 +14,7 @@ type DashboardKpiCardProps = {
   className?: string;
 };
 
-/** 仪表盘渐变 KPI 卡片 */
+/** แดชบอร์ด渐变 KPI 卡片 */
 export function DashboardKpiCard({
   label,
   value,

@@ -82,7 +82,7 @@ export function PaginationBar({
               type="button"
               className={cn("admin-page-btn", n === page && "is-active")}
               aria-current={n === page ? "page" : undefined}
-              aria-label={`第 ${n} 页`}
+              aria-label={`ตอนที่  ${n} 页`}
               onClick={() => onPageChange(n)}
             >
               {n}

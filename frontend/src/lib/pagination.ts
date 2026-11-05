@@ -1,4 +1,4 @@
-/** 全局分页默认每页条数选项 */
+/** 全局分页ค่าเริ่มต้น每页条数选项 */
 export const DEFAULT_PAGE_SIZE_OPTIONS = [5, 8, 12, 20] as const
 
 /** 根据总数与每页条数计算页数 */

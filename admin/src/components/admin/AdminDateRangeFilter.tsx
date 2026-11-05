@@ -9,7 +9,7 @@ type AdminDateRangeFilterProps = {
   className?: string;
 };
 
-/** 日期范围筛选（ISO date 字符串 YYYY-MM-DD） */
+/** 日期范围ตัวกรอง（ISO date 字符串 YYYY-MM-DD） */
 export function AdminDateRangeFilter({ from, to, onChange, className }: AdminDateRangeFilterProps) {
   return (
     <div className={cn("admin-date-range admin-range-control", className)} role="group" aria-label="日期范围">

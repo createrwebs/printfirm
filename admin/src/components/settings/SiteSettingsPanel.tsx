@@ -21,7 +21,7 @@ export function SiteSettingsPanel() {
         ffprobe_path: form.ffprobe_path,
         marketplace_enabled: form.marketplace_enabled,
       },
-      "站点配置已保存",
+      "站点配置已บันทึก",
     );
   }
 
@@ -34,9 +34,9 @@ export function SiteSettingsPanel() {
   const hasFfprobe = Boolean(form.ffprobe_path?.trim());
 
   return (
-    <SettingsTabShell onSave={handleSave} saving={saving} saveLabel="保存站点设置">
+    <SettingsTabShell onSave={handleSave} saving={saving} saveLabel="บันทึก站点ตั้งค่า">
       <SettingsStatusBar
-        title="站点工具状态"
+        title="站点工具สถานะ"
         items={[
           {
             id: "public",
@@ -50,18 +50,18 @@ export function SiteSettingsPanel() {
             label: "ffmpeg",
             ready: hasFfmpeg,
             readyText: form.ffmpeg_path || "已配置",
-            pendingText: "使用默认 PATH",
+            pendingText: "使用ค่าเริ่มต้น PATH",
           },
           {
             id: "ffprobe",
             label: "ffprobe",
             ready: hasFfprobe,
             readyText: form.ffprobe_path || "已配置",
-            pendingText: "使用默认 PATH",
+            pendingText: "使用ค่าเริ่มต้น PATH",
           },
           {
             id: "marketplace",
-            label: "数字资产市场",
+            label: "ตลาดดิจิทัลแอสเซท",
             ready: form.marketplace_enabled,
             readyText: "已启用",
             pendingText: "未启用",
@@ -78,7 +78,7 @@ export function SiteSettingsPanel() {
           <div className="settings-field-grid">
             <LabeledControl
               label="后端公网基址"
-              hint="例如 https://www.printfilm.com；留空使用服务器默认配置。"
+              hint="例如 https://www.printfilm.com；留空使用服务器ค่าเริ่มต้น配置。"
               optional
               className="settings-field-span-full"
             >
@@ -100,10 +100,10 @@ export function SiteSettingsPanel() {
         <SettingsPanel
           className="settings-panel--compact"
           title="媒体处理工具"
-          description="视频合成与抽帧使用服务器上的工具。已加入服务器 PATH 时，可保持默认名称。"
+          description="วิดีโอ合成与抽帧使用服务器上的工具。已加入服务器 PATH 时，可保持ค่าเริ่มต้น名称。"
         >
           <div className="settings-field-grid">
-            <LabeledControl label="视频处理工具（ffmpeg）" hint="可填写命令名或服务器上的完整路径。" optional>
+            <LabeledControl label="วิดีโอ处理工具（ffmpeg）" hint="可填写命令名或服务器上的完整路径。" optional>
               <input
                 className="settings-input"
                 placeholder="ffmpeg"
@@ -124,13 +124,13 @@ export function SiteSettingsPanel() {
 
         <SettingsPanel
           className="settings-panel--compact"
-          title="3. 数字资产市场"
+          title="3. ตลาดดิจิทัลแอสเซท"
           description="线上没有环境文件时，在这里打开入口"
         >
           <div className="settings-toggle-row">
             <div>
-              <strong>启用数字资产市场</strong>
-              <span>保存后用户端出现「数字资产市场」，管理端「业务」出现「数字资产平台运营」。上传仍使用「存储 OSS」。</span>
+              <strong>启用ตลาดดิจิทัลแอสเซท</strong>
+              <span>บันทึก后用户端出现「ตลาดดิจิทัลแอสเซท」，管理端「业务」出现「数字แอสเซท平台运营」。อัปโหลด仍使用「存储 OSS」。</span>
             </div>
             <Switch
               checked={form.marketplace_enabled}

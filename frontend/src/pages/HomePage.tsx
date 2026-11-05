@@ -1,4 +1,4 @@
-/** PRINTFILM 官网首页：产品主张、漫剧/科普入口、成片流程与创作入口 */
+/** PRINTFILM 官网首页：产品主张、ละครซีรีส์/科普入口、成片流程与创作入口 */
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ArrowRight, ArrowUpRight, Cloud, Cpu, Video as KepuIcon } from 'lucide-react'
@@ -29,7 +29,7 @@ export default function HomePage() {
     return () => { active = false }
   }, [])
 
-  // 未登录去登录；已登录弹出产品选择
+  // 未登录去登录；已登录弹出产品เลือก
   function goCreate() {
     if (!loggedIn) {
       nav('/auth?next=/')

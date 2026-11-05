@@ -7,9 +7,12 @@ from app.services.media_models import get_strategy, strategies
 
 @pytest.mark.parametrize("model,resolutions,maximum", [
     ("seedream-5.0-pro", ["1K", "2K"], None),
+    ("nano-banana-2", ["1K", "2K"], None),
     ("gpt-image-2.5", ["1K", "2K", "4K"], None),
     ("seedance-2.5", ["480p", "720p", "1080p"], 30),
     ("seedance-2.0", ["480p", "720p"], 15),
+    ("wan-2.7", ["480p", "720p", "1080p"], 15),
+    ("kling-3.0", ["480p", "720p", "1080p"], 15),
     ("MiniMax-H3", ["480p", "768p"], 15),
 ])
 def test_model_contract(model, resolutions, maximum):
@@ -19,8 +22,9 @@ def test_model_contract(model, resolutions, maximum):
 
 
 def test_alias_and_registry():
-    assert len(strategies()) == 9
+    assert len(strategies()) == 18
     assert get_strategy("seedance-2-5").model_id == "seedance-2.5"
+    assert get_strategy("wan-2-7").model_id == "wan-2.7"
     assert get_strategy("doubao-seedance-2-0-260128").model_id == "seedance-2.0"
     with pytest.raises(ValueError, match="model"):
         get_strategy("not-registered")

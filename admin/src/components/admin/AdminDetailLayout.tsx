@@ -12,7 +12,7 @@ type StatItem = {
   value: ReactNode;
 };
 
-/** 详情弹窗分区标题 + 内容 */
+/** รายละเอียด弹窗分区标题 + 内容 */
 export function AdminDetailSection({
   title,
   children,

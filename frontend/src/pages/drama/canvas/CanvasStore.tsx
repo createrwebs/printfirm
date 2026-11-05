@@ -1,4 +1,4 @@
-/** 画布状态上下文：节点/边、历史、UI 开关与增删操作 */
+/** 画布สถานะ上下文：节点/边、历史、UI 开关与增删การดำเนินการ */
 import {
   useCallback,
   useEffect,
@@ -48,7 +48,7 @@ import {
 import { useCanvasAutoSave, type CanvasSaveStatus } from './useCanvasAutoSave'
 import { CanvasStoreContext, useCanvasStore as useCanvasStoreBase } from './canvasStoreContext'
 
-/** 从连线两端识别「音频 → 角色」绑定对（方向可互换） */
+/** 从连线两端识别「เสียง → ตัวละคร」绑定对（方向可互换） */
 function pickAudioCharacterPair(
   source: Node<CanvasAssetNodeData> | undefined,
   target: Node<CanvasAssetNodeData> | undefined,
@@ -93,15 +93,15 @@ type CanvasStoreValue = {
   ensureNodeAsset: (nodeId: string) => Promise<number>
   uploadNodeMedia: (nodeId: string, file: File) => Promise<void>
   applyLibraryMediaToNode: (nodeId: string, source: DramaAsset) => Promise<void>
-  /** 用最新资产字段同步节点（音色绑定等） */
+  /** 用最新แอสเซท字段同步节点（น้ำเสียง绑定等） */
   syncNodeFromAsset: (nodeId: string, asset: DramaAsset) => void
-  /** 写回节点提示词（本地） */
+  /** 写回节点คำแนะนำ词（本地） */
   updateNodePrompt: (nodeId: string, prompt: string) => void
-  /** 写回视频节点生成参数 */
+  /** 写回วิดีโอ节点生成参数 */
   updateNodeVideoOptions: (nodeId: string, options: Record<string, unknown>) => void
   /** 写回生图节点生成参数 */
   updateNodeImageOptions: (nodeId: string, options: Record<string, unknown>) => void
-  /** 重命名节点（同步资产 name） */
+  /** 重命名节点（同步แอสเซท name） */
   renameNode: (nodeId: string, name: string) => Promise<void>
   generateNodeImage: (
     nodeId: string,
@@ -114,7 +114,7 @@ type CanvasStoreValue = {
     options?: Partial<VideoGenerationOptions>,
   ) => Promise<void>
   updateNodeTextContent: (nodeId: string, textContent: string) => void
-  /** 可供 @ 引用的画布节点（角色/场景/图片/音频等） */
+  /** 可供 @ 引用的画布节点（ตัวละคร/ฉาก/รูปภาพ/เสียง等） */
   mentionableNodes: Array<{
     nodeId: string
     assetId: number
@@ -122,11 +122,11 @@ type CanvasStoreValue = {
     label: string
     mediaUrl?: string | null
   }>
-  /** 项目级内置画面风格 ID */
+  /** โปรเจกต์级内置สไตล์ภาพ ID */
   projectImageStyleId: string
-  /** 是否自由画布工作流（非大纲分集） */
+  /** 是否自由画布工作流（非โครงร่าง分 ตอน） */
   freeCanvasMode: boolean
-  /** 立即保存画布（Ctrl+S） */
+  /** 立即บันทึก画布（Ctrl+S） */
   flushSave: () => Promise<void>
 }
 
@@ -135,7 +135,7 @@ type CanvasStoreProviderProps = {
   children: ReactNode
 }
 
-/** 提供画布受控状态与历史操作 */
+/** 提供画布受控สถานะ与历史การดำเนินการ */
 export function CanvasStoreProvider({ projectId, children }: CanvasStoreProviderProps) {
   const [nodes, setNodes] = useState<Node<CanvasAssetNodeData>[]>([])
   const [edges, setEdges] = useState<Edge[]>([])
@@ -147,8 +147,8 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
   const [snapToGrid, setSnapToGrid] = useState(false)
   const [showMinimap, setShowMinimap] = useState(false)
   const [focusNodeId, setFocusNodeId] = useState<string | null>(null)
-  // projectImageStyleId 项目内置画面风格
-  // freeCanvasMode 是否自由画布项目
+  // projectImageStyleId โปรเจกต์内置สไตล์ภาพ
+  // freeCanvasMode 是否自由画布โปรเจกต์
   const [projectImageStyleId, setProjectImageStyleId] = useState('')
   const [freeCanvasMode, setFreeCanvasMode] = useState(false)
   const readyRef = useRef(false)
@@ -156,7 +156,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
   const edgesRef = useRef(edges)
   const historyRef = useRef(history)
   const freeCanvasModeRef = useRef(freeCanvasMode)
-  /** 串行化新建节点，避免连点并发同名命中去重 */
+  /** 串行化สร้างใหม่节点，避免连点并发同名命中去重 */
   const addNodeChainRef = useRef(Promise.resolve())
   const flushRef = useRef<
     (override?: { nodes: Node<CanvasAssetNodeData>[]; edges: Edge[] }) => Promise<void>
@@ -236,7 +236,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
       })
       .catch((err) => {
         if (cancelled) return
-        setErrorMessage(err instanceof Error ? err.message : '加载画布失败')
+        setErrorMessage(err instanceof Error ? err.message : '加载画布ล้มเหลว')
         readyRef.current = true
       })
       .finally(() => {
@@ -269,8 +269,8 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
       const removeChanges = changes.filter((c) => c.type === 'remove')
       const hasRemove = removeChanges.length > 0
       /*
-       * removedAssetIds 待删后端资产
-       * nextNodes / nextEdges 删除后的布局（立刻落盘，避免刷新复现）
+       * removedAssetIds 待删后端แอสเซท
+       * nextNodes / nextEdges ลบ后的布局（立刻落盘，避免รีเฟรช复现）
        */
       const removedAssetIds: number[] = []
       if (hasRemove) {
@@ -293,7 +293,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
       nodesRef.current = nextNodes
       setNodes(nextNodes)
 
-      /* 同步剪掉指向已删节点的边，避免布局脏边刷新后异常 */
+      /* 同步剪掉指向已删节点的边，避免布局脏边รีเฟรช后异常 */
       let nextEdges = edgesRef.current
       if (hasRemove) {
         const removedIds = new Set(removeChanges.map((c) => c.id))
@@ -374,7 +374,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
       const pair = pickAudioCharacterPair(source, target)
       if (pair) {
         void bindVoiceFromEdgeRef.current(pair.audio.id, pair.character.id).catch((err) => {
-          setErrorMessage(err instanceof Error ? err.message : '音色绑定失败')
+          setErrorMessage(err instanceof Error ? err.message : 'น้ำเสียง绑定ล้มเหลว')
         })
       }
     },
@@ -384,7 +384,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
   const addNodeOfKind = useCallback(
     async (kind: CanvasNodeKind, position: { x: number; y: number }) => {
       const run = async () => {
-        /* 唯一名避免同类型同名去重复用资产；错开落点避免叠在同一位置 */
+        /* 唯一名避免同ประเภท同名去重复用แอสเซท；错开落点避免叠在同一位置 */
         let label = nextCanvasNodeLabel(kind, nodesRef.current)
         const stagger = nodesRef.current.length * 24
         const placed = { x: position.x + stagger, y: position.y + stagger }
@@ -398,7 +398,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
             params: { on_canvas: true },
           })
           assetId = asset.id
-          /* 若仍命中旧资产（兼容库内同名卡），换名再试一次 */
+          /* 若仍命中旧แอสเซท（兼容库内同名卡），换名再试一次 */
           const usedIds = new Set(
             nodesRef.current
               .map((n) => n.data.assetId)
@@ -414,13 +414,13 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
               params: { on_canvas: true },
             })
             if (usedIds.has(retry.id)) {
-              setErrorMessage('创建节点失败：资产已存在于画布')
+              setErrorMessage('สร้าง节点ล้มเหลว：แอสเซท已存在于画布')
               return
             }
             assetId = retry.id
           }
         } catch (err) {
-          setErrorMessage(err instanceof Error ? err.message : '创建资产失败')
+          setErrorMessage(err instanceof Error ? err.message : 'สร้างแอสเซทล้มเหลว')
           return
         }
 
@@ -437,7 +437,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
             mediaUrl: null,
           },
         }
-        /* 回写 canvas_node_id，刷新后仍能识别为画布节点 */
+        /* 回写 canvas_node_id，รีเฟรช后仍能识别为画布节点 */
         void dramaApi
           .updateAsset(assetId, { params: { canvas_node_id: id, on_canvas: true } })
           .catch(() => undefined)
@@ -452,7 +452,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
         nodesRef.current = nextNodes
         setNodes(nextNodes)
         markDirty()
-        /* 立刻落盘，避免刷新丢失新建节点 */
+        /* 立刻落盘，避免รีเฟรช丢失สร้างใหม่节点 */
         void flushRef.current({
           nodes: nextNodes,
           edges: edgesRef.current,
@@ -474,7 +474,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
     [markDirty, projectId],
   )
 
-  /** 确保节点已绑定后端资产，返回 assetId */
+  /** 确保节点已绑定后端แอสเซท，กลับ assetId */
   const ensureNodeAsset = useCallback(
     async (nodeId: string) => {
       const node = nodesRef.current.find((n) => n.id === nodeId)
@@ -502,7 +502,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
     [markDirty, projectId],
   )
 
-  /** 本地上传图片/音频到节点；音频上传后若已连角色则自动重绑音色 */
+  /** 本地อัปโหลดรูปภาพ/เสียง到节点；เสียงอัปโหลด后若已连ตัวละคร则自动重绑น้ำเสียง */
   const uploadNodeMedia = useCallback(
     async (nodeId: string, file: File) => {
       pushSnapshot()
@@ -529,7 +529,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
           .filter((n): n is Node<CanvasAssetNodeData> => Boolean(n && n.data.kind === 'character'))
         for (const character of linkedCharacters) {
           void bindVoiceFromEdgeRef.current(nodeId, character.id).catch((err) => {
-            setErrorMessage(err instanceof Error ? err.message : '音色绑定失败')
+            setErrorMessage(err instanceof Error ? err.message : 'น้ำเสียง绑定ล้มเหลว')
           })
         }
       }
@@ -537,7 +537,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
     [ensureNodeAsset, markDirty, pushSnapshot],
   )
 
-  /** 从全局资产库选用媒体并写回节点，保留可编辑提示词以便再次生成 */
+  /** 从ทั่วไปแอสเซท库选用媒体并写回节点，保留可แก้ไขคำแนะนำ词以便再次生成 */
   const applyLibraryMediaToNode = useCallback(
     async (nodeId: string, source: DramaAsset) => {
       pushSnapshot()
@@ -545,7 +545,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
       if (!node) throw new Error('节点不存在')
       const isAudioNode = node.data.kind === 'audio'
       if (!source.url && !source.cover) {
-        throw new Error(isAudioNode ? '所选资产没有可用音频' : '所选资产没有可用图片')
+        throw new Error(isAudioNode ? '所选แอสเซท没有可用เสียง' : '所选แอสเซท没有可用รูปภาพ')
       }
       const assetId = await ensureNodeAsset(nodeId)
       const promptHint = isAudioNode ? '' : readEditableVisualPrompt(source)
@@ -621,7 +621,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
           .filter((n): n is Node<CanvasAssetNodeData> => Boolean(n && n.data.kind === 'character'))
         for (const character of linkedCharacters) {
           void bindVoiceFromEdgeRef.current(nodeId, character.id).catch((err) => {
-            setErrorMessage(err instanceof Error ? err.message : '音色绑定失败')
+            setErrorMessage(err instanceof Error ? err.message : 'น้ำเสียง绑定ล้มเหลว')
           })
         }
       }
@@ -629,7 +629,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
     [ensureNodeAsset, markDirty, pushSnapshot, projectId],
   )
 
-  /** 用最新资产字段同步节点展示（音色、封面等；不覆盖本地已有提示词） */
+  /** 用最新แอสเซท字段同步节点展示（น้ำเสียง、封面等；不覆盖本地已有คำแนะนำ词） */
   const syncNodeFromAsset = useCallback(
     (nodeId: string, asset: DramaAsset) => {
       const next = buildNodeDataFromAsset(asset)
@@ -641,11 +641,11 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
                 data: {
                   ...n.data,
                   ...next,
-                  // 资产侧可能是空/弱提示词，保留节点上用户已写内容
+                  // แอสเซท侧可能是空/弱คำแนะนำ词，保留节点上用户已写内容
                   promptHint: next.promptHint || n.data.promptHint || '',
                   videoOptions: next.videoOptions || n.data.videoOptions,
                   imageOptions: next.imageOptions || n.data.imageOptions,
-                  // 保留本地 generating 状态，避免绑定时闪断
+                  // 保留本地 generating สถานะ，避免绑定时闪断
                   generating: n.data.generating,
                 },
               }
@@ -657,7 +657,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
     [markDirty],
   )
 
-  /** 音频节点连到角色：把音频写入角色 voiceAudio（连线绑定） */
+  /** เสียง节点连到ตัวละคร：把เสียง写入ตัวละคร voiceAudio（连线绑定） */
   const bindCharacterVoiceFromAudioEdge = useCallback(
     async (audioNodeId: string, characterNodeId: string) => {
       const audioNode = nodesRef.current.find((n) => n.id === audioNodeId)
@@ -665,7 +665,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
       if (!audioNode || !characterNode) return
       const audioUrl = String(audioNode.data.mediaUrl || '').trim()
       if (!audioUrl) {
-        setErrorMessage('请先给音频节点上传或选用音频，再连到角色')
+        setErrorMessage('请先给เสียง节点อัปโหลด或选用เสียง，再连到ตัวละคร')
         return
       }
 
@@ -674,15 +674,15 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
       const list = await dramaApi.listAssets(projectId)
       let character = list.find((a) => a.id === characterAssetId)
       let audio = list.find((a) => a.id === audioAssetId)
-      if (!character) throw new Error('角色资产不存在')
-      if (!audio) throw new Error('音频资产不存在')
+      if (!character) throw new Error('แอสเซทตัวละคร不存在')
+      if (!audio) throw new Error('เสียงแอสเซท不存在')
 
       if (!(audio.url || '').trim()) {
         audio = await dramaApi.updateAsset(audioAssetId, {
           url: audioUrl,
           type: audio.type === 'voice' ? 'voice' : 'audio',
           asset_type: 'audio',
-          name: audio.name || String(audioNode.data.label || '音色'),
+          name: audio.name || String(audioNode.data.label || 'น้ำเสียง'),
         })
       }
 
@@ -699,11 +699,11 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
   const generateNodeImage = useCallback(
     async (nodeId: string, prompt: string, options?: Partial<ImageGenerationOptions>) => {
       const trimmed = prompt.trim()
-      if (!trimmed) throw new Error('请输入提示词')
+      if (!trimmed) throw new Error('请输入คำแนะนำ词')
       pushSnapshot()
       const node = nodesRef.current.find((n) => n.id === nodeId)
       if (!node) throw new Error('节点不存在')
-      if (node.data.kind === 'video') throw new Error('视频节点请使用视频生成')
+      if (node.data.kind === 'video') throw new Error('วิดีโอ节点请使用วิดีโอ生成')
 
       setNodes((current) =>
         current.map((n) =>
@@ -723,19 +723,19 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
 
       try {
         const assetId = await ensureNodeAsset(nodeId)
-        /* 把 @asset:id 展开为可读名称再送生图 API；本地仍保留 token */
+        /* 把 @asset:id ขยาย为可读名称再送生图 API；本地仍保留 token */
         const expandedPrompt = trimmed.replace(/@asset:(\d+)/g, (token, idStr: string) => {
           const refId = Number(idStr)
           const ref = nodesRef.current.find((n) => n.data.assetId === refId)
           if (!ref) return token
           const kindLabel =
             ref.data.kind === 'character'
-              ? '角色'
+              ? 'ตัวละคร'
               : ref.data.kind === 'scene'
-                ? '场景'
+                ? 'ฉาก'
                 : ref.data.kind === 'image'
-                  ? '图片'
-                  : '资产'
+                  ? 'รูปภาพ'
+                  : 'แอสเซท'
           return `${kindLabel}「${ref.data.label}」`
         })
         const latest = await enqueueDramaImageGen({
@@ -757,7 +757,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
               ((next.params || {}).generation as { status?: string } | undefined)?.status || '',
             )
             const stillBusy = genStatus === 'queued' || genStatus === 'generating'
-            /* 提示词以框内为准，生图后不回写三视图等到框 */
+            /* คำแนะนำ词以框内为准，生图后不回写三视图等到框 */
             setNodes((current) =>
               current.map((n) =>
                 n.id === nodeId
@@ -777,7 +777,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
           },
         })
         const mediaUrl = latest.url || latest.cover || ''
-        if (!mediaUrl) throw new Error('生图超时，请重试')
+        if (!mediaUrl) throw new Error('生图超时，请ลองใหม่')
         setNodes((current) =>
           current.map((n) =>
             n.id === nodeId
@@ -808,8 +808,8 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
   )
 
   /**
-   * 收集与当前节点已连线的参考资产 ID（双向）。
-   * 与 @ 提及可选邻居一致：边方向不限，避免只连出时漏传参考图。
+   * 收 ตอน与当前节点已连线的参考แอสเซท ID（双向）。
+   * 与 @ 提及可选邻居一致：边方向不限，避免只连出时漏传ภาพอ้างอิง。
    */
   const collectConnectedAssetIds = useCallback((nodeId: string) => {
     const ids: number[] = []
@@ -828,11 +828,11 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
     return ids
   }, [])
 
-  /** AI 生视频并写回节点（Seedance，保留 @asset:id） */
+  /** AI 生วิดีโอ并写回节点（Seedance，保留 @asset:id） */
   const generateNodeVideo = useCallback(
     async (nodeId: string, prompt: string, options?: Partial<VideoGenerationOptions>) => {
       const trimmed = prompt.trim()
-      if (!trimmed) throw new Error('请输入提示词')
+      if (!trimmed) throw new Error('请输入คำแนะนำ词')
       pushSnapshot()
       const node = nodesRef.current.find((n) => n.id === nodeId)
       if (!node) throw new Error('节点不存在')
@@ -870,7 +870,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
           referenceAssetIds: collectConnectedAssetIds(nodeId),
         })
         const mediaUrl = resolveDramaMediaUrl(latest.url || latest.cover || '')
-        if (!mediaUrl) throw new Error('生视频超时，请重试')
+        if (!mediaUrl) throw new Error('生วิดีโอ超时，请ลองใหม่')
         setNodes((current) =>
           current.map((n) =>
             n.id === nodeId
@@ -907,7 +907,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
     ],
   )
 
-  /** 更新节点提示词（不触发生成） */
+  /** อัปเดต节点คำแนะนำ词（不触发生成） */
   const updateNodePrompt = useCallback(
     (nodeId: string, prompt: string) => {
       setNodes((current) =>
@@ -920,7 +920,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
     [markDirty],
   )
 
-  /** 更新视频节点 Seedance 参数 */
+  /** อัปเดตวิดีโอ节点 Seedance 参数 */
   const updateNodeVideoOptions = useCallback(
     (nodeId: string, options: Record<string, unknown>) => {
       setNodes((current) =>
@@ -933,7 +933,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
     [markDirty],
   )
 
-  /** 写回生图模型/比例等到节点，避免发送后 UI 跳回默认 */
+  /** 写回生图模型/อัตราส่วน等到节点，避免发送后 UI 跳回ค่าเริ่มต้น */
   const updateNodeImageOptions = useCallback(
     (nodeId: string, options: Record<string, unknown>) => {
       setNodes((current) =>
@@ -946,7 +946,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
     [markDirty],
   )
 
-  /** 重命名节点并同步资产 name */
+  /** 重命名节点并同步แอสเซท name */
   const renameNode = useCallback(
     async (nodeId: string, name: string) => {
       const trimmed = name.trim()
@@ -980,7 +980,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
     [ensureNodeAsset, markDirty, pushSnapshot],
   )
 
-  /** 更新文本节点内容 */
+  /** อัปเดต文本节点内容 */
   const updateNodeTextContent = useCallback(
     (nodeId: string, textContent: string) => {
       setNodes((current) =>
@@ -1034,7 +1034,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
   })
   flushRef.current = flush
 
-  /** Ctrl+S：立刻落盘；无脏数据也刷一次以反馈「已保存」 */
+  /** Ctrl+S：立刻落盘；无脏数据也刷一次以反馈「已บันทึก」 */
   const flushSave = useCallback(async () => {
     if (!readyRef.current || loading) return
     setSaveStatus('saving')
@@ -1045,7 +1045,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
     }
   }, [flush, loading])
 
-  /* 页面关闭前尽量刷一次保存 */
+  /* 页面ปิด前尽量刷一次บันทึก */
   useEffect(() => {
     const onBeforeUnload = () => {
       if (dirty) void flush()
@@ -1163,7 +1163,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
   return <CanvasStoreContext.Provider value={value}>{children}</CanvasStoreContext.Provider>
 }
 
-/** 读取画布状态上下文 */
+/** 读取画布สถานะ上下文 */
 export function useCanvasStore() {
   return useCanvasStoreBase<CanvasStoreValue>()
 }

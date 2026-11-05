@@ -1,9 +1,9 @@
 /** Four manual checkpoints for the image + narration short-video workflow. */
 export const IMAGE_TEXT_STEPS = [
-  { key: 'topic', label: '创作设置' },
+  { key: 'topic', label: '创作ตั้งค่า' },
   { key: 'confirm', label: '文案与分镜' },
-  { key: 'assets', label: '画面与配音' },
-  { key: 'compose', label: '成片预览' },
+  { key: 'assets', label: '画面与เสียงพากย์' },
+  { key: 'compose', label: '成片ดูตัวอย่าง' },
 ]
 
 type ImageTextProject = {

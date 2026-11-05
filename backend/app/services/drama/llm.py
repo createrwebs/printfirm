@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import re
@@ -17,6 +18,13 @@ logger = logging.getLogger(__name__)
 
 # 兼容旧引用
 DramaLlmUnavailableError = LlmUnavailableError
+
+
+class DramaLlmJsonError(RuntimeError):
+    """模型没有返回可解析的结构化 JSON。"""
+    def __init__(self, message: str, raw_content: str = ""):
+        super().__init__(message)
+        self.raw_content = raw_content
 
 _JSON_FENCE_RE = re.compile(r"^```(?:json)?\s*", re.IGNORECASE)
 _JSON_FENCE_TAIL_RE = re.compile(r"\s*```$")
@@ -61,7 +69,7 @@ def _extract_json(text: str) -> Any:
         if not candidate:
             continue
         try:
-            return json.loads(candidate)
+            return json.loads(candidate, strict=False)
         except json.JSONDecodeError as exc:
             last_error = exc
             continue
@@ -78,6 +86,12 @@ def _ensure_json_word_in_prompt(system: str, user: str) -> tuple[str, str]:
         return system, user
     suffix = "\n\n请只输出合法 JSON 对象，不要 markdown 代码围栏。"
     return (system or "").rstrip() + suffix, user
+
+
+def _looks_like_json_candidate(text: str) -> bool:
+    """判断响应是否至少像 JSON，避免对整段自然语言重复调用上游。"""
+    raw = _strip_json_fences(text)
+    return raw.startswith(("{", "[")) or bool(re.search(r"[\[{]", raw))
 
 
 async def drama_chat_json(
@@ -115,11 +129,22 @@ async def drama_chat_json(
     try:
         return _extract_json(content)
     except json.JSONDecodeError as first_error:
+        # 兼容网关有时会直接返回解释性 prose。此时再发同一份长请求
+        # 只会制造第二次昂贵调用，且常见结果是 524；只对“看起来像 JSON 但格式坏了”
+        # 的响应做一次修复重试。
+        if not _looks_like_json_candidate(content):
+            preview = " ".join((content or "").split())[:240]
+            raise DramaLlmJsonError(
+                "模型未按要求返回 JSON；请在模型渠道中切换到支持结构化输出的文本模型（推荐 Kimi K2.6/DeepSeek V4 Pro）后重试。"
+                + (f" 模型响应：{preview}" if preview else ""),
+                raw_content=content
+            ) from first_error
         logger.warning(
             "JSON 解析失败，重试一次 err=%s content_head=%s",
             first_error,
             (content or "")[:200],
         )
+        await asyncio.sleep(1.0)
         retry_user = (
             f"{user}\n\n"
             "【重要】上次输出不是合法 JSON。请只输出一个完整、可 json.loads 的 JSON 对象，"
@@ -133,7 +158,15 @@ async def drama_chat_json(
             timeout=300.0,
             response_format=json_format,
         )
-        return _extract_json(content)
+        try:
+            return _extract_json(content)
+        except json.JSONDecodeError as exc:
+            preview = " ".join((content or "").split())[:240]
+            raise DramaLlmJsonError(
+                "模型连续两次未返回合法 JSON；请切换到支持结构化输出的文本模型后重试。"
+                + (f" 模型响应：{preview}" if preview else ""),
+                raw_content=content
+            ) from exc
 
 
 async def drama_chat_text(

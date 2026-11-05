@@ -15,7 +15,7 @@ import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 
 type ListRes = { items: AdminDramaFragment[]; meta: PageMeta };
 
-/** 全站漫剧分镜列表 */
+/** 全站ละครซีรีส์รายการสตอรี่บอร์ด */
 export function DramaFragmentsPage() {
   const [searchParams] = useSearchParams();
   const initialProjectId = searchParams.get("project_id");
@@ -39,7 +39,7 @@ export function DramaFragmentsPage() {
       if (generationStatus.trim()) params.set("generation_status", generationStatus.trim());
       setData(await api<ListRes>(`/api/admin/drama-fragments?${params}`));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "加载失败");
+      toast.error(err instanceof Error ? err.message : "โหลดไม่สำเร็จ");
     }
   }
 
@@ -50,18 +50,18 @@ export function DramaFragmentsPage() {
 
   return (
     <div className="admin-list-page">
-      <PageHeader title="分镜管理" description="全站漫剧分镜：按项目、分集筛选，查看生成状态与资产引用" />
+      <PageHeader title="จัดการสตอรี่บอร์ด (Fragments)" description="全站ละครซีรีส์分镜：按โปรเจกต์、分 ตอนตัวกรอง，ดู生成สถานะ与แอสเซท引用" />
       <AdminFilterBar>
-        <Input placeholder="内容 / 集名 / 项目" value={q} onChange={(e) => setQ(e.target.value)} />
+        <Input placeholder="内容 /  ตอน名 / โปรเจกต์" value={q} onChange={(e) => setQ(e.target.value)} />
         <AdminUserSearchSelect value={userId} onChange={setUserId} />
-        <Input placeholder="项目 ID" value={projectId} onChange={(e) => setProjectId(e.target.value)} />
-        <Input placeholder="分集 ID" value={episodeId} onChange={(e) => setEpisodeId(e.target.value)} />
+        <Input placeholder="โปรเจกต์ ID" value={projectId} onChange={(e) => setProjectId(e.target.value)} />
+        <Input placeholder="分 ตอน ID" value={episodeId} onChange={(e) => setEpisodeId(e.target.value)} />
         <Select
           className="admin-native-select"
           value={generationStatus}
           onChange={(e) => setGenerationStatus(e.target.value)}
         >
-          <option value="">全部生成状态</option>
+          <option value="">全部生成สถานะ</option>
           {DRAMA_GENERATION_STATUSES.map((s) => (
             <option key={s} value={s}>
               {formatDramaGenerationStatus(s)}
@@ -77,7 +77,7 @@ export function DramaFragmentsPage() {
             void load(1);
           }}
         >
-          筛选
+          ตัวกรอง
         </Button>
       </AdminFilterBar>
 
@@ -88,11 +88,11 @@ export function DramaFragmentsPage() {
               <th>ID</th>
               <th>序号</th>
               <th>内容</th>
-              <th>分集</th>
-              <th>项目</th>
-              <th>时长</th>
+              <th>分 ตอน</th>
+              <th>โปรเจกต์</th>
+              <th>ความยาว</th>
               <th>生成</th>
-              <th>资产</th>
+              <th>แอสเซท</th>
               <th></th>
             </tr>
           </thead>
@@ -113,7 +113,7 @@ export function DramaFragmentsPage() {
                 <td>{row.asset_ref_count}</td>
                 <td>
                   <Button size="sm" variant="outline" asChild>
-                    <Link to={`/drama-fragments/${row.id}`}>查看</Link>
+                    <Link to={`/drama-fragments/${row.id}`}>ดู</Link>
                   </Button>
                 </td>
               </tr>

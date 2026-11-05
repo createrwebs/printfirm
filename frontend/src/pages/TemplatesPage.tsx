@@ -40,14 +40,14 @@ export default function TemplatesPage() {
       <div className="pf-section-head">
         <div>
           <h2>模板库</h2>
-          <p>四种精选动画与插画风格，从想法、文案分镜到画面配音，分步完成短片。默认使用 3D 动画。</p>
+          <p>四种精选动画与插画สไตล์，从想法、文案分镜到ภาพเสียงพากย์，分步เสร็จสิ้น短片。ค่าเริ่มต้น使用 3D 动画。</p>
         </div>
       </div>
       <div className="pf-search" style={{ maxWidth: 420, marginBottom: '1rem' }}>
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="搜索模板名称或描述"
+          placeholder="ค้นหา模板名称或คำอธิบาย"
         />
       </div>
       {error ? <BillingErrorNotice message={error} /> : null}

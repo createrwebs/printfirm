@@ -27,8 +27,8 @@ export function useAgentSkillSelection(): UseAgentSkillSelectionResult {
    * skills 可见 Skill
    * selectedIds 当前勾选
    * loaded 列表是否已拉完
-   * uploading 正在上传 md
-   * uploadError 上传失败文案
+   * uploading 正在อัปโหลด md
+   * uploadError อัปโหลดไม่สำเร็จ文案
    */
   const [skills, setSkills] = useState<AgentSkill[]>([])
   const [selectedIds, setSelectedIdsState] = useState<number[]>([])
@@ -92,7 +92,7 @@ export function useAgentSkillSelection(): UseAgentSkillSelectionResult {
         return next
       })
     } catch (err) {
-      setUploadError(err instanceof Error ? err.message : '上传失败')
+      setUploadError(err instanceof Error ? err.message : 'อัปโหลดไม่สำเร็จ')
     } finally {
       setUploading(false)
     }

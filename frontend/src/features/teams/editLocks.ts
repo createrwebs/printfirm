@@ -7,7 +7,7 @@ export type EditTarget = { projectId: number; type: EditResource; resourceId: nu
 type Lease = EditLease
 type Held = { lease: Lease; target: EditTarget; teamId: number; refs: number; timer: ReturnType<typeof setInterval>; lost?: string }
 type Row = Record<string, any>
-/* 注册表记录真实资源归属，不从当前选中团队猜测项目所属。 */
+/* 注册表记录真实资源归属，不从当前选中团队猜测โปรเจกต์所属。 */
 const request = createJsonRequester()
 const projectTeams = new Map<number, number | null>()
 const assets = new Map<number, number>()
@@ -17,15 +17,15 @@ const held = new Map<string, Held>()
 const pending = new Map<string, Promise<Held>>()
 const listeners = new Set<() => void>()
 export const editSessionId = typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : Array.from(crypto.getRandomValues(new Uint32Array(4)), (part) => part.toString(16)).join('-')
-/** 资源锁键与后端一致，分集正文和分镜共用集号。 */
+/** 资源锁键与后端一致，เนื้อหาบทละครแต่ละตอน和分镜共用集号。 */
 function key(target: EditTarget): string { return `${target.projectId}:${target.type}:${target.resourceId}` }
-/** 通知页面占用状态变化。 */
+/** 通知页面占用สถานะ变化。 */
 function emit(): void { listeners.forEach((listener) => listener()) }
 /** 订阅占用失效等事件。 */
 export function subscribeEditLocks(listener: () => void): () => void { listeners.add(listener); return () => { listeners.delete(listener) } }
 /** 获取已持有资源的失效原因。 */
 export function editLockError(target: EditTarget): string { return held.get(key(target))?.lost || '' }
-/** 显式重试只清理本标签页已失效的租约，不强制接管其他成员。 */
+/** 显式ลองใหม่只清理本标签页已失效的租约，不强制接管其他สมาชิก。 */
 export async function releaseLostEditLock(target: EditTarget): Promise<void> {
   const entry = held.get(key(target))
   if (entry?.lost) await releaseEditLock(target, true, entry.lease.token)
@@ -48,7 +48,7 @@ export function recordDramaResponse(path: string, data: unknown, requestEpoch?: 
     }
   }
 }
-/** 按资源自身的服务端归属确定团队，个人项目永不取得团队锁。 */
+/** 按资源自身的服务端归属ตกลง团队，个人โปรเจกต์永不取得团队锁。 */
 export async function projectTeam(projectId: number): Promise<number | null> {
   if (projectTeams.has(projectId)) return projectTeams.get(projectId) ?? null
   const epoch = workspaceScope.epoch
@@ -58,14 +58,14 @@ export async function projectTeam(projectId: number): Promise<number | null> {
   recordDramaResponse(`/api/drama/projects/${projectId}`, project)
   return project.team_id ?? null
 }
-/** 只允许当前可见项目同步空间；旧后台请求不改变导航范围。 */
+/** 只允许当前可见โปรเจกต์同步空间；旧后台请求不改变导航范围。 */
 export async function syncProjectWorkspace(projectId: number): Promise<void> {
   const epoch = workspaceScope.epoch
   const teamId = await projectTeam(projectId)
   const visible = typeof window === 'undefined' ? 0 : Number(window.location.pathname.match(/^\/drama\/projects\/(\d+)/)?.[1] || 0)
   if (epoch === workspaceScope.epoch && visible === projectId) setWorkspaceTeam(teamId)
 }
-/** 取得或复用同一标签页的锁，续租失败后锁定为只读。 */
+/** 取得或复用同一标签页的锁，续租ล้มเหลว后锁定为只读。 */
 export async function holdEditLock(target: EditTarget, force = false): Promise<string | null> {
   const epoch = workspaceScope.epoch
   const authToken = localStorage.getItem('token')
@@ -86,7 +86,7 @@ export async function holdEditLock(target: EditTarget, force = false): Promise<s
       }
       if (existing) clearInterval(existing.timer)
       const entry: Held = { lease, teamId, target, refs: 0, timer: setInterval(() => {
-        void request<Omit<Lease, 'token'>>(`/api/teams/${teamId}/edit-locks/renew`, { method: 'POST', body: JSON.stringify({ token: entry.lease.token, session_id: editSessionId }) }).then((next) => { if (held.get(id) === entry) entry.lease = renewedLease(entry.lease, next) }).catch((cause) => { if (held.get(id) !== entry) return; entry.lost = cause instanceof Error ? cause.message : '编辑占用已失效'; clearInterval(entry.timer); emit() })
+        void request<Omit<Lease, 'token'>>(`/api/teams/${teamId}/edit-locks/renew`, { method: 'POST', body: JSON.stringify({ token: entry.lease.token, session_id: editSessionId }) }).then((next) => { if (held.get(id) === entry) entry.lease = renewedLease(entry.lease, next) }).catch((cause) => { if (held.get(id) !== entry) return; entry.lost = cause instanceof Error ? cause.message : 'แก้ไข占用已失效'; clearInterval(entry.timer); emit() })
       }, 30_000) }
       held.set(id, entry); emit(); return entry
     })()
@@ -105,14 +105,14 @@ export async function releaseEditLock(target: EditTarget, all = false, expectedT
   await request(`/api/teams/${entry.teamId}/edit-locks/release`, { method: 'POST', body: JSON.stringify({ token: entry.lease.token, session_id: editSessionId }), keepalive: true }).catch(() => undefined)
 }
 /** 切换空间和离开标签页时尽早释放；异常退出仍有后端租约过期兜底。 */
-subscribeWorkspace(() => { pending.clear(); for (const entry of held.values()) entry.lost = '空间或登录身份已变化，请重新读取内容后取得编辑权'; emit(); for (const entry of held.values()) void releaseEditLock(entry.target, true) })
+subscribeWorkspace(() => { pending.clear(); for (const entry of held.values()) entry.lost = '空间或登录身份已变化，请重新读取内容后取得แก้ไข权'; emit(); for (const entry of held.values()) void releaseEditLock(entry.target, true) })
 if (typeof window !== 'undefined') window.addEventListener('pagehide', () => { for (const entry of held.values()) void releaseEditLock(entry.target, true) })
 
-/** 补齐已知分集的业务集号，禁止用当前项目猜测归属。 */
+/** 补齐已知分集的业务集号，禁止用当前โปรเจกต์猜测归属。 */
 async function episodeTarget(id: number): Promise<EditTarget> {
   let info = episodes.get(id)
   if (!info) { const episode = await request<Row>(`/api/drama/episodes/${id}`); recordDramaResponse(`/api/drama/episodes/${id}`, episode); info = episodes.get(id) }
-  if (!info) throw new Error('无法确认分集归属，请重新打开项目')
+  if (!info) throw new Error('无法确认分集归属，请重新打开โปรเจกต์')
   return { projectId: info.projectId, type: 'episode', resourceId: info.number }
 }
 /** 根据现有写入接口解析唯一资源目标。 */
@@ -128,9 +128,9 @@ export async function resolveEditTarget(path: string, init: RequestInit): Promis
   match = path.match(/\/episodes\/(\d+)/)
   if (match) return episodeTarget(Number(match[1]))
   match = path.match(/\/fragments\/(\d+)/)
-  if (match) { const episodeId = fragments.get(Number(match[1])); if (!episodeId) throw new Error('请刷新分集后再操作此分镜'); return episodeTarget(episodeId) }
+  if (match) { const episodeId = fragments.get(Number(match[1])); if (!episodeId) throw new Error('请รีเฟรช分集后再การดำเนินการ此分镜'); return episodeTarget(episodeId) }
   match = path.match(/\/assets\/(\d+)/)
-  if (match) { const assetId = Number(match[1]); projectId = assets.get(assetId) || 0; if (!projectId) throw new Error('请重新打开所属项目的资产后再编辑'); return { projectId, type: 'asset', resourceId: assetId } }
+  if (match) { const assetId = Number(match[1]); projectId = assets.get(assetId) || 0; if (!projectId) throw new Error('请重新打开所属โปรเจกต์的แอสเซท后再แก้ไข'); return { projectId, type: 'asset', resourceId: assetId } }
   if (!projectId) return null
   if (/canvas/.test(path)) return { projectId, type: 'canvas', resourceId: 0 }
   if (/seed_from_script|script_summary|add_episode/.test(path)) return { projectId, type: 'structure', resourceId: 0 }
@@ -155,13 +155,13 @@ export async function withDramaEditLock<T>(path: string, init: RequestInit | und
   if (!heldToken) return action(scoped)
   try {
     const entry = held.get(key(target))
-    if (!entry || !isSameLease(entry.lease, heldToken) || entry.lost || new Date(entry.lease.expires_at).getTime() <= Date.now()) throw new Error(entry?.lost || '编辑占用已失效，请重新取得编辑权')
+    if (!entry || !isSameLease(entry.lease, heldToken) || entry.lost || new Date(entry.lease.expires_at).getTime() <= Date.now()) throw new Error(entry?.lost || 'แก้ไข占用已失效，请重新取得แก้ไข权')
     const headers = new Headers(scopeHeaders)
     headers.set('X-Edit-Session', editSessionId); headers.set('X-Edit-Token', entry.lease.token); headers.set('X-Edit-Version', String(entry.lease.version))
     return await action({ ...init, headers })
   } catch (cause) {
     const error = cause as Error & { status?: number }
-    if (error.status === 423 || error.status === 428 || (error.status === 409 && /编辑版本|占用|编辑权/.test(error.message))) {
+    if (error.status === 423 || error.status === 428 || (error.status === 409 && /แก้ไข版本|占用|แก้ไข权/.test(error.message))) {
       const entry = held.get(key(target))
       if (entry && isSameLease(entry.lease, heldToken)) { entry.lost = error.message; clearInterval(entry.timer); emit() }
     }

@@ -5,12 +5,12 @@ import { useI18n } from '../i18n'
 import { filterHelpFaq } from '../lib/helpContent'
 import { GITHUB_REPO_URL } from '../lib/siteLinks'
 
-/** 帮助中心整页：分类入口、上手步骤、可搜索 FAQ */
+/** ช่วยเหลือ中心整页：分类入口、上手步骤、可ค้นหา FAQ */
 export default function HelpPage() {
   const { t, m } = useI18n()
   /*
-   * q 搜索关键词
-   * openFaq 当前展开的 FAQ 下标
+   * q ค้นหา关键词
+   * openFaq 当前ขยาย的 FAQ 下标
    */
   const [q, setQ] = useState('')
   const [openFaq, setOpenFaq] = useState<number | null>(0)

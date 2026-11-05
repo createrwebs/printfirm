@@ -1,4 +1,4 @@
-/** 选中节点底部：AI 提示词浮动面板（生图 / 生视频） */
+/** 选中节点底部：AI คำแนะนำ词浮动面板（生图 / 生วิดีโอ） */
 import { useEffect, useMemo, useRef, useState, type FormEvent, type MouseEvent } from 'react'
 import { ArrowUp, CircleHelp, Loader2, Sparkles, Wand2 } from 'lucide-react'
 import { SeedanceRulesModal } from '../../../../components/drama/SeedanceRulesModal'
@@ -27,49 +27,49 @@ type CanvasNodeGeneratePanelProps = {
   kind: CanvasNodeKind
   generating?: boolean
   defaultPrompt?: string
-  /** 节点展示名，用于过滤弱占位提示词 */
+  /** 节点展示名，用于过滤弱占位คำแนะนำ词 */
   label?: string
-  /** 是否已有参考图（资产库/上传） */
+  /** 是否已有ภาพอ้างอิง（แอสเซท库/อัปโหลด） */
   hasMedia?: boolean
-  /** 视频节点已保存的 Seedance 参数 */
+  /** วิดีโอ节点已บันทึก的 Seedance 参数 */
   videoOptions?: Record<string, unknown>
-  /** 生图节点已保存的模型/比例/清晰度 */
+  /** 生图节点已บันทึก的模型/อัตราส่วน/ความคมชัด */
   imageOptions?: Record<string, unknown>
 }
 
-/** 按节点类型返回面板文案 */
+/** 按节点ประเภทกลับ面板文案 */
 function panelCopy(kind: CanvasNodeKind, hasMedia: boolean) {
   if (kind === 'video') {
     return {
-      title: hasMedia ? '编辑并重生视频' : 'AI 生成视频',
-      placeholder: '描述视频画面、镜头运动与氛围；键入 @ 引用已连线节点…',
-      hint: 'Enter 生成视频 · @ 仅可引用已连线节点 · Shift+Enter 换行',
+      title: hasMedia ? 'แก้ไข并重生วิดีโอ' : 'AI สร้างวิดีโอ',
+      placeholder: 'คำอธิบายวิดีโอภาพ、镜头运动与氛围；键入 @ 引用已连线节点…',
+      hint: 'Enter สร้างวิดีโอ · @ 仅可引用已连线节点 · Shift+Enter 换行',
     }
   }
   if (kind === 'character') {
     return {
-      title: hasMedia ? '编辑并重生角色' : 'AI 生角色',
-      placeholder: '描述角色外貌、服饰与气质…',
+      title: hasMedia ? 'แก้ไข并重生ตัวละคร' : 'AI 生ตัวละคร',
+      placeholder: 'คำอธิบายตัวละคร外貌、服饰与气质…',
       hint: 'Enter 生成 · Shift+Enter 换行',
     }
   }
   if (kind === 'scene') {
     return {
-      title: hasMedia ? '编辑并重生场景' : 'AI 生场景',
-      placeholder: '描述场景环境、光线与氛围…',
+      title: hasMedia ? 'แก้ไข并重生ฉาก' : 'AI 生ฉาก',
+      placeholder: 'คำอธิบายฉาก环境、光线与氛围…',
       hint: 'Enter 生成 · Shift+Enter 换行',
     }
   }
   return {
-    title: hasMedia ? '编辑并重生图片' : 'AI 生图',
-    placeholder: '描述画面内容；键入 @ 引用已连线节点…',
+    title: hasMedia ? 'แก้ไข并重生รูปภาพ' : 'AI 生图',
+    placeholder: 'คำอธิบายภาพ内容；键入 @ 引用已连线节点…',
     hint: 'Enter 生成 · @ 仅可引用已连线节点 · Shift+Enter 换行',
   }
 }
 
 const PLACEHOLDER_PROMPT = /^(character|scene|prop|material|none|image|audio|video)\s+\S+$/i
 
-/** 清洗默认提示词：只去掉「video 新视频」这类占位，保留用户短描述与 @ 引用 */
+/** 清洗ค่าเริ่มต้นคำแนะนำ词：只去掉「video 新วิดีโอ」这类占位，保留用户短คำอธิบาย与 @ 引用 */
 function sanitizePrompt(raw: string, kind: CanvasNodeKind, label: string): string {
   const text = (raw || '').trim()
   if (!text) return ''
@@ -78,7 +78,7 @@ function sanitizePrompt(raw: string, kind: CanvasNodeKind, label: string): strin
   return text
 }
 
-/** 渲染 AI 提示词编辑面板 */
+/** เรนเดอร์ AI คำแนะนำ词แก้ไข面板 */
 export function CanvasNodeGeneratePanel({
   nodeId,
   kind,
@@ -103,7 +103,7 @@ export function CanvasNodeGeneratePanel({
   } = useCanvasStore()
   const [prompt, setPrompt] = useState(() => sanitizePrompt(defaultPrompt, kind, label))
   /*
-   * busy 正在提交生成
+   * busy 正在ส่ง生成
    * rulesOpen Seedance 规则弹窗
    * optimizing Skill 改写进行中
    */
@@ -112,7 +112,7 @@ export function CanvasNodeGeneratePanel({
   const [optimizing, setOptimizing] = useState(false)
   const { skills, selectedIds, toggleSkill, selectAll, selectNone, uploadSkill, uploading, uploadError } =
     useAgentSkillSelection()
-  // imageOptions 生图风格/模型/画幅（优先恢复节点上已保存选择）
+  // imageOptions 生图สไตล์/模型/画幅（优先恢复节点上已บันทึกเลือก）
   const [imageOptions, setImageOptions] = useState<ImageGenerationOptions>(() => {
     const saved = readImageGenerationOptions(savedImageOptions, kind)
     return {
@@ -120,7 +120,7 @@ export function CanvasNodeGeneratePanel({
       image_style_id: saved.image_style_id || projectImageStyleId || undefined,
     }
   })
-  // videoOpts Seedance 时长/比例/清晰度
+  // videoOpts Seedance ความยาว/อัตราส่วน/ความคมชัด
   const [videoOpts, setVideoOpts] = useState<VideoGenerationOptions>(() => {
     const saved = readVideoGenerationOptions(savedVideoOptions)
     return {
@@ -150,7 +150,7 @@ export function CanvasNodeGeneratePanel({
 
   const lastNodeIdRef = useRef(nodeId)
 
-  /* 换节点时强制同步；同一节点不要用空默认值清掉用户正文 */
+  /* 换节点时强制同步；同一节点不要用空ค่าเริ่มต้น值清掉用户เนื้อหาหลัก */
   useEffect(() => {
     const switched = lastNodeIdRef.current !== nodeId
     lastNodeIdRef.current = nodeId
@@ -162,7 +162,7 @@ export function CanvasNodeGeneratePanel({
     setPrompt((prev) => next || prev)
   }, [defaultPrompt, nodeId, kind, label])
 
-  /* 仅切换节点时从节点恢复生图选项；编辑过程不覆盖本地选择 */
+  /* 仅切换节点时从节点恢复生图选项；แก้ไข过程不覆盖本地เลือก */
   useEffect(() => {
     const saved = readImageGenerationOptions(savedImageOptions, kind)
     setImageOptions({
@@ -179,7 +179,7 @@ export function CanvasNodeGeneratePanel({
       ...saved,
       image_style_id: saved.image_style_id || projectImageStyleId || undefined,
     })
-    // 仅切换节点时恢复已保存参数，避免编辑选项时被回写覆盖
+    // 仅切换节点时恢复已บันทึก参数，避免แก้ไข选项时被回写覆盖
   }, [nodeId])
 
   const isBusy = busy || generating || optimizing
@@ -196,7 +196,7 @@ export function CanvasNodeGeneratePanel({
     if (!canSubmit) return
     setBusy(true)
     try {
-      // 提示词以框内为准（抽取/生成提示词时已含三视图等结构）；生图不再动态拼接
+      // คำแนะนำ词以框内为准（抽取/生成คำแนะนำ词时已含三视图等结构）；生图不再动态拼接
       const finalPrompt = prompt.trim()
       updateNodePrompt(nodeId, finalPrompt)
       if (isVideo) {
@@ -207,7 +207,7 @@ export function CanvasNodeGeneratePanel({
         await generateNodeImage(nodeId, finalPrompt, imageOptions)
       }
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : '生成失败')
+      setErrorMessage(err instanceof Error ? err.message : 'สร้างไม่สำเร็จ')
     } finally {
       setBusy(false)
     }
@@ -218,7 +218,7 @@ export function CanvasNodeGeneratePanel({
     void submit()
   }
 
-  // 按勾选 Skill 改写当前提示词；若优化丢掉结构前缀则补回（写入框内，非生图时静默携带）
+  // 按勾选 Skill 改写当前คำแนะนำ词；若优化丢掉结构前缀则补回（写入框内，非生图时静默携带）
   const optimizePrompt = async () => {
     if (!canOptimize) return
     setOptimizing(true)
@@ -238,7 +238,7 @@ export function CanvasNodeGeneratePanel({
         updateNodePrompt(nodeId, next)
       }
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : '描述优化失败')
+      setErrorMessage(err instanceof Error ? err.message : 'คำอธิบาย优化ล้มเหลว')
     } finally {
       setOptimizing(false)
     }
@@ -275,7 +275,7 @@ export function CanvasNodeGeneratePanel({
         ) : null}
       </div>
       <div className="fc-generate-prompt-meta">
-        <span>提示词{allowMention ? <span className="fc-generate-mention-hint"> · @ 引用连线节点</span> : null}</span>
+        <span>คำแนะนำ词{allowMention ? <span className="fc-generate-mention-hint"> · @ 引用连线节点</span> : null}</span>
         <span className="fc-generate-count">{Array.from(prompt).length.toLocaleString()} 字</span>
       </div>
       <CanvasPromptEditor
@@ -321,8 +321,8 @@ export function CanvasNodeGeneratePanel({
           uploadError={uploadError}
         />
         {referenceLimits ? (
-          <span className="fc-generate-reference-limits" title="首尾帧和画风板计入参考图片数量；0 表示模型不支持此类参考。">
-            参考上限：图片 {referenceLimits.images} · 视频 {referenceLimits.videos} · 音频 {referenceLimits.audios}
+          <span className="fc-generate-reference-limits" title="首尾帧和画风板计入ภาพอ้างอิง片数量；0 表示模型不支持此类参考。">
+            参考上限：รูปภาพ {referenceLimits.images} · วิดีโอ {referenceLimits.videos} · เสียง {referenceLimits.audios}
           </span>
         ) : null}
       </div>
@@ -338,16 +338,16 @@ export function CanvasNodeGeneratePanel({
             disabled={!canOptimize}
             title={
               selectedIds.length
-                ? '优化画面描述，并保留台词与 @ 引用'
-                : '请先选择 Skill'
+                ? '优化คำบรรยายภาพ，并保留บทพูด与 @ 引用'
+                : '请先เลือก Skill'
             }
             onClick={() => void optimizePrompt()}
           >
             {optimizing ? <Loader2 size={14} className="fc-spin" /> : <Wand2 size={14} strokeWidth={1.8} />}
-            描述优化
+            คำอธิบาย优化
           </button>
-          <button type="submit" className="fc-generate-submit" disabled={!canSubmit} aria-label={generating || busy ? '生成中' : '生成'}>
-            <span>{generating || busy ? '生成中' : '生成'}</span>
+          <button type="submit" className="fc-generate-submit" disabled={!canSubmit} aria-label={generating || busy ? 'กำลังสร้าง' : '生成'}>
+            <span>{generating || busy ? 'กำลังสร้าง' : '生成'}</span>
             {isBusy && !optimizing ? (
               <Loader2 size={16} className="fc-spin" />
             ) : (

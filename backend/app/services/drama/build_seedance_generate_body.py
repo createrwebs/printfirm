@@ -36,6 +36,14 @@ SEEDANCE_VISUAL_STYLE_SECTION_INTRO = (
     "【强制约束：视频画面风格】全片画面必须严格遵循以下风格描述，"
     "严禁偏离、弱化或混用其他画风与镜头美学："
 )
+SEEDANCE_VISUAL_STYLE_SECTION_INTRO_TH = (
+    "【ข้อกำหนดบังคับ: สไตล์ภาพวิดีโอ】ภาพทั้งหมดต้องยึดตามคำอธิบายสไตล์ด้านล่างนี้อย่างเคร่งครัด "
+    "ห้ามเบี่ยงเบนหรือปะปนสไตล์ภาพอื่น:"
+)
+STYLE_BOARD_PROMPT_HINT_TH = (
+    "【ข้อกำหนดอ้างอิงแผ่นสไตล์ภาพ】ภาพอ้างอิงแผ่นสไตล์ใช้เพื่อกำหนดโทนสี แสงเงา พื้นผิว และบรรยากาศเท่านั้น "
+    "ห้ามคัดลอกใบหน้าตัวละคร ท่าทาง การจัดวาง หรือวัตถุจากแผ่นสไตล์ลงในช็อตนี้โดยตรง"
+)
 # 提交角色/旁白试听为 Seedance reference_audio，并写入音色强制约束。
 SEEDANCE_ATTACH_REFERENCE_AUDIO = True
 SEEDANCE_CHARACTER_VOICE_SECTION_HEADER = (
@@ -404,7 +412,7 @@ def normalize_canvas_freeform_speech(
         if not line or line.startswith("@duration:") or is_production_meta_line(line):
             out.append(raw)
             continue
-        if line.startswith("【对白") or line.startswith("【旁白") or line.startswith("【内心"):
+        if line.startswith(("【对白", "【旁白", "【内心", "【บทพูด", "【เสียงบรรยาย", "【เสียงในใจ")):
             out.append(raw)
             continue
 
@@ -509,12 +517,12 @@ def collect_speaking_character_names(
         line = raw.strip()
         if not line or line.startswith("@duration:") or is_production_meta_line(line):
             continue
-        if line.startswith("【画面") or line.startswith("【空镜"):
+        if line.startswith(("【画面", "【空镜", "【ภาพ", "【ช็อตว่าง")):
             continue
         body = VOICE_CUE_PREFIX_RE.sub("", line).strip()
         # 已标【对白/内心】的行直接视为开口，避免 @asset: 等形态 classify 失败丢音色
-        if line.startswith("【对白") or line.startswith("【内心"):
-            kind = "dialogue" if line.startswith("【对白") else "inner"
+        if line.startswith(("【对白", "【内心", "【บทพูด", "【เสียงในใจ")):
+            kind = "dialogue" if line.startswith(("【对白", "【บทพูด")) else "inner"
         else:
             kind = classify_voice_body(body)
         if kind not in {"dialogue", "inner"}:
@@ -825,10 +833,14 @@ def build_visual_style_section(
     video_style_id: str | None,
     *,
     has_style_board: bool = False,
+    lang: str = "zh",
 ) -> str | None:
-    style_prompt = resolve_image_style_prompt(video_style_id)
+    style_prompt = resolve_image_style_prompt(video_style_id, lang=lang)
     if not style_prompt:
         return None
+    if lang == "th":
+        extra = f"\n{STYLE_BOARD_PROMPT_HINT_TH}" if has_style_board else ""
+        return f"{SEEDANCE_VISUAL_STYLE_SECTION_INTRO_TH}\n{style_prompt}{extra}"
     extra = f"\n{STYLE_BOARD_PROMPT_HINT}" if has_style_board else ""
     return f"{SEEDANCE_VISUAL_STYLE_SECTION_INTRO}\n{style_prompt}{extra}"
 
@@ -941,7 +953,7 @@ def _merge_orphan_asset_mention_lines(text: str) -> str:
         if match and index + 1 < len(raw_lines):
             nxt = raw_lines[index + 1].strip()
             name = match.group("name").strip()
-            if nxt.startswith(("【画面", "【对白", "【旁白", "【内心")) and name:
+            if nxt.startswith(("【画面", "【对白", "【旁白", "【内心", "【ภาพ", "【บทพูด", "【เสียงบรรยาย", "【เสียงในใจ")) and name:
                 if name not in nxt:
                     cue = re.match(r"^(【[^】]+】)\s*(.*)$", nxt)
                     if cue:
@@ -991,11 +1003,14 @@ def build_seedance_prompt_text(
         normalized = strip_model_burn_subtitle_cues(normalized)
     if not character_intro:
         normalized = strip_character_intro_cues(normalized)
+    from app.services.drama.language import detect_content_language
+
     resolved_catalog = catalog or build_seedance_reference_catalog(reference, script=normalized)
+    lang = detect_content_language(normalized)
     # Submitted prompts contain the selected visual style and storyboard body only.
     # Reference images/audio stay in content[], without extra mandatory instruction paragraphs.
     sections = [
-        build_visual_style_section(video_style_id, has_style_board=has_style_board),
+        build_visual_style_section(video_style_id, has_style_board=has_style_board, lang=lang),
         build_seedance_body_text(normalized, reference, resolved_catalog),
     ]
     return "\n\n".join(section for section in sections if section)

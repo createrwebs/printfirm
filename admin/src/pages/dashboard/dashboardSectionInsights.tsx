@@ -59,7 +59,7 @@ const STATUS_META: Record<string, { icon: LucideIcon; tone: DashboardInsightItem
   VIDEOING: { icon: Activity, tone: "teal" },
 };
 
-/** 项目运维 Tab 图标指标 */
+/** โปรเจกต์运维 Tab 图标指标 */
 export function buildProjectInsights(stats: AdminStats | null, periodDaily: ReturnType<typeof sumDailyUsage>): DashboardInsightItem[] {
   if (!stats) return [];
 
@@ -67,17 +67,17 @@ export function buildProjectInsights(stats: AdminStats | null, periodDaily: Retu
   const items: DashboardInsightItem[] = [
     {
       key: "kepu-total",
-      label: "科普项目",
+      label: "科普โปรเจกต์",
       value: kepuTotal,
-      hint: `漫剧 ${stats.drama_project_count ?? 0} 部`,
+      hint: `ละครซีรีส์ ${stats.drama_project_count ?? 0} 部`,
       icon: Clapperboard,
       tone: "blue",
     },
     {
       key: "drama-total",
-      label: "漫剧项目",
+      label: "โปรเจกต์ละครซีรีส์",
       value: stats.drama_project_count ?? 0,
-      hint: "全站项目",
+      hint: "全站โปรเจกต์",
       icon: Film,
       tone: "teal",
     },

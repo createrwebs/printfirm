@@ -1,4 +1,4 @@
-/** 分镜故事板节点：上方视频，下方提示词；出境资产通过左侧节点连线关联 */
+/** 分镜故事板节点：上方วิดีโอ，下方คำแนะนำ词；出境แอสเซท通过左侧节点连线关联 */
 import { memo, useCallback, type ChangeEvent } from 'react'
 import { useTeamReadOnly } from '../../../features/teams/readOnlyContext'
 import { Handle, Position, type Node, type NodeProps } from '@xyflow/react'
@@ -10,7 +10,7 @@ type Props = NodeProps<Node<EpisodeFragmentNodeData>> & {
   onRequestLinkAsset?: (fragmentId: number) => void
 }
 
-// 渲染单个分镜视频节点
+// เรนเดอร์单个分镜วิดีโอ节点
 function EpisodeFragmentNodeComponent({
   data,
   selected,
@@ -37,15 +37,15 @@ function EpisodeFragmentNodeComponent({
           <button
             type="button"
             className="ep-frag-link-btn nodrag nopan"
-            title="关联出境资产"
-            aria-label="关联出境资产"
+            title="关联出境แอสเซท"
+            aria-label="关联出境แอสเซท"
             disabled={readOnly}
             onClick={() => onRequestLinkAsset?.(data.fragmentId)}
           >
             <Plus size={14} strokeWidth={2} />
           </button>
         ) : (
-          <em className="ep-frag-link-count">{data.linkedCount || 0} 资产</em>
+          <em className="ep-frag-link-count">{data.linkedCount || 0} แอสเซท</em>
         )}
       </div>
 
@@ -70,19 +70,19 @@ function EpisodeFragmentNodeComponent({
       </div>
 
       <div className="ep-frag-prompt">
-        <label>提示词</label>
+        <label>คำแนะนำ词</label>
         {selected ? (
           <textarea
             className="ep-frag-prompt-input nodrag nowheel"
             value={data.content}
             readOnly={readOnly}
             onChange={handlePromptChange}
-            placeholder="分镜脚本 / Seedance 提示词…"
+            placeholder="บทสตอรี่บอร์ด / Seedance คำแนะนำ词…"
             rows={5}
           />
         ) : (
           <p className="ep-frag-prompt-text">
-            {(data.content || '').trim() || '（空提示词）'}
+            {(data.content || '').trim() || '（空คำแนะนำ词）'}
           </p>
         )}
       </div>

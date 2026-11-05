@@ -1,7 +1,7 @@
 import { useCallback, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 
-/** 通过 URL query 打开/关闭详情弹层（可刷新恢复） */
+/** 通过 URL query 打开/ปิดรายละเอียด弹层（可รีเฟรช恢复） */
 export function useAdminDetailQuery(paramKey: string) {
   const [searchParams, setSearchParams] = useSearchParams();
 

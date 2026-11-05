@@ -1,36 +1,36 @@
 /**
- * 科普分镜脚本内 @duration 解析、校验与分段预览
+ * 科普บทสตอรี่บอร์ด内 @duration 解析、校验与分段ดูตัวอย่าง
  * 常量与后端 seedance_segments 对齐（单段 3–12s，镜合计 ≤30s）
  */
 
-/** 单段时长下限（秒） */
+/** 单段ความยาว下限（วินาที） */
 export const SEGMENT_DURATION_MIN = 3
 
-/** 单段时长上限（秒） */
+/** 单段ความยาว上限（วินาที） */
 export const SEGMENT_DURATION_MAX = 12
 
-/** 单镜脚本内 @duration 合计上限（秒） */
+/** 单镜脚本内 @duration 合计上限（วินาที） */
 export const SHOT_DURATION_MAX = 30
 
-/** 时长快捷选项（秒） */
+/** ความยาว快捷选项（วินาที） */
 export const SEGMENT_DURATION_PRESETS = [4, 6, 8, 10, 12] as const
 
-/** 与后端一致的字幕 cue（后期叠字，非模型烧录） */
-export const SUBTITLE_CUE = '【字幕：后期叠旁白字幕，简体中文逐句同步】'
+/** 与后端一致的คำบรรยาย (ซับไตเติล) cue（后期叠字，非模型烧录） */
+export const SUBTITLE_CUE = '【คำบรรยาย (ซับไตเติล)：后期叠เสียงบรรยายคำบรรยาย (ซับไตเติล)，简体中文逐句同步】'
 
-/** 与后端一致的旁白前缀（科普自然偏快；旧稿「慢速清晰」仍可识别） */
-export const NARRATION_PREFIX = '【旁白·自然语速·同步字幕】'
+/** 与后端一致的เสียงบรรยาย前缀（科普自然偏快；旧稿「慢速清晰」仍可识别） */
+export const NARRATION_PREFIX = '【เสียงบรรยาย·自然语速·同步คำบรรยาย (ซับไตเติล)】'
 
-/** 脚本编辑区 placeholder */
-export const SEGMENT_SCRIPT_PLACEHOLDER = `${SUBTITLE_CUE}\n【BGM：后期混音 · 轻快专业，音量低于人声】\n@duration:4\n过肩工位操作画面…\n@duration:8\n${NARRATION_PREFIX}口播内容…`
+/** 脚本แก้ไข区 placeholder */
+export const SEGMENT_SCRIPT_PLACEHOLDER = `${SUBTITLE_CUE}\n【BGM：后期混音 · 轻快专业，音量低于人声】\n@duration:4\n过肩工位การดำเนินการ画面…\n@duration:8\n${NARRATION_PREFIX}口播内容…`
 
 const DURATION_TOKEN_PATTERN = /@duration:(\d+)/g
 
 export type SegmentBeatView = { duration: number; text: string }
 
 /**
- * 从脚本中提取全部 @duration 秒数（保留顺序）
- * @param content 逐段分镜脚本文本
+ * 从脚本中提取全部 @duration วินาที数（保留顺序）
+ * @param content 逐段บทสตอรี่บอร์ด文本
  */
 export function extractDurations(content: string): number[] {
   const durations: number[] = []
@@ -44,15 +44,15 @@ export function extractDurations(content: string): number[] {
 }
 
 /**
- * 合计脚本内 @duration 秒数
- * @param content 逐段分镜脚本文本
+ * 合计脚本内 @duration วินาที数
+ * @param content 逐段บทสตอรี่บอร์ด文本
  */
 export function sumDuration(content: string): number {
   return extractDurations(content).reduce((sum, value) => sum + value, 0)
 }
 
 /**
- * 分镜列表展示用时长：优先脚本内 @duration 合计，否则回退 shot.duration
+ * รายการสตอรี่บอร์ด展示用ความยาว：优先脚本内 @duration 合计，否则回退 shot.duration
  * （生成时 LLM 的 duration 字段常与逐段标签脱节，列表应对齐用户看到的 3s/4s 标签）
  */
 export function shotDisplayDurationSec(shot: {
@@ -68,8 +68,8 @@ export function shotDisplayDurationSec(shot: {
 }
 
 /**
- * 校验单个时长是否在科普单段合法区间
- * @param seconds 时长秒数
+ * 校验单个ความยาว是否在科普单段合法区间
+ * @param seconds ความยาววินาที数
  */
 export function isValidSegmentDuration(seconds: number): boolean {
   return (
@@ -80,8 +80,8 @@ export function isValidSegmentDuration(seconds: number): boolean {
 }
 
 /**
- * 校验脚本内时长标签：单段范围 + 合计 ≤ 镜上限
- * @param content 逐段分镜脚本文本
+ * 校验脚本内ความยาว标签：单段范围 + 合计 ≤ 镜上限
+ * @param content 逐段บทสตอรี่บอร์ด文本
  */
 export function validateSegmentScriptDuration(content: string): {
   valid: boolean
@@ -101,7 +101,7 @@ export function validateSegmentScriptDuration(content: string): {
       valid: false,
       total,
       durations,
-      message: `单个 @duration 需在 ${SEGMENT_DURATION_MIN}–${SEGMENT_DURATION_MAX} 秒之间`,
+      message: `单个 @duration 需在 ${SEGMENT_DURATION_MIN}–${SEGMENT_DURATION_MAX} วินาที之间`,
     }
   }
 
@@ -110,7 +110,7 @@ export function validateSegmentScriptDuration(content: string): {
       valid: false,
       total,
       durations,
-      message: `镜头时长合计不能超过 ${SHOT_DURATION_MAX} 秒（当前 ${total}s）`,
+      message: `镜头ความยาว合计不能超过 ${SHOT_DURATION_MAX} วินาที（当前 ${total}s）`,
     }
   }
 
@@ -118,15 +118,15 @@ export function validateSegmentScriptDuration(content: string): {
 }
 
 /**
- * 解析脚本为字幕/BGM cues 与带时长的正文段（列表预览用）
- * @param script 逐段分镜脚本
+ * 解析脚本为คำบรรยาย (ซับไตเติล)/BGM cues 与带ความยาว的正文段（列表ดูตัวอย่าง用）
+ * @param script 逐段บทสตอรี่บอร์ด
  */
 export function parseSegmentScript(script: string | undefined | null): {
   cues: string[]
   beats: SegmentBeatView[]
 } {
   /*
-   * cues 字幕/BGM 行
+   * cues คำบรรยาย (ซับไตเติล)/BGM 行
    * beats 带 duration 的正文段
    * pendingDur 上一段 @duration 值
    */
@@ -141,7 +141,7 @@ export function parseSegmentScript(script: string | undefined | null): {
     .filter(Boolean)
 
   for (const line of lines) {
-    if (line.startsWith('【字幕') || line.startsWith('【BGM')) {
+    if (line.startsWith('【คำบรรยาย (ซับไตเติล)') || line.startsWith('【BGM')) {
       cues.push(line)
       continue
     }
@@ -161,21 +161,21 @@ export function parseSegmentScript(script: string | undefined | null): {
   return { cues, beats }
 }
 
-const NARRATION_LINE_PREFIX = /^【旁白[^】]*】/
+const NARRATION_LINE_PREFIX = /^【เสียงบรรยาย[^】]*】/
 
-/** 脚本行是否为旁白口播（字幕 cue 含「旁白」二字但不算） */
+/** 脚本行是否为เสียงบรรยาย口播（คำบรรยาย (ซับไตเติล) cue 含「เสียงบรรยาย」二字但不算） */
 export function isNarrationScriptLine(line: string): boolean {
   const stripped = line.trim()
-  if (stripped.startsWith('【字幕') || stripped.startsWith('【BGM')) return false
+  if (stripped.startsWith('【คำบรรยาย (ซับไตเติล)') || stripped.startsWith('【BGM')) return false
   return NARRATION_LINE_PREFIX.test(stripped)
 }
 
-/** 去掉旁白前缀，得到可朗读正文 */
+/** 去掉เสียงบรรยาย前缀，得到可朗读正文 */
 export function stripNarrationPrefix(line: string): string {
   return line.trim().replace(NARRATION_LINE_PREFIX, '').trim()
 }
 
-/** 从脚本提取旁白正文（多段拼接） */
+/** 从脚本提取เสียงบรรยาย正文（多段拼接） */
 export function narrationFromScript(script: string | undefined | null): string {
   const parts: string[] = []
   for (const line of String(script || '').replace(/\r\n/g, '\n').split('\n')) {
@@ -187,14 +187,14 @@ export function narrationFromScript(script: string | undefined | null): string {
   return parts.join('')
 }
 
-/** 从脚本提取首段画面（非旁白、非 cue） */
+/** 从脚本提取首段画面（非เสียงบรรยาย、非 cue） */
 export function firstVisualFromScript(script: string | undefined | null): string {
   for (const line of String(script || '').replace(/\r\n/g, '\n').split('\n')) {
     const stripped = line.trim()
     if (
       !stripped ||
       stripped.startsWith('@duration:') ||
-      stripped.startsWith('【字幕') ||
+      stripped.startsWith('【คำบรรยาย (ซับไตเติล)') ||
       stripped.startsWith('【BGM') ||
       isNarrationScriptLine(stripped)
     ) {
@@ -205,7 +205,7 @@ export function firstVisualFromScript(script: string | undefined | null): string
   return ''
 }
 
-/** 把弹窗旁白写回脚本中的旁白段 */
+/** 把弹窗เสียงบรรยาย写回脚本中的เสียงบรรยาย段 */
 export function replaceNarrationInScript(script: string, narration: string): string {
   const text = narration.trim()
   const lines = String(script || '').replace(/\r\n/g, '\n').split('\n')
@@ -238,7 +238,7 @@ export function replaceFirstVisualInScript(script: string, visual: string): stri
   let cueEnd = 0
   for (let i = 0; i < lines.length; i += 1) {
     const stripped = lines[i].trim()
-    if (stripped.startsWith('【字幕') || stripped.startsWith('【BGM') || !stripped) {
+    if (stripped.startsWith('【คำบรรยาย (ซับไตเติล)') || stripped.startsWith('【BGM') || !stripped) {
       cueEnd = i + 1
       continue
     }
@@ -250,7 +250,7 @@ export function replaceFirstVisualInScript(script: string, visual: string): stri
       !replaced &&
       stripped &&
       !stripped.startsWith('@duration:') &&
-      !stripped.startsWith('【字幕') &&
+      !stripped.startsWith('【คำบรรยาย (ซับไตเติล)') &&
       !stripped.startsWith('【BGM') &&
       !isNarrationScriptLine(stripped)
     ) {

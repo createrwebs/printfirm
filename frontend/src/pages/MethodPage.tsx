@@ -1,4 +1,4 @@
-/** 获客短视频宣传页：方法论结构 + 开始使用 / 回到 GEO */
+/** 获客วิดีโอสั้น宣传页：方法论结构 + 开始使用 / 回到 GEO */
 import { useEffect, type ReactNode } from 'react'
 import { ArrowRight, ArrowUpRight } from 'lucide-react'
 import LanguageSwitch from '../components/layout/LanguageSwitch'
@@ -13,7 +13,7 @@ import './method/method.css'
 
 const PAGE_URL = 'https://www.printfilm.com/method'
 
-// 注入本页 title / description；延迟一拍以免被 I18nProvider 的默认 meta 覆盖
+// 注入本页 title / description；延迟一拍以免被 I18nProvider 的ค่าเริ่มต้น meta 覆盖
 function useMethodMeta(copy: MethodLandingCopy) {
   useEffect(() => {
     const descEl = document.querySelector('meta[name="description"]')
@@ -53,10 +53,10 @@ function MethodCta({
   )
 }
 
-/** 获客短视频宣传页主体：方法论章节 + 双 CTA */
+/** 获客วิดีโอสั้น宣传页主体：方法论章节 + 双 CTA */
 export default function MethodPage() {
   const { locale } = useI18n()
-  const copy = METHOD_LANDING[locale]
+  const copy = METHOD_LANDING[locale === 'zh' ? 'zh' : 'en']
   useMethodMeta(copy)
 
   const jsonLd = {

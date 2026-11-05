@@ -2,7 +2,7 @@ import type { AdminDailyUsage, AdminStats, AdminUsageBucket } from "@/api/client
 import type { DashboardMetric } from "@/pages/dashboard/DashboardFilters";
 import { fenToYuan } from "@/lib/utils";
 
-/** 时间窗内日趋势汇总 */
+/** เวลา窗内日趋势汇总 */
 export function sumDailyUsage(daily: AdminDailyUsage[]) {
   return daily.reduce(
     (acc, row) => ({
@@ -25,15 +25,15 @@ export function formatDashboardMetric(value: number, metric: DashboardMetric): s
   return `¥${fenToYuan(value)}`;
 }
 
-/** 科普项目总数（各状态之和） */
+/** 科普โปรเจกต์总数（各สถานะ之和） */
 export function sumProjectStatuses(counts: Record<string, number> | undefined): number {
   return Object.values(counts ?? {}).reduce((sum, n) => sum + n, 0);
 }
 
-/** 漫剧 + 科普项目规模摘要 */
+/** ละครซีรีส์ + 科普โปรเจกต์规模เรื่องย่อ */
 export function projectScaleHint(stats: AdminStats | null): string | undefined {
   if (!stats) return undefined;
   const kepu = sumProjectStatuses(stats.project_status_counts);
   const drama = stats.drama_project_count ?? 0;
-  return `科普 ${kepu} · 漫剧 ${drama}`;
+  return `科普 ${kepu} · ละครซีรีส์ ${drama}`;
 }

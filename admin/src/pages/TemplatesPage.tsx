@@ -21,9 +21,9 @@ type ListRes = { items: AdminTemplate[]; meta: PageMeta };
 type MetaRes = { categories: string[] };
 
 const STATUS_OPTIONS = [
-  { value: "", label: "全部状态" },
-  { value: "active", label: "已上架" },
-  { value: "inactive", label: "已下架" },
+  { value: "", label: "全部สถานะ" },
+  { value: "active", label: "เผยแพร่แล้ว" },
+  { value: "inactive", label: "นำลงแล้ว" },
   { value: "premium", label: "Premium" },
 ];
 
@@ -46,13 +46,13 @@ const emptyForm = (): TemplateFormState => ({
   is_premium: false,
 });
 
-// 从 seedream_config 读取角色/额外提示词
+// 从 seedream_config 读取ตัวละคร/额外คำแนะนำ词
 function seedreamText(cfg: Record<string, unknown> | undefined, key: string): string {
   const value = cfg?.[key];
   return typeof value === "string" ? value : "";
 }
 
-// 模板管理：封面卡片网格 + 分类筛选 + 全局 UI 组件
+// 模板管理：封面卡片网格 + 分类ตัวกรอง + ทั่วไป UI 组件
 export function TemplatesPage() {
   const [page, setPage] = useState(1);
   const [data, setData] = useState<ListRes | null>(null);
@@ -68,7 +68,7 @@ export function TemplatesPage() {
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  // 加载模板分页列表（服务端筛选）
+  // 加载模板分页列表（服务端ตัวกรอง）
   async function load(nextPage = page) {
     setLoading(true);
     try {
@@ -82,19 +82,19 @@ export function TemplatesPage() {
       if (statusFilter === "inactive") params.set("is_active", "false");
       setData(await api<ListRes>(`/api/admin/templates?${params}`));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "加载失败");
+      toast.error(err instanceof Error ? err.message : "โหลดไม่สำเร็จ");
     } finally {
       setLoading(false);
     }
   }
 
-  // 加载全库分类标签
+  // 加载全库分类แท็ก
   async function loadMeta() {
     try {
       const meta = await api<MetaRes>("/api/admin/templates/meta");
       setCategories(meta.categories ?? []);
     } catch {
-      /* 分类元数据失败不阻塞列表 */
+      /* 分类元数据ล้มเหลว不阻塞列表 */
     }
   }
 
@@ -127,14 +127,14 @@ export function TemplatesPage() {
     return items.filter((t) => t.is_premium);
   }, [data?.items, statusFilter]);
 
-  // 打开新建弹窗
+  // 打开สร้างใหม่弹窗
   function openCreate() {
     setEditing(null);
     setForm(emptyForm());
     setOpen(true);
   }
 
-  // 打开编辑弹窗（拉取最新配置）
+  // 打开แก้ไข弹窗（拉取最新配置）
   async function openEdit(tpl: AdminTemplate) {
     try {
       const fresh = await api<AdminTemplate>(`/api/admin/templates/${tpl.id}`);
@@ -159,11 +159,11 @@ export function TemplatesPage() {
       });
       setOpen(true);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "加载模板详情失败");
+      toast.error(err instanceof Error ? err.message : "加载模板รายละเอียดล้มเหลว");
     }
   }
 
-  // 创建或更新模板
+  // สร้าง或อัปเดต模板
   async function save() {
     setSaving(true);
     try {
@@ -224,11 +224,11 @@ export function TemplatesPage() {
           }),
         });
       }
-      toast.success("已保存");
+      toast.success("已บันทึก");
       setOpen(false);
       await Promise.all([load(), loadMeta()]);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "保存失败");
+      toast.error(err instanceof Error ? err.message : "บันทึกไม่สำเร็จ");
     } finally {
       setSaving(false);
     }
@@ -240,21 +240,21 @@ export function TemplatesPage() {
       await api(`/api/admin/templates/${id}`, { method: "PATCH", body: JSON.stringify(body) });
       await load();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "更新失败");
+      toast.error(err instanceof Error ? err.message : "อัปเดตล้มเหลว");
     }
   }
 
-  // 确认删除模板
+  // ยืนยันการลบ模板
   async function confirmDelete() {
     if (!deleteTarget) return;
     setDeleting(true);
     try {
       await api(`/api/admin/templates/${deleteTarget}`, { method: "DELETE" });
-      toast.success("已删除");
+      toast.success("已ลบ");
       setDeleteTarget(null);
       await Promise.all([load(), loadMeta()]);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "删除失败");
+      toast.error(err instanceof Error ? err.message : "ลบไม่สำเร็จ");
     } finally {
       setDeleting(false);
     }
@@ -262,12 +262,12 @@ export function TemplatesPage() {
 
   return (
     <div className="admin-list-page">
-      <PageHeader title="模板管理"
-        description="风格 / 角色 / 提示词以本页为准；已创建项目需在分镜页恢复模板后才会跟随。"
+      <PageHeader title="จัดการแม่แบบ"
+        description="สไตล์ / ตัวละคร / คำแนะนำ词以本页为准；已สร้างโปรเจกต์需在分镜页恢复模板后才会跟随。"
         actions={
           <Button onClick={openCreate} className="gap-2">
             <Plus className="h-4 w-4" />
-            新建模板
+            สร้างใหม่模板
           </Button>
         }
       />
@@ -282,7 +282,7 @@ export function TemplatesPage() {
       >
         <AdminSearchInput
           className="min-w-[220px] flex-1 max-w-md"
-          placeholder="搜索名称 / ID / 描述 / 分类"
+          placeholder="ค้นหา名称 / ID / คำอธิบาย / 分类"
           value={q}
           onChange={setQ}
           onKeyDown={(e) => {
@@ -318,7 +318,7 @@ export function TemplatesPage() {
             void load(1);
           }}
         >
-          筛选
+          ตัวกรอง
         </Button>
       </AdminFilterBar>
 
@@ -331,7 +331,7 @@ export function TemplatesPage() {
         <div className="template-grid-empty">
           <p>暂无匹配的模板</p>
           <Button variant="outline" size="sm" onClick={openCreate}>
-            新建第一个模板
+            สร้างใหม่ตอนที่ 一个模板
           </Button>
         </div>
       ) : (
@@ -371,9 +371,9 @@ export function TemplatesPage() {
 
       <AdminConfirmDialog
         open={Boolean(deleteTarget)}
-        title="删除模板"
-        description={deleteTarget ? `确认删除模板「${deleteTarget}」？已被项目引用的模板无法删除。` : undefined}
-        confirmLabel="删除"
+        title="ลบ模板"
+        description={deleteTarget ? `ยืนยันการลบ模板「${deleteTarget}」？已被โปรเจกต์引用的模板无法ลบ。` : undefined}
+        confirmLabel="ลบ"
         loading={deleting}
         destructive
         onOpenChange={(next) => {

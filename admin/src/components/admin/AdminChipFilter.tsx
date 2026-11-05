@@ -15,13 +15,13 @@ type AdminChipFilterProps = {
   className?: string;
 };
 
-// 管理端分类 Chip 筛选
+// 管理端分类 Chip ตัวกรอง
 export function AdminChipFilter({ label, value, options, onChange, className }: AdminChipFilterProps) {
   const segment = className?.includes("admin-chip-filter--segment");
   return (
     <div className={cn("admin-chip-filter admin-choice-filter", className)}>
       {label ? <span className="admin-chip-filter-label">{label}</span> : null}
-      <div className={cn("admin-chip-filter-list", segment && "is-segment")} role="group" aria-label={label || "筛选分类"}>
+      <div className={cn("admin-chip-filter-list", segment && "is-segment")} role="group" aria-label={label || "ตัวกรอง分类"}>
         {options.map((opt) => {
           const active = value === opt.value;
           return (

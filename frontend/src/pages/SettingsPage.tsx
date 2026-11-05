@@ -14,7 +14,7 @@ import { USER_UPDATED_EVENT } from '../lib/userEvents'
 
 type SettingsTab = 'account' | 'subscription' | 'team' | 'notify' | 'security'
 
-/* 侧栏只保留账户设置；余额与账单通过头像菜单独立进入。 */
+/* 侧栏只保留账户ตั้งค่า；余额与账单通过头像菜单独立เข้าสู่。 */
 const SIDE_ITEMS: { id: Exclude<SettingsTab, 'subscription'>; soon?: boolean }[] = [
   { id: 'account' },
   { id: 'team' },
@@ -34,14 +34,14 @@ function parseTab(raw: string | null): SettingsTab {
   return raw && TAB_IDS.has(raw) ? raw as SettingsTab : 'account'
 }
 
-/** 旧项目与记录分区直接转到统一页面，不再加载重复列表。 */
+/** 旧โปรเจกต์与记录分区直接转到统一页面，不再加载重复列表。 */
 export default function SettingsPage() {
   const [params] = useSearchParams()
   const legacyPath = LEGACY_TAB_PATHS.get(params.get('tab') || '')
   return legacyPath ? <Navigate to={legacyPath} replace /> : <AccountSettings />
 }
 
-/** 个人中心维护账户资料、安全和团队设置，账单保留专用直达视图。 */
+/** 个人中心维护账户资料、安全和การตั้งค่าทีม，账单保留专用直达视图。 */
 function AccountSettings() {
   const nav = useNavigate()
   const { t } = useI18n()

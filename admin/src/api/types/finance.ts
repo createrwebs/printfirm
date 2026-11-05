@@ -30,7 +30,7 @@ export type AdminLedger = {
   ref_id: string;
   note: string;
   created_at: string;
-  /** 手动调账操作人邮箱（ref_type=admin 时） */
+  /** 手动调账การดำเนินการ人邮箱（ref_type=admin 时） */
   operator_email?: string | null;
 };
 

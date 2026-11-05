@@ -217,7 +217,7 @@ async def update_asset(
 @router.post(
     "/assets/{asset_id}/upload", response_model=DramaAssetOut,
     summary="上传资产图片或音频",
-    description="通过 multipart/form-data 为 asset_id 指定的资产上传媒体到 OSS，需启用 OSS。支持 JPG、PNG、WebP、GIF 图片（最大 20MB）及 MP3、WAV、M4A、AAC、OGG、WebM 音频（最大 30MB）。图片替换前归档当前版本，音频不写入图片封面；生成进行中返回 409，团队项目需持有该资产的编辑租约。",
+    description="通过 multipart/form-data 为 asset_id 指定的资产上传媒体；启用 OSS 时上传到 OSS，否则保存到本地 static 目录。支持 JPG、PNG、WebP、GIF 图片（最大 20MB）及 MP3、WAV、M4A、AAC、OGG、WebM 音频（最大 30MB）。图片替换前归档当前版本，音频不写入图片封面；生成进行中返回 409，团队项目需持有该资产的编辑租约。",
     response_description="上传完成后的资产，包含媒体地址、媒体元数据和 done 生成状态",
 )
 async def upload_asset_media(
@@ -226,12 +226,10 @@ async def upload_asset_media(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> DramaAssetOut:
-    """上传图片或音频到 OSS（不落本地）；音频资产不写 cover。"""
+    """上传图片或音频；有 OSS 时远端保存，否则使用本地 static 存储。音频资产不写 cover。"""
     from app.models_drama import DramaProject
     from app.services import oss as oss_svc
-
-    if not oss_svc.oss_enabled():
-        raise HTTPException(status_code=503, detail="OSS 未启用，无法上传资产媒体")
+    from app.services import storage
 
     asset = await get_owned_asset(db, asset_id, user)
 
@@ -305,20 +303,29 @@ async def upload_asset_media(
             detail="音频不能超过 30MB" if is_audio else "文件不能超过 20MB",
         )
 
-    object_key = (
-        f"{oss_svc.folder_prefix()}/generated/p{asset.project_id}/"
-        f"asset_{asset.id}_{uuid.uuid4().hex[:10]}{ext}"
-    )
-    try:
-        # OSS SDK 为同步阻塞 IO，放到线程池里避免阻塞事件循环。
-        url = await run_in_threadpool(
-            oss_svc.upload_fileobj,
-            upload_fp,
-            object_key,
-            content_type=content_type or "application/octet-stream",
+    if oss_svc.oss_enabled():
+        object_key = (
+            f"{oss_svc.folder_prefix()}/generated/p{asset.project_id}/"
+            f"asset_{asset.id}_{uuid.uuid4().hex[:10]}{ext}"
         )
-    except Exception as exc:  # noqa: BLE001
-        raise HTTPException(status_code=502, detail=f"OSS 上传失败：{exc}") from exc
+        try:
+            # OSS SDK 为同步阻塞 IO，放到线程池里避免阻塞事件循环。
+            url = await run_in_threadpool(
+                oss_svc.upload_fileobj,
+                upload_fp,
+                object_key,
+                content_type=content_type or "application/octet-stream",
+            )
+        except Exception as exc:  # noqa: BLE001
+            raise HTTPException(status_code=502, detail=f"OSS 上传失败：{exc}") from exc
+    else:
+        dest = storage.project_dir(asset.project_id) / f"asset_{asset.id}_{uuid.uuid4().hex[:10]}{ext}"
+        try:
+            upload_fp.seek(0)
+            dest.write_bytes(upload_fp.read())
+            url = storage.publish_local(dest)
+        except Exception as exc:  # noqa: BLE001
+            raise HTTPException(status_code=500, detail=f"本地存储保存失败：{exc}") from exc
 
     from app.services.drama.generation import archive_asset_image_version
 

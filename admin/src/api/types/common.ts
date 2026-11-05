@@ -1,4 +1,4 @@
-/** 管理接口通用分页元信息；列表仍由服务端筛选和分页。 */
+/** 管理接口通用分页元信息；列表仍由服务端ตัวกรอง和分页。 */
 export type PageMeta = {
   page: number;
   page_size: number;

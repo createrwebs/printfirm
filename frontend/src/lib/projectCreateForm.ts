@@ -13,7 +13,7 @@ export type ProjectCreateValues = {
 export type ProjectCreateDraft = Omit<ProjectCreateValues, 'episodeCount'> & { episodeCount: string }
 export type ProjectCreateErrors = Partial<Record<'title' | 'source' | 'description' | 'episodeCount', string>>
 
-/** 与个人和团队创建接口的集数边界保持一致。 */
+/** 与个人和团队สร้าง接口的集数边界保持一致。 */
 export const PROJECT_EPISODE_MAX = 120
 
 export type ProjectCreateConstraints = {
@@ -23,7 +23,7 @@ export type ProjectCreateConstraints = {
   sourceMaxLength?: number
 }
 
-/** 校验故事、名称与分集规划；自由画布不使用分集和画风参数。 */
+/** 校验故事、名称与การวางแผนแต่ละตอน；自由画布不使用分集和画风参数。 */
 export function validateProjectCreate(
   draft: ProjectCreateDraft,
   { kind, titleRequired = false, titleMaxLength = 80, sourceMaxLength = 2000 }: ProjectCreateConstraints,
@@ -34,7 +34,7 @@ export function validateProjectCreate(
   const episodeCount = Number(draft.episodeCount)
   const errors: ProjectCreateErrors = {}
 
-  if ((kind === 'canvas' || titleRequired) && !title) errors.title = kind === 'canvas' ? '请填写画布名称' : '请填写项目名称'
+  if ((kind === 'canvas' || titleRequired) && !title) errors.title = kind === 'canvas' ? '请填写画布名称' : '请填写ชื่อโปรเจกต์'
   else if (title.length > titleMaxLength) errors.title = `名称请控制在 ${titleMaxLength} 字以内`
   if (description.length > 500) errors.description = '简介请控制在 500 字以内'
   if (kind === 'drama') {

@@ -7,7 +7,10 @@ ai_movie 扩展：prop/material 增加静物/空镜前缀（manju 无此前缀�
 
 from __future__ import annotations
 
+import re
+
 from app.services.drama.image_styles import STYLE_BOARD_PROMPT_HINT, resolve_image_style_prompt
+from app.services.drama.language import detect_content_language
 
 # CHARACTER_PROMPT_PREFIX 角色设定板结构要求（无风格词）
 CHARACTER_PROMPT_PREFIX = (
@@ -26,6 +29,14 @@ CHARACTER_PROMPT_PREFIX = (
     "并据此补全外貌、体态与服饰。请严格依据以下用户描述生成上述结构的角色设定图："
 )
 
+THAI_CHARACTER_PROMPT_PREFIX = (
+    "【คำสั่งบังคับ: แผ่นตั้งค่าตัวละคร】พื้นหลังสีขาวล้วน ไม่มีฉากซับซ้อน ไม่มีสิ่งบัง และไม่มีลายน้ำ "
+    "ด้านซ้ายต้องเป็นตัวละครเดียวกันแบบเต็มตัวสามมุมมอง: ด้านหน้า ด้านข้าง และด้านหลัง "
+    "ใบหน้า ทรงผม เสื้อผ้า รูปร่าง และสัดส่วนต้องเหมือนกันทุกมุม ยืนท่าธรรมชาติ แขนวางลง และเห็นตั้งแต่ศีรษะถึงเท้า "
+    "ในภาพเดียวกันต้องมีภาพใบหน้าโคลสอัปและภาพครึ่งตัวด้วย แสงสตูดิโอกลาง ขอบตัวละครคมชัด เว้นพื้นที่ว่างมากพอ "
+    "ห้ามสร้างฉากหรือสิ่งของเป็นตัวหลัก และห้ามตัดสามมุมมอง ใบหน้า หรือภาพครึ่งตัวออก โปรดสร้างตามคำอธิบายต่อไปนี้:"
+)
+
 # SCENE_PROMPT_PREFIX 场景设计参考图结构要求（无风格词）
 SCENE_PROMPT_PREFIX = (
     "【强制任务：场景设计参考图构图】"
@@ -35,6 +46,12 @@ SCENE_PROMPT_PREFIX = (
     "以环境空间与建筑结构为主体，严禁人物特写、角色立绘或以人物为视觉中心。"
     "即使用户描述涉及人物、角色或动作，也必须剥离人物主体，仅保留可独立成立的环境与结构信息。"
     "请严格依据以下用户描述生成上述结构的场景设计图："
+)
+
+THAI_SCENE_PROMPT_PREFIX = (
+    "【คำสั่งบังคับ: แผ่นออกแบบฉาก】ให้พื้นที่และโครงสร้างอาคารเป็นตัวหลักในภาพเดียว "
+    "แสดงมุมมองระดับสายตาและมุมมองด้านบน พร้อมผนัง ประตู หน้าต่าง และพื้นที่ใช้งานหลายส่วน "
+    "ห้ามให้ตัวละครเป็นจุดสนใจ โปรดสร้างตามคำอธิบายฉากต่อไปนี้:"
 )
 
 
@@ -54,6 +71,11 @@ PROP_PROMPT_PREFIX = (
     "请严格依据以下用户描述生成上述结构的道具设定图："
 )
 
+THAI_PROP_PROMPT_PREFIX = (
+    "【คำสั่งบังคับ: แผ่นตั้งค่าวัตถุ】พื้นหลังสีขาวล้วน แสดงวัตถุชิ้นเดียวกันสามมุมมองด้านหน้า ด้านข้าง และด้านหลัง "
+    "ต้องมีภาพรายละเอียดจุดสำคัญและพื้นผิววัสดุ ห้ามมีตัวละครหรือฉากซับซ้อน โปรดสร้างตามคำอธิบายวัตถุต่อไปนี้:"
+)
+
 # MATERIAL_PROMPT_PREFIX 气氛素材强制前缀
 MATERIAL_PROMPT_PREFIX = (
     "【强制任务：生成气氛空镜素材】本次必须生成环境/气氛静帧，"
@@ -61,6 +83,7 @@ MATERIAL_PROMPT_PREFIX = (
     "严禁生成可识别人脸特写或角色立绘。"
     "请严格依据以下用户描述生成素材画面："
 )
+THAI_MATERIAL_PROMPT_PREFIX = "【คำสั่งบังคับ: ภาพบรรยากาศ】สร้างภาพสภาพแวดล้อมและแสงเงาโดยไม่มีใบหน้าตัวละครเด่น โปรดสร้างตามคำอธิบายต่อไปนี้:"
 
 # IMAGE_PROMPT_PREFIX 自由画布图片：短意图也必须钉住主体
 IMAGE_PROMPT_PREFIX = (
@@ -69,6 +92,7 @@ IMAGE_PROMPT_PREFIX = (
     "禁止白底多视图设定板，禁止只出空镜氛围而丢掉主体。"
     "请严格依据以下用户描述生成画面："
 )
+THAI_IMAGE_PROMPT_PREFIX = "【คำสั่งบังคับ: ภาพตามเจตนาผู้ใช้】ให้สิ่งที่ผู้ใช้ระบุเป็นจุดศูนย์กลาง ห้ามแทนที่ด้วยสิ่งอื่น และห้ามเปลี่ยนเป็นแผ่นตั้งค่าหลายมุมมอง โปรดสร้างตามคำอธิบายต่อไปนี้:"
 
 
 # 将内置风格提示词追加到正文后；设定板类资产强调构图优先于风格场景
@@ -80,9 +104,19 @@ def append_style_prompt(
     structure_locked: bool = False,
     has_style_board: bool = False,
 ) -> str:
-    style_prompt = resolve_image_style_prompt(style_id)
+    lang = detect_content_language(prompt)
+    style_prompt = resolve_image_style_prompt(style_id, lang=lang)
     if not style_prompt:
         return prompt
+    if lang == "th":
+        board_hint = " (อ้างอิงเฉพาะโทนสีและแสงเงา ห้ามคัดลอกตัวละครหรือฉาก)" if has_style_board else ""
+        if structure_locked:
+            return (
+                f"{prompt} รูปแบบภาพและวัสดุ: {style_prompt}{board_hint} "
+                "(ต้องคงรูปแบบแผ่นตั้งค่าบนพื้นหลังสีขาว ห้ามเปลี่ยนเป็นฉากซับซ้อน)"
+            )
+        return f"{prompt} สไตล์ของภาพ: {style_prompt}{board_hint}"
+
     board_hint = f"。{STYLE_BOARD_PROMPT_HINT}" if has_style_board else ""
     if structure_locked:
         return (
@@ -101,17 +135,58 @@ _STRUCTURE_PREFIX_BY_KIND: dict[str, str] = {
     "image": IMAGE_PROMPT_PREFIX,
 }
 
+_THAI_STRUCTURE_PREFIX_BY_KIND: dict[str, str] = {
+    "character": THAI_CHARACTER_PROMPT_PREFIX,
+    "scene": THAI_SCENE_PROMPT_PREFIX,
+    "prop": THAI_PROP_PROMPT_PREFIX,
+    "material": THAI_MATERIAL_PROMPT_PREFIX,
+    "none": THAI_MATERIAL_PROMPT_PREFIX,
+    "image": THAI_IMAGE_PROMPT_PREFIX,
+}
+
+_KNOWN_CHINESE_PREFIXES = (
+    CHARACTER_PROMPT_PREFIX,
+    SCENE_PROMPT_PREFIX,
+    PROP_PROMPT_PREFIX,
+    MATERIAL_PROMPT_PREFIX,
+    IMAGE_PROMPT_PREFIX,
+)
+
+
+def strip_chinese_structure_prefix(text: str) -> str:
+    t = (text or "").strip()
+    for prefix in _KNOWN_CHINESE_PREFIXES:
+        if t.startswith(prefix):
+            return t[len(prefix):].strip()
+    return re.sub(r"^【强制任务：[\s\S]*?(?:请严格依据[^：:\n]*[：:]|[：:])\s*", "", t).strip()
+
+
 # 提示词正文是否已含设定板/构图强制任务（避免重复拼接）
 def prompt_has_structure_prefix(prompt: str) -> bool:
     text = prompt or ""
-    return "【强制任务：" in text or "全身三视图" in text or "完整三视图" in text
+    return (
+        "【คำสั่งบังคับ" in text
+        or "【强制任务" in text
+        or "全身三视图" in text
+        or "完整三视图" in text
+        or "สามมุมมอง" in text
+    )
 
 
 # 将三视图等结构前缀写入提示词正文（供提示词框展示；提交时不再静默携带）
-def ensure_structure_in_prompt(user_prompt: str, asset_type: str | None = None) -> str:
+def ensure_structure_in_prompt(user_prompt: str, asset_type: str | None = None, language: str | None = None) -> str:
     trimmed = (user_prompt or "").strip()
     if not trimmed:
         return trimmed
+    lang = language or detect_content_language(trimmed)
+    if lang == "th":
+        trimmed = strip_chinese_structure_prefix(trimmed)
+        if "【คำสั่งบังคับ" in trimmed:
+            return trimmed
+        kind = (asset_type or "").strip().lower()
+        prefix = _THAI_STRUCTURE_PREFIX_BY_KIND.get(kind)
+        return f"{prefix}{trimmed}" if prefix else trimmed
+
     if prompt_has_structure_prefix(trimmed):
         return trimmed
     kind = (asset_type or "").strip().lower()

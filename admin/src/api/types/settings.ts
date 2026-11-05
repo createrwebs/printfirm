@@ -1,4 +1,4 @@
-/** 模型路由、运行时、存储、支付与站点设置的接口契约。 */
+/** 模型路由、运行时、存储、支付与站点ตั้งค่า的接口契约。 */
 export type ModelCapabilityReadiness = {
   capability: string;
   label: string;

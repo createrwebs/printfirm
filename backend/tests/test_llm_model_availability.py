@@ -1,6 +1,7 @@
 """Managed text model switches must also block legacy environment requests."""
 
 import json
+from unittest.mock import AsyncMock
 
 import httpx
 import pytest
@@ -9,6 +10,14 @@ from app.config import Settings
 from app.schemas_routing import DefaultModels, LogicalModel, LogicalModelBinding, SystemModelChannel
 from app.services import llm_client
 from app.services.model_settings import RoutingSnapshot
+
+
+def test_common_gateway_errors_are_actionable():
+    auth = llm_client._format_upstream_error(401, '{"error":{"message":"Invalid token"}}')
+    timeout = llm_client._format_upstream_error(524, '{"error":{"message":"bad response status code 524"}}')
+
+    assert "API Key" in auth and "重新保存" in auth
+    assert "切换到 Kimi K2.6" in timeout and "524" in timeout
 
 
 @pytest.fixture
@@ -77,3 +86,35 @@ async def test_enabled_managed_text_uses_channel_credentials(text_client):
     assert len(requests) == 1
     assert str(requests[0].url) == "https://channel.test/v1/chat/completions"
     assert requests[0].headers["Authorization"] == "Bearer channel-key"
+
+
+async def test_transient_claude_failure_can_fall_back_without_name_error(text_client, monkeypatch):
+    """暂时不可用时的 fallback 不能因缺少 asyncio import 而变成 NameError。"""
+    configure, _ = text_client
+    configure(managed=False)
+    llm_client.get_settings().model_llm = "claude-sonnet-5-5"
+    responses = [
+        httpx.Response(403, json={"error": {"type": "model_temporarily_unavailable", "message": "retry later"}}),
+        httpx.Response(200, json={"choices": [{"message": {"content": "fallback response"}}]}),
+    ]
+
+    class FakeClient:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *_args):
+            return None
+
+        async def post(self, *_args, **_kwargs):
+            return responses.pop(0)
+
+    monkeypatch.setattr(
+        llm_client.httpx,
+        "AsyncClient",
+        lambda **_kwargs: FakeClient(),
+    )
+    sleep = AsyncMock()
+    monkeypatch.setattr(llm_client.asyncio, "sleep", sleep)
+
+    assert await llm_client.chat_completions("system", "user") == "fallback response"
+    sleep.assert_awaited_once()

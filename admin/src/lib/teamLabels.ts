@@ -3,5 +3,5 @@ export function teamDate(value: string): string {
   return new Date(value).toLocaleString("zh-CN", { timeZone: "Asia/Shanghai", hour12: false });
 }
 
-/** 平台管理员查看的团队内角色名称。 */
-export const teamRoleLabels = { owner: "所有者", admin: "管理员", member: "成员" };
+/** 平台ผู้ดูแลระบบ (Admin)ดู的团队内ตัวละคร名称。 */
+export const teamRoleLabels = { owner: "เจ้าของ (Owner)", admin: "ผู้ดูแลระบบ (Admin)", member: "สมาชิก" };

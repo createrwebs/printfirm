@@ -10,7 +10,7 @@ import { dialog } from '../../lib/dialog'
 import { isFreeWork } from './playbackPolicy'
 import { explainMarketplaceError } from './messages'
 
-const fileKindNames: Record<string, string> = { video: '视频', image: '图片', document: '文档' }
+const fileKindNames: Record<string, string> = { video: 'วิดีโอ', image: 'รูปภาพ', document: 'เอกสาร' }
 
 function mineHref(item: Row) {
   return item.kind === 'series' ? `/marketplace/series/${item.id}/edit` : `/marketplace/works/${item.id}/manage`
@@ -18,15 +18,15 @@ function mineHref(item: Row) {
 
 function mineStatus(item: Row) {
   if (item.blocked) return '已限制'
-  if (item.listed) return '已上架'
-  return labels[item.audit_status || ''] || '草稿'
+  if (item.listed) return 'เผยแพร่แล้ว'
+  return labels[item.audit_status || ''] || 'ฉบับร่าง'
 }
 
 function recruitStatus(item: Row) {
   if (item.blocked) return '已限制'
-  if (item.state === 'closed') return '已关闭'
+  if (item.state === 'closed') return 'ปิดใช้งานแล้ว'
   if (item.state === 'expired') return '已到期'
-  return labels[item.audit_status || ''] || '草稿'
+  return labels[item.audit_status || ''] || 'ฉบับร่าง'
 }
 
 function freeMine(item: Row) {
@@ -35,7 +35,7 @@ function freeMine(item: Row) {
 
 function MineRecruits({ listing, loading, page, changePage }: { listing: Listing | null; loading: boolean; page: number; changePage: (value: number) => void }) {
   return <section className="pf-market-discover pf-market-mine">
-    <header className="pf-discover-heading"><div><span className="pf-market-kicker">创作需求</span><h1>我的招募</h1><p>草稿、审核和已通过的需求都在这里。</p></div><Button variant="dark" to="/marketplace/recruits/new" icon>发布招募<ArrowUpRight size={17} /></Button></header>
+    <header className="pf-discover-heading"><div><span className="pf-market-kicker">创作需求</span><h1>我的招募</h1><p>ฉบับร่าง、审核和已通过的需求都在这里。</p></div><Button variant="dark" to="/marketplace/recruits/new" icon>发布招募<ArrowUpRight size={17} /></Button></header>
     {loading || !listing ? <div key="loading" className="pf-market-grid" role="status">{[0, 1, 2].map(item => <div key={item} className="pf-market-skeleton"><div /><span /><span /></div>)}</div> : listing.items.length ? <div key="ready" className="pf-market-grid">{listing.items.map(item => {
       const href = `/marketplace/recruits/${item.id}/manage`
       return <article className="pf-market-item" key={`recruit-${item.id}`}>
@@ -46,14 +46,14 @@ function MineRecruits({ listing, loading, page, changePage }: { listing: Listing
           <div className="pf-market-item-price"><div><strong>{money(item.budget_fen)}</strong><span>/ 条预算</span></div><Link to={href} aria-label={`管理${item.title}`}><ArrowUpRight size={20} /></Link></div>
         </div>
       </article>
-    })}</div> : <EmptyState title="还没有招募" description="写下创作需求，审核通过后会出现在招募广场。" action="发布招募需求" to="/marketplace/recruits/new" />}
+    })}</div> : <EmptyState title="还没有招募" description="写下创作需求，ผ่านการตรวจสอบ后会出现在招募广场。" action="发布招募需求" to="/marketplace/recruits/new" />}
     <Pager listing={listing} page={page} change={changePage} />
   </section>
 }
 
 function MineWorks({ listing, loading, page, changePage, remove }: { listing: Listing | null; loading: boolean; page: number; changePage: (value: number) => void; remove: (item: Row) => void }) {
   return <section className="pf-market-discover pf-market-mine">
-    <header className="pf-discover-heading"><div><span className="pf-market-kicker">单视频与短剧</span><h1>我的作品</h1><p>草稿、审核和已上架的作品都在这里。</p></div><Button variant="dark" to="/marketplace/works/new" icon>发布作品<ArrowUpRight size={17} /></Button></header>
+    <header className="pf-discover-heading"><div><span className="pf-market-kicker">单วิดีโอ与ละครสั้น</span><h1>我的作品</h1><p>ฉบับร่าง、审核和เผยแพร่แล้ว的作品都在这里。</p></div><Button variant="dark" to="/marketplace/works/new" icon>发布作品<ArrowUpRight size={17} /></Button></header>
     {loading || !listing ? <div key="loading" className="pf-market-grid" role="status">{[0, 1, 2].map(item => <div key={item} className="pf-market-skeleton"><div /><span /><span /></div>)}</div> : listing.items.length ? <div key="ready" className="pf-market-grid">{listing.items.map(item => {
       const href = mineHref(item)
       const free = freeMine(item)
@@ -63,17 +63,17 @@ function MineWorks({ listing, loading, page, changePage, remove }: { listing: Li
         <div className="pf-market-item-body">
           <h3><Link to={href}>{item.title}</Link></h3>
           <p className="pf-market-author"><span>{item.kind === 'series' ? '剧' : '作'}</span>{mineStatus(item)}{item.kind === 'series' ? ` · ${item.episode_count || 0} 集` : ''}</p>
-          <div className="pf-market-item-price"><div><strong>{free ? '免费' : item.kind === 'series' && item.sale_type === 'platform_unlock' ? '按集解锁' : money(item.sale_type === 'platform_unlock' ? item.unlock_price_fen : copyrightPrice)}</strong>{!free && <span>{item.sale_type === 'platform_unlock' ? item.kind === 'series' ? '分集定价' : '解锁价' : '参考价'}</span>}</div><button type="button" onClick={() => remove(item)}>删除</button><Link to={href} aria-label={`管理${item.title}`}><ArrowUpRight size={20} /></Link></div>
+          <div className="pf-market-item-price"><div><strong>{free ? '免费' : item.kind === 'series' && item.sale_type === 'platform_unlock' ? '按集解锁' : money(item.sale_type === 'platform_unlock' ? item.unlock_price_fen : copyrightPrice)}</strong>{!free && <span>{item.sale_type === 'platform_unlock' ? item.kind === 'series' ? '分集定价' : '解锁价' : '参考价'}</span>}</div><button type="button" onClick={() => remove(item)}>ลบ</button><Link to={href} aria-label={`管理${item.title}`}><ArrowUpRight size={20} /></Link></div>
         </div>
       </article>
-    })}</div> : <EmptyState title="还没有作品" description="单条视频和短剧都会出现在这里。" action="发布我的作品" to="/marketplace/works/new" />}
+    })}</div> : <EmptyState title="还没有作品" description="单条วิดีโอ和ละครสั้น都会出现在这里。" action="发布我的作品" to="/marketplace/works/new" />}
     <Pager listing={listing} page={page} change={changePage} />
   </section>
 }
 
 // 所有列表由后端按当前账号隔离；不与原个人中心数据混合。
 export default function Workspace() {
-  /* kind 工作台分类；listing/page 当前列表；refresh 重新读取；mediaId 当前文件预览。 */
+  /* kind เวิร์กสเตชัน分类；listing/page 当前列表；refresh 重新读取；mediaId 当前文件ดูตัวอย่าง。 */
   const [kind, setKind] = useState('works')
   const [listing, setListing] = useState<Listing | null>(null)
   const [page, setPage] = useState(1)
@@ -84,25 +84,25 @@ export default function Workspace() {
   useEffect(() => { let active = true; setLoading(true); setListing(null); setError(''); request<Listing>(`/mine/${kind}?page=${page}`).then(value => { if (active) setListing(value) }).catch(e => { if (active) setError(e.message) }).finally(() => { if (active) setLoading(false) }); return () => { active = false } }, [kind, page, refresh])
   async function action(path: string) { try { await request(path, 'POST'); setRefresh(v => v + 1) } catch (e) { setError((e as Error).message) } }
   async function removeOwned(item: Row) {
-    const ok = await dialog.confirm({ title: '删除作品', message: `删除后「${item.title || '未命名作品'}」会从我的作品和作品广场撤下。文件和审核记录会保留，但不能再展示。`, confirmText: '删除', tone: 'danger' })
+    const ok = await dialog.confirm({ title: 'ลบ作品', message: `ลบ后「${item.title || '未命名作品'}」会从我的作品和作品广场撤下。文件和审核记录会保留，但不能再展示。`, confirmText: 'ลบ', tone: 'danger' })
     if (!ok || !item.id) return
     try { await request(item.kind === 'series' ? `/series/${item.id}` : `/works/${item.id}`, 'DELETE'); setRefresh(value => value + 1) } catch (e) { setError((e as Error).message) }
   }
-  const tabs = { works: '我的作品', series: '我的短剧', recruits: '我的招募', rights: '版权材料', assets: '我的文件', notifications: '站内通知' }
-  return <><PageHeading title="我的发布与业务进度" description="从作品草稿到合作机会，在这里跟进作品发布与需求审核。招募接单请联系客服。" /><p><Link to="/marketplace/authorization">签署 / 查看 PrintFilm 授权函</Link></p>
-    <div className="pf-market-workspace-toolbar"><nav className="pf-market-tabs" aria-label="个人业务分类">{Object.entries(tabs).map(([key, label]) => <button key={key} type="button" aria-pressed={key === kind} onClick={() => { setKind(key); setPage(1); setMediaId(null); setListing(null); setLoading(true) }}>{label}</button>)}</nav><button type="button" onClick={() => setRefresh(v => v + 1)}><RefreshCw size={14} />刷新</button></div>
+  const tabs = { works: '我的作品', series: '我的ละครสั้น', recruits: '我的招募', rights: '版权材料', assets: '我的文件', notifications: '站内通知' }
+  return <><PageHeading title="我的发布与业务进度" description="从作品ฉบับร่าง到合作机会，在这里跟进เผยแพร่ผลงาน与需求审核。招募接单请联系客服。" /><p><Link to="/marketplace/authorization">签署 / ดู PrintFilm 授权函</Link></p>
+    <div className="pf-market-workspace-toolbar"><nav className="pf-market-tabs" aria-label="个人业务分类">{Object.entries(tabs).map(([key, label]) => <button key={key} type="button" aria-pressed={key === kind} onClick={() => { setKind(key); setPage(1); setMediaId(null); setListing(null); setLoading(true) }}>{label}</button>)}</nav><button type="button" onClick={() => setRefresh(v => v + 1)}><RefreshCw size={14} />รีเฟรช</button></div>
     {error && <p role="alert">{error}</p>}
     {kind === 'works' ? <MineWorks listing={listing} loading={loading} page={page} changePage={setPage} remove={item => void removeOwned(item)} /> : kind === 'recruits' ? <MineRecruits listing={listing} loading={loading} page={page} changePage={setPage} /> : <>
-      {kind === 'series' && <section className="pf-market-discover pf-market-mine"><header className="pf-discover-heading"><div><span className="pf-market-kicker">剧集资产</span><h1>我的短剧</h1><p>查看短剧草稿、统一审核和上架状态。</p></div><Button variant="dark" to="/marketplace/works/new?type=series" icon>发布短剧<ArrowUpRight size={17} /></Button></header>{loading || !listing ? <div key="loading" className="pf-market-grid" role="status">{[0, 1, 2].map(item => <div key={item} className="pf-market-skeleton"><div /><span /><span /></div>)}</div> : listing.items.length ? <div key="ready" className="pf-market-grid">{listing.items.map(item => { const href = `/marketplace/series/${item.id}/edit`; const free = item.sale_type === 'free'; const price = item.copyright_price_fen ?? item.price_fen; return <article className="pf-market-item" key={`series-${item.id}`}><div className="pf-market-item-cover">{item.cover_asset_id ? <Media kind="series" id={item.id} purpose="cover" /> : <span className="pf-market-series-mark"><Film size={36} /></span>}<Link className="pf-market-cover-play" to={href} aria-label={`管理${item.title}`}><Play size={16} /></Link></div><div className="pf-market-item-body"><h3><Link to={href}>{item.title}</Link></h3><p className="pf-market-author"><span>剧</span>{mineStatus(item)} · {item.episode_count || 0} 集</p><div className="pf-market-item-price"><div><strong>{free ? '免费' : item.sale_type === 'platform_unlock' ? '按集解锁' : money(price)}</strong>{!free && <span>{item.sale_type === 'platform_unlock' ? '分集定价' : '参考价'}</span>}</div><Link to={href} aria-label={`管理${item.title}`}><ArrowUpRight size={20} /></Link></div></div></article> })}</div> : <EmptyState title="还没有短剧" description="创建系列后，可逐集上传或导入漫剧分集。" action="发布短剧" to="/marketplace/works/new?type=series" />}<Pager listing={listing} page={page} change={setPage} /></section>}
+      {kind === 'series' && <section className="pf-market-discover pf-market-mine"><header className="pf-discover-heading"><div><span className="pf-market-kicker">剧集แอสเซท</span><h1>我的ละครสั้น</h1><p>ดูละครสั้นฉบับร่าง、统一审核和上架สถานะ。</p></div><Button variant="dark" to="/marketplace/works/new?type=series" icon>发布ละครสั้น<ArrowUpRight size={17} /></Button></header>{loading || !listing ? <div key="loading" className="pf-market-grid" role="status">{[0, 1, 2].map(item => <div key={item} className="pf-market-skeleton"><div /><span /><span /></div>)}</div> : listing.items.length ? <div key="ready" className="pf-market-grid">{listing.items.map(item => { const href = `/marketplace/series/${item.id}/edit`; const free = item.sale_type === 'free'; const price = item.copyright_price_fen ?? item.price_fen; return <article className="pf-market-item" key={`series-${item.id}`}><div className="pf-market-item-cover">{item.cover_asset_id ? <Media kind="series" id={item.id} purpose="cover" /> : <span className="pf-market-series-mark"><Film size={36} /></span>}<Link className="pf-market-cover-play" to={href} aria-label={`管理${item.title}`}><Play size={16} /></Link></div><div className="pf-market-item-body"><h3><Link to={href}>{item.title}</Link></h3><p className="pf-market-author"><span>剧</span>{mineStatus(item)} · {item.episode_count || 0} 集</p><div className="pf-market-item-price"><div><strong>{free ? '免费' : item.sale_type === 'platform_unlock' ? '按集解锁' : money(price)}</strong>{!free && <span>{item.sale_type === 'platform_unlock' ? '分集定价' : '参考价'}</span>}</div><Link to={href} aria-label={`管理${item.title}`}><ArrowUpRight size={20} /></Link></div></div></article> })}</div> : <EmptyState title="还没有ละครสั้น" description="สร้าง系列后，可逐集อัปโหลด或导入ละครซีรีส์分集。" action="发布ละครสั้น" to="/marketplace/works/new?type=series" />}<Pager listing={listing} page={page} change={setPage} /></section>}
       {kind !== 'series' && kind !== 'recruits' && <>{loading ? <div className="pf-market-empty" role="status">正在读取你的业务进度…</div> : listing?.items.map(item => <article className="pf-market-workspace-item" key={item.id}>
         <div className="pf-market-record-head"><h2>{item.title || item.filename || item.recruit_title || item.message || `记录 #${item.id}`}</h2><span className="pf-market-badge">{item.blocked ? '已限制' : item.withdrawn ? '已撤回' : labels[item.audit_status ?? item.status ?? item.state ?? item.selection ?? ''] || (kind === 'notifications' ? item.read ? '已读' : '未读' : '业务记录')}</span></div>
         <p>{date(item.created_at)} · 编号 #{item.id}</p>
         {(item.reason || item.note || item.error) && <p className="pf-market-record-note">{item.reason || item.note || (item.error ? explainMarketplaceError(item.error) : '')}</p>}
-        {kind === 'assets' && <><p>文件类型：{fileKindNames[item.kind || ''] || '文件'}</p><button type="button" onClick={() => setMediaId(mediaId === item.id ? null : item.id)}>{mediaId === item.id ? '收起预览' : '查看文件预览'}</button>{mediaId === item.id && <AssetPreview id={item.id} />}{item.status === 'failed' && <button type="button" onClick={() => action(`/assets/${item.id}/retry`)}>重新校验文件</button>}{item.kind === 'video' && item.status === 'ready' && <Link to={`/marketplace/assets/${item.id}/rights?return=${encodeURIComponent('/marketplace/mine')}`}>查看版权材料</Link>}</>}
-        {kind === 'rights' && <><p>材料状态：{labels[item.full_status ?? ''] || '待补充'}</p><p>版权材料随作品一并提交审核，无需单独申请审核。</p><Link to={`/marketplace/assets/${item.asset_id}/rights?return=${encodeURIComponent('/marketplace/mine')}`}>查看与补充材料</Link></>}
-        {kind === 'notifications' && <>{item.link && <Link to={item.link}>前往工作台</Link>}<button type="button" disabled={item.read} onClick={() => action(`/notifications/${item.id}/read`)}>{item.read ? '已读' : '标记已读'}</button></>}
+        {kind === 'assets' && <><p>文件ประเภท：{fileKindNames[item.kind || ''] || '文件'}</p><button type="button" onClick={() => setMediaId(mediaId === item.id ? null : item.id)}>{mediaId === item.id ? 'ย่อเก็บดูตัวอย่าง' : 'ดู文件ดูตัวอย่าง'}</button>{mediaId === item.id && <AssetPreview id={item.id} />}{item.status === 'failed' && <button type="button" onClick={() => action(`/assets/${item.id}/retry`)}>重新校验文件</button>}{item.kind === 'video' && item.status === 'ready' && <Link to={`/marketplace/assets/${item.id}/rights?return=${encodeURIComponent('/marketplace/mine')}`}>ดู版权材料</Link>}</>}
+        {kind === 'rights' && <><p>材料สถานะ：{labels[item.full_status ?? ''] || '待补充'}</p><p>版权材料随作品一并ส่ง审核，无需单独申请审核。</p><Link to={`/marketplace/assets/${item.asset_id}/rights?return=${encodeURIComponent('/marketplace/mine')}`}>ดู与补充材料</Link></>}
+        {kind === 'notifications' && <>{item.link && <Link to={item.link}>前往เวิร์กสเตชัน</Link>}<button type="button" disabled={item.read} onClick={() => action(`/notifications/${item.id}/read`)}>{item.read ? '已读' : '标记已读'}</button></>}
       </article>)}
-      {!loading && !error && listing?.items.length === 0 && kind !== 'recruits' && <EmptyState title="这里还没有记录" description={kind === 'notifications' ? '发布及审核状态发生变化时，通知会出现在这里。' : '你的需求与合作进展，都会在这里留下记录。'} />}
+      {!loading && !error && listing?.items.length === 0 && kind !== 'recruits' && <EmptyState title="这里还没有记录" description={kind === 'notifications' ? '发布及审核สถานะ发生变化时，通知会出现在这里。' : '你的需求与合作进展，都会在这里留下记录。'} />}
       <Pager listing={listing} page={page} change={setPage} /></>}
     </>}
   </>

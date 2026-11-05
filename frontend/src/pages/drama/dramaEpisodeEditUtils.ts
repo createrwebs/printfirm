@@ -1,4 +1,4 @@
-/** 分集编辑页辅助：资产分类、引用解析、标签文案 */
+/** 分 ตอนแก้ไข页辅助：หมวดหมู่แอสเซท、引用解析、แท็ก文案 */
 import type { DramaAsset, DramaFragment } from '../../api/drama'
 import {
   DRAMA_RATIO_OPTIONS,
@@ -13,16 +13,16 @@ export type AssetScope = 'episode' | 'series'
 export type AssetTab = 'character' | 'scene' | 'prop'
 
 export const ASSET_TABS: Array<{ key: AssetTab; label: string }> = [
-  { key: 'character', label: '角色' },
-  { key: 'scene', label: '场景' },
-  { key: 'prop', label: '道具' },
+  { key: 'character', label: 'ตัวละคร' },
+  { key: 'scene', label: 'ฉาก' },
+  { key: 'prop', label: 'อุปกรณ์/พร็อพ' },
 ]
 
 export const RATIO_OPTIONS = DRAMA_RATIO_OPTIONS
 export const RES_OPTIONS = DRAMA_RES_OPTIONS
 export { readProjectAspectRatio, readProjectResolution, readEpisodeAspectRatio, readEpisodeResolution }
 
-// 从分镜正文提取 @asset:id
+// 从分镜เนื้อหาหลัก提取 @asset:id
 export function extractAssetIds(content: string): number[] {
   const ids: number[] = []
   const re = /@asset:(\d+)/g
@@ -33,7 +33,7 @@ export function extractAssetIds(content: string): number[] {
   return ids
 }
 
-// 合并正文 @asset 与 asset_ids，去重保序
+// 合并เนื้อหาหลัก @asset 与 asset_ids，去重保序
 export function collectFragmentAssetIds(frag: DramaFragment | null | undefined): number[] {
   if (!frag) return []
   const seen = new Set<number>()
@@ -56,7 +56,7 @@ export type FragmentRefStripItem = {
   voiceUrl?: string
 }
 
-// 组装当前分镜关联资产条
+// 组装当前分镜关联แอสเซท条
 export function buildFragmentRefStripItems(
   frag: DramaFragment | null | undefined,
   assets: DramaAsset[],
@@ -71,7 +71,7 @@ export function buildFragmentRefStripItems(
     const voice = asset && readVoice ? readVoice(asset) : null
     return {
       assetId,
-      name: asset?.name || `资产 ${assetId}`,
+      name: asset?.name || `แอสเซท ${assetId}`,
       type: asset?.type || '',
       previewUrl: preview,
       isCharacter,
@@ -81,16 +81,16 @@ export function buildFragmentRefStripItems(
   })
 }
 
-// 规范化资产分类
+// 规范化หมวดหมู่แอสเซท
 export function normalizeAssetTab(type: string): AssetTab | null {
   const t = (type || '').toLowerCase()
-  if (t === 'character' || t === '角色') return 'character'
-  if (t === 'scene' || t === '场景') return 'scene'
-  if (t === 'prop' || t === '道具') return 'prop'
+  if (t === 'character' || t === 'ตัวละคร') return 'character'
+  if (t === 'scene' || t === 'ฉาก') return 'scene'
+  if (t === 'prop' || t === 'อุปกรณ์/พร็อพ') return 'prop'
   return null
 }
 
-// 从分镜正文合计 @duration 秒数（与后端 fragment_content_duration 一致）
+// 从分镜เนื้อหาหลัก合计 @duration วินาที数（与后端 fragment_content_duration 一致）
 export function sumFragmentContentDuration(content: string): number {
   const re = /@duration:(\d+)/g
   let total = 0
@@ -102,7 +102,7 @@ export function sumFragmentContentDuration(content: string): number {
   return total
 }
 
-// 解析分镜生成状态（params.generation 优先于已有 video，支持重新生成）
+// 解析分镜生成สถานะ（params.generation 优先于已有 video，支持สร้างใหม่）
 export function readFragmentGenerationStatus(
   frag: DramaFragment,
 ): { status: string; error?: string; message?: string; phase?: string } {
@@ -116,7 +116,7 @@ export function readFragmentGenerationStatus(
       const error =
         status === 'failed' &&
         root &&
-        (!surface || /重试超过|超过重试/.test(surface))
+        (!surface || /ลองใหม่超过|超过ลองใหม่/.test(surface))
           ? root
           : surface
       return {
@@ -137,7 +137,7 @@ export function readFragmentGenerationStatus(
   return { status: 'idle' }
 }
 
-// 是否处于排队/生成中
+// 是否处于排队/กำลังสร้าง
 export function isFragmentGenerationBusy(status: string): boolean {
   return ['queued', 'running', 'generating', 'pending', 'leased', 'awaiting_poll', 'awaiting_review'].includes(
     status,
@@ -180,12 +180,12 @@ export function readFragmentVideoVersions(frag: DramaFragment | null | undefined
 // 分镜队列徽标文案
 export function fragmentQueueBadgeLabel(status: string): string {
   if (status === 'queued' || status === 'pending' || status === 'leased') return '排队'
-  if (status === 'running' || status === 'generating' || status === 'awaiting_poll') return '生成中'
-  if (status === 'failed') return '失败'
+  if (status === 'running' || status === 'generating' || status === 'awaiting_poll') return 'กำลังสร้าง'
+  if (status === 'failed') return 'ล้มเหลว'
   return ''
 }
 
-// 保存前：有 @duration 标签时用合计值作为 duration_sec
+// บันทึก前：有 @duration แท็ก时用合计值作为 duration_sec
 export function resolveFragmentDurationSec(
   content: string,
   durationSec: number | null | undefined,
@@ -196,14 +196,14 @@ export function resolveFragmentDurationSec(
   return Math.min(15, Math.max(4, fallback))
 }
 
-// 格式化片段标签
+// 格式化片段แท็ก
 export function formatFragLabel(index: number, durationSec: number | null | undefined) {
   const n = String(index + 1).padStart(2, '0')
   const sec = durationSec && durationSec > 0 ? durationSec : 8
   return `片段 ${n} · ${sec}s`
 }
 
-// 按本集/全集与分类筛选资产
+// 按本 ตอน/全 ตอน与分类ตัวกรองแอสเซท
 export function filterEpisodeAssets(
   assets: DramaAsset[],
   scope: AssetScope,

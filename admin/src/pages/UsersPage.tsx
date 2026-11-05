@@ -21,11 +21,12 @@ import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { fenToYuan } from "@/lib/utils";
 import { yuanInputToFen } from "@/lib/moneyInput";
 import { Switch } from "@/components/ui/switch";
+import { useI18n } from "@/i18n";
 
 type ListRes = { items: AdminUserRow[]; meta: PageMeta };
 
-// 用户管理：搜索、筛选、只读明细与编辑
 export function UsersPage() {
+  const { locale } = useI18n();
   const [q, setQ] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
   const [page, setPage] = useState(1);
@@ -37,9 +38,7 @@ export function UsersPage() {
   const [detailUser, setDetailUser] = useState<AdminUserRow | null>(null);
   const [form, setForm] = useState({
     role: "user",
-    /** increase=增加 / decrease=减少 */
     balance_dir: "increase" as "increase" | "decrease",
-    /** 调账金额（元），空表示不改余额 */
     balance_amount_yuan: "",
     balance_note: "",
   });
@@ -57,13 +56,15 @@ export function UsersPage() {
   const balanceAfterFen = editing && adjustBalance && amountFen !== null
     ? editing.balance_fen + (form.balance_dir === "decrease" ? -amountFen : amountFen)
     : editing?.balance_fen ?? 0;
+
   const amountError = !adjustBalance ? "" : !form.balance_amount_yuan.trim()
-    ? "请输入需要调整的金额"
-    : amountFen === null ? "请输入有效金额，最多保留两位小数"
-    : amountFen === 0 ? "调账金额须大于 0 元"
-    : !Number.isSafeInteger(balanceAfterFen) ? "调整后金额过大，请减少调账金额"
-    : balanceAfterFen < 0 ? "减少金额不能超过当前余额"
+    ? (locale === "th" ? "กรุณาระบุจำนวนเงินที่ต้องการปรับ" : "Please enter the amount to adjust")
+    : amountFen === null ? (locale === "th" ? "กรุณาระบุจำนวนเงินที่ถูกต้อง (ทศนิยมไม่เกิน 2 ตำแหน่ง)" : "Invalid amount (up to 2 decimal places)")
+    : amountFen === 0 ? (locale === "th" ? "จำนวนเงินที่ปรับต้องมากกว่า 0" : "Amount must be greater than 0")
+    : !Number.isSafeInteger(balanceAfterFen) ? (locale === "th" ? "ยอดเงินหลังปรับสูงเกินไป กรุณาลดจำนวนเงิน" : "Adjusted amount is too large")
+    : balanceAfterFen < 0 ? (locale === "th" ? "ยอดเงินที่ลดต้องไม่เกินยอดคงเหลือปัจจุบัน" : "Deduction cannot exceed current balance")
     : "";
+
   const visibleAmountError = amountTouched || submitAttempted ? amountError : "";
   const roleChanged = editing !== null && form.role !== editing.role;
   const hasChanges = roleChanged || adjustBalance;
@@ -80,7 +81,7 @@ export function UsersPage() {
       const res = await api<ListRes>(`/api/admin/users?${params}`);
       setData(res);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "加载失败");
+      toast.error(err instanceof Error ? err.message : (locale === "th" ? "โหลดข้อมูลล้มเหลว" : "Failed to load"));
     } finally {
       setLoading(false);
     }
@@ -96,9 +97,9 @@ export function UsersPage() {
       .then(setStats)
       .catch((err) => {
         setStats(null);
-        toast.error(err instanceof Error ? err.message : "统计加载失败");
+        toast.error(err instanceof Error ? err.message : (locale === "th" ? "โหลดสถิติล้มเหลว" : "Failed to load stats"));
       });
-  }, []);
+  }, [locale]);
 
   useEffect(() => {
     if (!userDetail.id || !data?.items) return;
@@ -144,11 +145,13 @@ export function UsersPage() {
         method: "PATCH",
         body: JSON.stringify(payload),
       });
-      toast.success(payload.balance_delta_fen ? "已调账并保存" : "已保存");
+      toast.success(payload.balance_delta_fen
+        ? (locale === "th" ? "ปรับยอดเงินและบันทึกสำเร็จ" : "Adjusted and saved")
+        : (locale === "th" ? "บันทึกสำเร็จ" : "Saved"));
       setEditing(null);
       await load();
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : "保存失败，请重试");
+      setSaveError(err instanceof Error ? err.message : (locale === "th" ? "บันทึกล้มเหลว กรุณาลองใหม่" : "Save failed"));
     } finally {
       pendingSave.current = false;
       setSaving(false);
@@ -162,37 +165,40 @@ export function UsersPage() {
 
   return (
     <div className="admin-list-page">
-      <PageHeader title="用户管理" description="搜索用户，调整角色与余额" />
+      <PageHeader
+        title={locale === "th" ? "จัดการผู้ใช้" : "User Management"}
+        description={locale === "th" ? "ค้นหาผู้ใช้ ตรวจสอบข้อมูล ปรับบทบาทและยอดคงเหลือ" : "Search users, adjust roles and balances"}
+      />
 
       <AdminFilterBar>
         <AdminSearchInput
           value={q}
           onChange={setQ}
-          placeholder="搜索邮箱 / 昵称 / 账号 ID"
+          placeholder={locale === "th" ? "ค้นหาอีเมล / ชื่อ / ID บัญชี" : "Search email / nickname / ID"}
           onKeyDown={(e) => {
             if (e.key === "Enter") applyFilters();
           }}
         />
         <Select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
-          <option value="">全部角色</option>
-          <option value="user">普通用户</option>
-          <option value="admin">管理员</option>
+          <option value="">{locale === "th" ? "ทุกบทบาท" : "All Roles"}</option>
+          <option value="user">{locale === "th" ? "ผู้ใช้ทั่วไป" : "User"}</option>
+          <option value="admin">{locale === "th" ? "ผู้ดูแลระบบ" : "Admin"}</option>
         </Select>
         <Button size="sm" className="admin-filter-action" onClick={applyFilters} disabled={loading}>
-          {loading ? "加载中…" : "搜索"}
+          {loading ? (locale === "th" ? "กำลังโหลด…" : "Loading…") : (locale === "th" ? "ค้นหา" : "Search")}
         </Button>
       </AdminFilterBar>
 
       <AdminListStats
         items={[
-          { label: "总用户数", value: stats?.user_count ?? (loading ? "…" : "—") },
+          { label: locale === "th" ? "ผู้ใช้ทั้งหมด" : "Total Users", value: stats?.user_count ?? (loading ? "…" : "—") },
           {
-            label: "本月调用",
+            label: locale === "th" ? "การเรียกใช้เดือนนี้" : "Monthly Calls",
             value: stats != null ? (stats.usage_calls_month ?? 0) : loading ? "…" : "—",
-            hint: stats ? `今日 ${stats.usage_calls_today ?? 0} 次` : undefined,
+            hint: stats ? (locale === "th" ? `วันนี้ ${stats.usage_calls_today ?? 0} ครั้ง` : `Today ${stats.usage_calls_today ?? 0}`) : undefined,
           },
           {
-            label: "累计调用",
+            label: locale === "th" ? "การเรียกใช้สะสม" : "All-time Calls",
             value: stats != null ? (stats.usage_calls_total ?? 0) : loading ? "…" : "—",
           },
         ]}
@@ -202,15 +208,15 @@ export function UsersPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>账号 ID</TableHead>
-              <TableHead>邮箱</TableHead>
-              <TableHead>昵称</TableHead>
-              <TableHead>手机</TableHead>
-              <TableHead>余额</TableHead>
-              <TableHead>冻结</TableHead>
-              <TableHead>角色</TableHead>
-              <TableHead>注册时间</TableHead>
-              <TableHead className="w-[140px]">操作</TableHead>
+              <TableHead>{locale === "th" ? "ID บัญชี" : "Account ID"}</TableHead>
+              <TableHead>{locale === "th" ? "อีเมล" : "Email"}</TableHead>
+              <TableHead>{locale === "th" ? "ชื่อ" : "Nickname"}</TableHead>
+              <TableHead>{locale === "th" ? "เบอร์โทร" : "Phone"}</TableHead>
+              <TableHead>{locale === "th" ? "ยอดคงเหลือ" : "Balance"}</TableHead>
+              <TableHead>{locale === "th" ? "ระงับชั่วคราว" : "Frozen"}</TableHead>
+              <TableHead>{locale === "th" ? "บทบาท" : "Role"}</TableHead>
+              <TableHead>{locale === "th" ? "เวลาลงทะเบียน" : "Registered At"}</TableHead>
+              <TableHead className="w-[140px]">{locale === "th" ? "การจัดการ" : "Actions"}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -223,7 +229,9 @@ export function UsersPage() {
                 <TableCell className="tabular-nums">¥{fenToYuan(u.balance_fen)}</TableCell>
                 <TableCell className="tabular-nums">¥{fenToYuan(u.frozen_fen)}</TableCell>
                 <TableCell>
-                  <Badge variant={u.role === "admin" ? "success" : "secondary"}>{u.role === "admin" ? "管理员" : "普通用户"}</Badge>
+                  <Badge variant={u.role === "admin" ? "success" : "secondary"}>
+                    {u.role === "admin" ? (locale === "th" ? "ผู้ดูแลระบบ" : "Admin") : (locale === "th" ? "ผู้ใช้ทั่วไป" : "User")}
+                  </Badge>
                 </TableCell>
                 <TableCell className="text-xs text-muted-foreground">
                   {u.created_at ? new Date(u.created_at).toLocaleString() : "—"}
@@ -238,10 +246,10 @@ export function UsersPage() {
                         userDetail.open(u.id);
                       }}
                     >
-                      查看
+                      {locale === "th" ? "ดู" : "View"}
                     </Button>
                     <Button size="sm" variant="ghost" onClick={() => openEdit(u)}>
-                      编辑
+                      {locale === "th" ? "แก้ไข" : "Edit"}
                     </Button>
                   </div>
                 </TableCell>
@@ -250,7 +258,10 @@ export function UsersPage() {
             {!loading && (data?.items.length ?? 0) === 0 && (
               <TableRow>
                 <TableCell colSpan={9} className="p-0">
-                  <EmptyState title="暂无用户" description="试试换个关键词搜索" />
+                  <EmptyState
+                    title={locale === "th" ? "ไม่พบผู้ใช้" : "No users found"}
+                    description={locale === "th" ? "ลองค้นหาด้วยคำค้นอื่น" : "Try searching with different keywords"}
+                  />
                 </TableCell>
               </TableRow>
             )}
@@ -284,55 +295,95 @@ export function UsersPage() {
         open={!!editing}
         onOpenChange={(open) => { if (!open && !pendingSave.current) setEditing(null); }}
         size="lg"
-        title="编辑用户"
+        title={locale === "th" ? "แก้ไขข้อมูลผู้ใช้" : "Edit User"}
         subtitle={editing?.email}
         footer={
           <>
-            <Button type="button" variant="outline" disabled={saving} onClick={() => setEditing(null)}>取消</Button>
+            <Button type="button" variant="outline" disabled={saving} onClick={() => setEditing(null)}>
+              {locale === "th" ? "ยกเลิก" : "Cancel"}
+            </Button>
             <Button type="submit" form={editFormId} disabled={saving || !hasChanges} aria-busy={saving}>
               {saving ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : null}
-              {saving ? "正在保存…" : adjustBalance ? "确认调账并保存" : "保存权限修改"}
+              {saving
+                ? (locale === "th" ? "กำลังบันทึก…" : "Saving…")
+                : adjustBalance
+                  ? (locale === "th" ? "ยืนยันการปรับยอดและบันทึก" : "Confirm Adjustment & Save")
+                  : (locale === "th" ? "บันทึกการเปลี่ยนสิทธิ์" : "Save Role")}
             </Button>
           </>
         }
       >
         <form id={editFormId} noValidate onSubmit={(event) => { event.preventDefault(); void saveEdit(); }} className="space-y-6">
           <div className="admin-form-summary grid gap-4 rounded-xl border border-[var(--admin-border)] bg-[#f7f9f4] p-4 sm:grid-cols-2">
-            <div className="admin-form-summary-item"><div className="text-xs text-[var(--admin-muted)]">当前账户余额</div><div className="mt-1.5 text-2xl font-semibold tabular-nums text-[var(--admin-text)]">¥{fenToYuan(editing?.balance_fen ?? 0)}</div></div>
-            <div className="admin-form-summary-item"><div className="text-xs text-[var(--admin-muted)]">已冻结金额</div><div className="mt-1.5 text-lg font-medium tabular-nums text-[var(--admin-text)]">¥{fenToYuan(editing?.frozen_fen ?? 0)}</div><p className="mt-1 text-xs leading-relaxed text-[var(--admin-muted)]">调账不会修改任务已冻结的金额</p></div>
+            <div className="admin-form-summary-item">
+              <div className="text-xs text-[var(--admin-muted)]">{locale === "th" ? "ยอดคงเหลือปัจจุบัน" : "Current Balance"}</div>
+              <div className="mt-1.5 text-2xl font-semibold tabular-nums text-[var(--admin-text)]">¥{fenToYuan(editing?.balance_fen ?? 0)}</div>
+            </div>
+            <div className="admin-form-summary-item">
+              <div className="text-xs text-[var(--admin-muted)]">{locale === "th" ? "ยอดที่ระงับชั่วคราว" : "Frozen Amount"}</div>
+              <div className="mt-1.5 text-lg font-medium tabular-nums text-[var(--admin-text)]">¥{fenToYuan(editing?.frozen_fen ?? 0)}</div>
+              <p className="mt-1 text-xs leading-relaxed text-[var(--admin-muted)]">
+                {locale === "th" ? "การปรับยอดจะไม่กระทบยอดที่ถูกระงับของคิวงาน" : "Adjustment does not alter task frozen amount"}
+              </p>
+            </div>
           </div>
           <fieldset disabled={saving} className="admin-form-section min-w-0 space-y-4">
-            <legend className="admin-form-section-title mb-1 text-sm font-semibold text-[var(--admin-text)]">账号权限</legend>
-            <AdminField label="账号角色" required hint="管理员可进入管理端，查看和管理全部业务数据。">
+            <legend className="admin-form-section-title mb-1 text-sm font-semibold text-[var(--admin-text)]">
+              {locale === "th" ? "สิทธิ์การใช้งานบัญชี" : "Account Permissions"}
+            </legend>
+            <AdminField label={locale === "th" ? "บทบาทบัญชี" : "Account Role"} required hint={locale === "th" ? "ผู้ดูแลระบบสามารถเข้าถึงคอนโซลและจัดการข้อมูลทั้งหมดได้" : "Admin can access the console"}>
               <Select value={form.role} onChange={(e) => { setSaveError(""); setForm((f) => ({ ...f, role: e.target.value })); }} disabled={saving}>
-                <option value="user">普通用户</option><option value="admin">管理员</option>
+                <option value="user">{locale === "th" ? "ผู้ใช้ทั่วไป" : "Regular User"}</option>
+                <option value="admin">{locale === "th" ? "ผู้ดูแลระบบ" : "Administrator"}</option>
               </Select>
             </AdminField>
           </fieldset>
           <section className="admin-form-section space-y-4 border-t border-[var(--admin-border)] pt-5">
             <div className="flex items-start justify-between gap-4">
-              <div><label htmlFor={adjustmentToggleId} className="text-sm font-semibold text-[var(--admin-text)]">调整账户余额</label><p className="mt-1 text-xs leading-relaxed text-[var(--admin-muted)]">按需开启；仅修改角色时，账户余额保持不变。</p></div>
+              <div>
+                <label htmlFor={adjustmentToggleId} className="text-sm font-semibold text-[var(--admin-text)]">
+                  {locale === "th" ? "ปรับยอดคงเหลือในบัญชี" : "Adjust Account Balance"}
+                </label>
+                <p className="mt-1 text-xs leading-relaxed text-[var(--admin-muted)]">
+                  {locale === "th" ? "เปิดเมื่อต้องการปรับยอด; หากแก้เฉพาะบทบาท ยอดเงินจะคงเดิม" : "Toggle if adjustment is needed"}
+                </p>
+              </div>
               <Switch id={adjustmentToggleId} checked={adjustBalance} disabled={saving} onCheckedChange={(checked) => { setAdjustBalance(checked); setSaveError(""); }} />
             </div>
-            {adjustBalance ? <fieldset disabled={saving} className="min-w-0 space-y-4">
-              <div className="admin-form-grid admin-form-grid--2">
-                <AdminField label="调整方向" required>
-                  <Select value={form.balance_dir} disabled={saving} onChange={(e) => { setSaveError(""); setForm((f) => ({ ...f, balance_dir: e.target.value === "decrease" ? "decrease" : "increase" })); }}>
-                    <option value="increase">增加余额</option><option value="decrease">减少余额</option>
-                  </Select>
+            {adjustBalance ? (
+              <fieldset disabled={saving} className="min-w-0 space-y-4">
+                <div className="admin-form-grid admin-form-grid--2">
+                  <AdminField label={locale === "th" ? "ทิศทางการปรับ" : "Adjustment Type"} required>
+                    <Select value={form.balance_dir} disabled={saving} onChange={(e) => { setSaveError(""); setForm((f) => ({ ...f, balance_dir: e.target.value === "decrease" ? "decrease" : "increase" })); }}>
+                      <option value="increase">{locale === "th" ? "เพิ่มยอดเงิน (+)" : "Increase (+)"}</option>
+                      <option value="decrease">{locale === "th" ? "ลดยอดเงิน (-)" : "Decrease (-)"}</option>
+                    </Select>
+                  </AdminField>
+                  <AdminField label={locale === "th" ? "จำนวนเงินที่ปรับ (หยวน)" : "Amount (CNY)"} required hint={locale === "th" ? "มากกว่า 0, ทศนิยมไม่เกิน 2 ตำแหน่ง" : "> 0, max 2 decimals"} error={visibleAmountError}>
+                    <Input inputMode="decimal" value={form.balance_amount_yuan} disabled={saving} placeholder="100.00" onBlur={() => setAmountTouched(true)} onChange={(e) => { setSaveError(""); setForm((f) => ({ ...f, balance_amount_yuan: e.target.value })); }} />
+                  </AdminField>
+                </div>
+                <AdminField label={locale === "th" ? "หมายเหตุการปรับยอด" : "Adjustment Note"} optional hint={locale === "th" ? "หมายเหตุจะบันทึกในประวัติการเงินเพื่อตรวจสอบ" : "Written to ledger note"}>
+                  <Input value={form.balance_note} disabled={saving} onChange={(e) => setForm((f) => ({ ...f, balance_note: e.target.value }))} placeholder={locale === "th" ? "เช่น โบนัสกิจกรรม, คืนเงิน" : "e.g. Bonus, Refund"} />
                 </AdminField>
-                <AdminField label="调整金额（元）" required hint="大于 0，最多两位小数。" error={visibleAmountError}>
-                  <Input inputMode="decimal" value={form.balance_amount_yuan} disabled={saving} placeholder="例如 100.00" onBlur={() => setAmountTouched(true)} onChange={(e) => { setSaveError(""); setForm((f) => ({ ...f, balance_amount_yuan: e.target.value })); }} />
-                </AdminField>
-              </div>
-              <AdminField label="调账备注" optional hint="备注会写入账户流水，便于后续核对。">
-                <Input value={form.balance_note} disabled={saving} onChange={(e) => setForm((f) => ({ ...f, balance_note: e.target.value }))} placeholder="例如：活动奖励补发、退款扣回" />
-              </AdminField>
-              {!amountError && amountFen !== null ? <div className="admin-form-preview rounded-xl border border-[#d5e6d1] bg-[var(--admin-accent-soft)] p-4" aria-live="polite">
-                <div className="mb-2 flex items-center gap-2 text-xs font-medium text-[var(--admin-forest)]"><Wallet className="h-4 w-4" aria-hidden="true" />保存后的账户余额</div>
-                <div className="flex flex-wrap items-center gap-3 text-lg font-semibold tabular-nums text-[var(--admin-text)]"><span className="text-[var(--admin-muted)]">¥{fenToYuan(editing?.balance_fen ?? 0)}</span><ArrowRight className="h-4 w-4 text-[var(--admin-muted)]" aria-hidden="true" /><span>¥{fenToYuan(balanceAfterFen)}</span><span className="text-xs font-medium text-[var(--admin-forest)]">{form.balance_dir === "decrease" ? "减少" : "增加"} ¥{fenToYuan(amountFen)}</span></div>
-              </div> : null}
-            </fieldset> : null}
+                {!amountError && amountFen !== null ? (
+                  <div className="admin-form-preview rounded-xl border border-[#d5e6d1] bg-[var(--admin-accent-soft)] p-4" aria-live="polite">
+                    <div className="mb-2 flex items-center gap-2 text-xs font-medium text-[var(--admin-forest)]">
+                      <Wallet className="h-4 w-4" aria-hidden="true" />
+                      {locale === "th" ? "ยอดเงินหลังบันทึก" : "Balance after adjustment"}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-3 text-lg font-semibold tabular-nums text-[var(--admin-text)]">
+                      <span className="text-[var(--admin-muted)]">¥{fenToYuan(editing?.balance_fen ?? 0)}</span>
+                      <ArrowRight className="h-4 w-4 text-[var(--admin-muted)]" aria-hidden="true" />
+                      <span>¥{fenToYuan(balanceAfterFen)}</span>
+                      <span className="text-xs font-medium text-[var(--admin-forest)]">
+                        {form.balance_dir === "decrease" ? (locale === "th" ? "ลด" : "Decrease") : (locale === "th" ? "เพิ่ม" : "Increase")} ¥{fenToYuan(amountFen)}
+                      </span>
+                    </div>
+                  </div>
+                ) : null}
+              </fieldset>
+            ) : null}
           </section>
           {saveError ? <p role="alert" className="admin-form-error rounded-lg border border-[#f0d9d5] bg-[#fcf0ee] px-3 py-2.5 text-sm leading-relaxed text-[#aa3d37]">{saveError}</p> : null}
         </form>

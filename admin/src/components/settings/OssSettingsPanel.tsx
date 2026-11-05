@@ -26,7 +26,7 @@ export function OssSettingsPanel() {
       oss_access_key_secret: clearOssSecret ? undefined : ossKeySecretInput.trim() || undefined,
       clear_oss_access_key_id: clearOssId,
       clear_oss_access_key_secret: clearOssSecret,
-    }, "存储配置已保存");
+    }, "存储配置已บันทึก");
     if (!saved) return;
     setOssKeyIdInput("");
     setOssKeySecretInput("");
@@ -59,23 +59,23 @@ export function OssSettingsPanel() {
   const accessPreview = publicBase || generatedBase;
   const folder = form.oss_folder.trim().replace(/^\/+|\/+$/g, "") || "kepu";
 
-  return <SettingsTabShell onSave={handleSave} saving={saving} saveLabel="保存存储设置">
-    <SettingsStatusBar title="存储配置状态" items={[
+  return <SettingsTabShell onSave={handleSave} saving={saving} saveLabel="บันทึก存储ตั้งค่า">
+    <SettingsStatusBar title="存储配置สถานะ" items={[
       { id: "oss", label: "阿里云 OSS", ready: ossReady, readyText: "配置完整", pendingText: form.oss_enabled ? "请补全连接与凭证" : "未启用" },
-      { id: "public", label: "公网访问", ready: Boolean(accessPreview && !publicBaseError), readyText: publicBase ? "自定义地址" : "Bucket 默认地址", pendingText: "待配置" },
-      { id: "async", label: "上传方式", ready: form.oss_enabled && form.oss_upload_async, readyText: "异步上传", pendingText: form.oss_enabled ? "同步上传" : "依赖 OSS 启用" },
-    ]} extra={<span className="settings-status-extra">配置来源：{form.source === "db" ? "管理端" : "环境变量"}</span>} />
+      { id: "public", label: "公网访问", ready: Boolean(accessPreview && !publicBaseError), readyText: publicBase ? "กำหนดเอง地址" : "Bucket ค่าเริ่มต้น地址", pendingText: "待配置" },
+      { id: "async", label: "อัปโหลด方式", ready: form.oss_enabled && form.oss_upload_async, readyText: "异步อัปโหลด", pendingText: form.oss_enabled ? "同步อัปโหลด" : "依赖 OSS 启用" },
+    ]} extra={<span className="settings-status-extra">配置ที่มา：{form.source === "db" ? "管理端" : "环境变量"}</span>} />
 
-    <SettingsPanel title="存储连接" description="生成业务与数字资产市场共用此处的 Bucket 和凭证。Endpoint 决定上传到哪里，Bucket 是存储空间名称。">
+    <SettingsPanel title="存储连接" description="生成业务与ตลาดดิจิทัลแอสเซท共用此处的 Bucket 和凭证。Endpoint 决定อัปโหลด到哪里，Bucket 是存储空间名称。">
       <div className="settings-toggle-row">
-        <div><strong>启用阿里云 OSS</strong><span>关闭后生成业务使用本地目录；数字资产市场文件上传与播放不可用。</span></div>
+        <div><strong>启用阿里云 OSS</strong><span>ปิด后生成业务使用本地目录；ตลาดดิจิทัลแอสเซท文件อัปโหลด与播放不可用。</span></div>
         <Switch aria-label="启用阿里云 OSS" checked={form.oss_enabled} onCheckedChange={(value) => patchField("oss_enabled", value)} />
       </div>
       <p className="mt-3 text-sm text-muted-foreground">
-        数字资产市场固定使用 marketplace/ 目录，不受下方生成业务目录设置影响。
-        市场文件以私有权限上传，通过短时签名访问，不使用公开域名。
-        Bucket 须为私有且不得存在匿名 Allow 策略；此页保存配置不会自动修改 Bucket 权限。
-        “配置完整”仅表示配置项已填写，实际权限仍需云端验证。
+        ตลาดดิจิทัลแอสเซท固定使用 marketplace/ 目录，不受下方生成业务目录ตั้งค่า影响。
+        市ฉาก文件以私有สิทธิ์อัปโหลด，通过短时签名访问，不使用公开域名。
+        Bucket 须为私有且不得存在匿名 Allow 策略；此页บันทึก配置不会自动修改 Bucket สิทธิ์。
+        “配置完整”仅表示配置项已填写，实际สิทธิ์仍需云端验证。
       </p>
       <div className="settings-field-grid mt-5">
         <LabeledControl label="服务域名 Endpoint" required={form.oss_enabled} error={endpointError} hint="如 oss-cn-beijing.aliyuncs.com；不要填写 Bucket 访问地址。">
@@ -87,7 +87,7 @@ export function OssSettingsPanel() {
         <LabeledControl label="地域 Region" optional hint="如 cn-beijing，应与 Endpoint 所属地域一致。">
           <input className="settings-input" placeholder="cn-beijing" value={form.oss_region} onChange={(event) => patchField("oss_region", event.target.value)} autoCapitalize="none" spellCheck={false} />
         </LabeledControl>
-        <LabeledControl label="文件目录前缀" optional hint="仅用于生成业务，不含域名；例如 kepu。留空使用默认目录 kepu。">
+        <LabeledControl label="文件目录前缀" optional hint="仅用于生成业务，不含域名；例如 kepu。留空使用ค่าเริ่มต้น目录 kepu。">
           <input className="settings-input" placeholder="kepu" value={form.oss_folder} onChange={(event) => patchField("oss_folder", event.target.value)} spellCheck={false} />
         </LabeledControl>
       </div>
@@ -97,34 +97,34 @@ export function OssSettingsPanel() {
       <div className="settings-field-grid">
         <SecretField label="AccessKey ID" placeholder="输入 AccessKey ID" value={ossKeyIdInput} configured={form.has_oss_access_key_id} required={form.oss_enabled}
           clearPending={clearOssId} onUndoClear={() => setClearOssId(false)}
-          error={form.oss_enabled && clearOssId ? "请先关闭 OSS 再清除凭证，或撤销清除。" : undefined}
+          error={form.oss_enabled && clearOssId ? "请先ปิด OSS 再清除凭证，或撤销清除。" : undefined}
           onChange={(value) => { setOssKeyIdInput(value); setClearOssId(false); }} onClear={() => setClearOssId(true)} />
         <SecretField label="AccessKey Secret" placeholder="输入 AccessKey Secret" value={ossKeySecretInput} configured={form.has_oss_access_key_secret} required={form.oss_enabled}
           clearPending={clearOssSecret} onUndoClear={() => setClearOssSecret(false)}
-          error={form.oss_enabled && clearOssSecret ? "请先关闭 OSS 再清除凭证，或撤销清除。" : undefined}
+          error={form.oss_enabled && clearOssSecret ? "请先ปิด OSS 再清除凭证，或撤销清除。" : undefined}
           onChange={(value) => { setOssKeySecretInput(value); setClearOssSecret(false); }} onClear={() => setClearOssSecret(true)} />
       </div>
     </SettingsPanel>
 
-    <SettingsPanel title="公网访问与 CDN" description="生成业务通过这个地址预览和下载媒体；它与上传使用的 Endpoint 分开配置。数字资产市场使用签名访问，不使用此地址。">
-      <LabeledControl label="自定义访问地址" optional error={publicBaseError} hint="绑定 CDN 或自定义域名时填写完整 https:// 地址；留空使用 Bucket 的公网地址。">
+    <SettingsPanel title="公网访问与 CDN" description="生成业务通过这个地址ดูตัวอย่าง和ดาวน์โหลด媒体；它与อัปโหลด使用的 Endpoint 分开配置。ตลาดดิจิทัลแอสเซท使用签名访问，不使用此地址。">
+      <LabeledControl label="กำหนดเอง访问地址" optional error={publicBaseError} hint="绑定 CDN 或กำหนดเอง域名时填写完整 https:// 地址；留空使用 Bucket 的公网地址。">
         <input className="settings-input" type="url" placeholder="https://cdn.example.com" value={form.oss_public_base} onChange={(event) => patchField("oss_public_base", event.target.value)} autoCapitalize="none" spellCheck={false} />
       </LabeledControl>
       <div className="admin-form-preview mt-4" aria-live="polite">
-        <strong>媒体访问路径预览</strong>
-        <div className="mt-1 break-all font-mono">{accessPreview && !publicBaseError ? `${accessPreview.replace(/\/$/, "")}/${folder}/generated/…` : "填写 Endpoint 与 Bucket 后显示默认访问路径。"}</div>
+        <strong>媒体访问路径ดูตัวอย่าง</strong>
+        <div className="mt-1 break-all font-mono">{accessPreview && !publicBaseError ? `${accessPreview.replace(/\/$/, "")}/${folder}/generated/…` : "填写 Endpoint 与 Bucket 后显示ค่าเริ่มต้น访问路径。"}</div>
       </div>
     </SettingsPanel>
 
     <details className="settings-advanced">
-      <summary>高级上传选项 · 上传方式与队列</summary>
+      <summary>高级อัปโหลด选项 · อัปโหลด方式与队列</summary>
       <div>
         <div className="settings-toggle-row">
-          <div><strong>异步上传</strong><span>{form.oss_enabled ? "先返回本地 URL，再由后台队列上传；关闭时同步上传。" : "先启用 OSS 后可调整上传方式。"}</span></div>
-          <Switch aria-label="启用异步上传" checked={form.oss_upload_async} disabled={!form.oss_enabled} onCheckedChange={(value) => patchField("oss_upload_async", value)} />
+          <div><strong>异步อัปโหลด</strong><span>{form.oss_enabled ? "先กลับ本地 URL，再由后台队列อัปโหลด；ปิด时同步อัปโหลด。" : "先启用 OSS 后可调整อัปโหลด方式。"}</span></div>
+          <Switch aria-label="启用异步อัปโหลด" checked={form.oss_upload_async} disabled={!form.oss_enabled} onCheckedChange={(value) => patchField("oss_upload_async", value)} />
         </div>
         <div className="settings-field-grid mt-5">
-          <LabeledControl label="上传队列名称" required={form.oss_enabled && form.oss_upload_async} hint="仅异步上传使用；保留与本地 Worker 配置一致的队列名称。">
+          <LabeledControl label="อัปโหลด队列名称" required={form.oss_enabled && form.oss_upload_async} hint="仅异步อัปโหลด使用；保留与本地 Worker 配置一致的队列名称。">
             <input className="settings-input" placeholder="例如 oss_upload" value={form.oss_upload_queue} disabled={!form.oss_enabled || !form.oss_upload_async} onChange={(event) => patchField("oss_upload_queue", event.target.value)} spellCheck={false} />
           </LabeledControl>
         </div>

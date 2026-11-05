@@ -1,11 +1,11 @@
-/** 项目全局成片设置读取：项目 params 优先，再回退分集历史值 */
+/** โปรเจกต์全局成片ตั้งค่า读取：โปรเจกต์ params 优先，再回退分集历史值 */
 import {
   readEpisodeCharacterIntroMode,
   type DramaCharacterIntroMode,
 } from './dramaCharacterIntro'
 import { readEpisodeSubtitleMode, type DramaSubtitleMode } from './dramaSubtitleSettings'
 
-/** 有效字幕方式：项目全局优先，再回退分集历史值 */
+/** 有效คำบรรยาย (ซับไตเติล)方式：โปรเจกต์全局优先，再回退分集历史值 */
 export function readEffectiveSubtitleMode(
   episodeParams?: Record<string, unknown> | null,
   projectParams?: Record<string, unknown> | null,
@@ -15,7 +15,7 @@ export function readEffectiveSubtitleMode(
   return readEpisodeSubtitleMode(episodeParams)
 }
 
-/** 有效人物介绍：项目全局优先，再回退分集历史值 */
+/** 有效人物介绍：โปรเจกต์全局优先，再回退分集历史值 */
 export function readEffectiveCharacterIntroMode(
   episodeParams?: Record<string, unknown> | null,
   projectParams?: Record<string, unknown> | null,

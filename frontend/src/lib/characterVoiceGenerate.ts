@@ -1,4 +1,4 @@
-/** 按角色设定 AI 生成音色并绑定到 voiceAudio（无弹窗，供卡片一键生成） */
+/** 按การตั้งค่าบทบาทตัวละคร AI 生成น้ำเสียง并绑定到 voiceAudio（无弹窗，供卡片一键生成） */
 import { dramaApi, type DramaAsset } from '../api/drama'
 import { buildBoundParams } from '../pages/drama/CharacterVoiceBindModal'
 import { ensureCharacterVoiceGenerationEnabled } from '../api/publicCapabilities'
@@ -8,7 +8,7 @@ export type CharacterVoiceGenerateResult = {
   voice: DramaAsset
 }
 
-// 根据角色资产生成音色描述、合成试听并写回绑定
+// 根据แอสเซทตัวละคร生成น้ำเสียง描述、合成试听并写回绑定
 export async function generateAndBindCharacterVoice(
   projectId: number,
   asset: DramaAsset,
@@ -20,12 +20,12 @@ export async function generateAndBindCharacterVoice(
   })
   const voicePrompt = (promptResult.voice_prompt || '').trim()
   if (!voicePrompt) {
-    throw new Error('音色描述为空')
+    throw new Error('น้ำเสียง描述为空')
   }
 
   const voiceResult = await dramaApi.generateVoice({
     project_id: projectId,
-    name: `${asset.name || '角色'}音色`,
+    name: `${asset.name || 'ตัวละคร'}น้ำเสียง`,
     voice_prompt: voicePrompt,
     speaker: promptResult.speaker || undefined,
     sample_text: promptResult.sample_text || undefined,
@@ -33,7 +33,7 @@ export async function generateAndBindCharacterVoice(
   })
   const voice = voiceResult.asset
   if (!voice?.url) {
-    throw new Error('音色合成失败')
+    throw new Error('น้ำเสียง合成ล้มเหลว')
   }
 
   const character = await dramaApi.updateAsset(asset.id, {

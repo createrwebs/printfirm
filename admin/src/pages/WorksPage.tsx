@@ -26,7 +26,7 @@ function coverSrc(url: string | null | undefined): string {
   return trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
 }
 
-// 作品审核：搜索、预览与只读详情
+// 作品审核：ค้นหา、ดูตัวอย่าง与只读รายละเอียด
 export function WorksPage() {
   const [auditStatus, setAuditStatus] = useState("");
   const [visibility, setVisibility] = useState("");
@@ -46,7 +46,7 @@ export function WorksPage() {
       if (userId) params.set("user_id", String(userId));
       setData(await api<ListRes>(`/api/admin/works?${params}`));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "加载失败");
+      toast.error(err instanceof Error ? err.message : "โหลดไม่สำเร็จ");
     }
   }
 
@@ -64,10 +64,10 @@ export function WorksPage() {
   async function patchWork(id: number, body: { visibility?: string; audit_status?: string }) {
     try {
       await api(`/api/admin/works/${id}`, { method: "PATCH", body: JSON.stringify(body) });
-      toast.success("已更新");
+      toast.success("已อัปเดต");
       await load();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "更新失败");
+      toast.error(err instanceof Error ? err.message : "อัปเดตล้มเหลว");
     }
   }
 
@@ -78,12 +78,12 @@ export function WorksPage() {
 
   return (
     <div className="admin-list-page">
-      <PageHeader title="作品审核" description="调整可见性与审核状态" />
+      <PageHeader title="ตรวจสอบผลงาน" description="调整可见性与审核สถานะ" />
       <AdminFilterBar>
         <AdminSearchInput
           value={q}
           onChange={setQ}
-          placeholder="搜索标题"
+          placeholder="ค้นหา标题"
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               setPage(1);
@@ -113,7 +113,7 @@ export function WorksPage() {
             void load(1);
           }}
         >
-          筛选
+          ตัวกรอง
         </Button>
       </AdminFilterBar>
       <div className="rounded-lg border bg-background">
@@ -126,8 +126,8 @@ export function WorksPage() {
               <TableHead>用户</TableHead>
               <TableHead>可见性</TableHead>
               <TableHead>审核</TableHead>
-              <TableHead>发布时间</TableHead>
-              <TableHead>操作</TableHead>
+              <TableHead>发布เวลา</TableHead>
+              <TableHead>การดำเนินการ</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -173,7 +173,7 @@ export function WorksPage() {
                 <TableCell>
                   <div className="flex flex-wrap gap-1">
                     <Button size="sm" variant="outline" onClick={() => openWork(w)}>
-                      详情
+                      รายละเอียด
                     </Button>
                     <Button size="sm" variant="outline" onClick={() => void patchWork(w.id, { audit_status: "passed" })}>
                       通过
@@ -221,13 +221,13 @@ export function WorksPage() {
           }
         }}
         size="lg"
-        title={detail?.title ?? "作品详情"}
+        title={detail?.title ?? "作品รายละเอียด"}
         subtitle={detail ? `作品 #${detail.id}` : undefined}
       >
         {detail ? (
           <>
             {(detail.cover_url || detail.video_url) ? (
-              <AdminDetailSection title="媒体预览">
+              <AdminDetailSection title="媒体ดูตัวอย่าง">
                 <div className="admin-detail-media">
                   {detail.cover_url ? (
                     <img src={coverSrc(detail.cover_url)} alt={detail.title} />
@@ -252,7 +252,7 @@ export function WorksPage() {
                     ),
                   },
                   {
-                    label: "关联项目",
+                    label: "关联โปรเจกต์",
                     value: detail.project_id ? (
                       <AdminEntityLink kind="project" id={detail.project_id} />
                     ) : (
@@ -262,7 +262,7 @@ export function WorksPage() {
                   { label: "可见性", value: visibilityLabel(detail.visibility) },
                   { label: "审核", value: auditStatusLabel(detail.audit_status) },
                   {
-                    label: "发布时间",
+                    label: "发布เวลา",
                     value: new Date(detail.published_at).toLocaleString(),
                     full: true,
                   },
@@ -272,7 +272,7 @@ export function WorksPage() {
             {detail.video_url ? (
               <Button size="sm" variant="outline" asChild>
                 <a href={detail.video_url} target="_blank" rel="noreferrer">
-                  新窗口打开视频
+                  新窗口打开วิดีโอ
                 </a>
               </Button>
             ) : null}

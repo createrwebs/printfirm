@@ -13,8 +13,8 @@ export default function ContactPage() {
   /*
    * topic 反馈主题
    * email 联系邮箱
-   * message 问题描述
-   * sent 是否已生成邮件草稿提示
+   * message 问题คำอธิบาย
+   * sent 是否已生成邮件ฉบับร่างคำแนะนำ
    */
   const [topic, setTopic] = useState<string>(m.contact.topics[0])
   const [email, setEmail] = useState('')

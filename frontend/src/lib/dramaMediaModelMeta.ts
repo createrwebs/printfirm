@@ -1,4 +1,4 @@
-/** 漫剧模型选择：图标族与展示文案辅助 */
+/** ละครซีรีส์模型เลือก：图标族与展示文案辅助 */
 import type { MediaModelOption } from '../api'
 
 export type MediaModelIconKind =
@@ -10,7 +10,7 @@ export type MediaModelIconKind =
   | 'gptImage'
   | 'generic'
 
-/** MiniMax-H3（忽略大小写与连字符）才开放分集批量提交 */
+/** MiniMax-H3（忽略大小写与连字符）才开放分集批量ส่ง */
 export function isMinimaxH3Model(modelId: string | undefined | null): boolean {
   const id = (modelId || '').toLowerCase().replace(/[_-]/g, '')
   return id.includes('minimax') && id.includes('h3')
@@ -48,14 +48,14 @@ export function mediaModelHoverText(model: MediaModelOption): string {
   const parts = [
     model.label || model.id,
     model.description?.trim(),
-    model.eta_hint?.trim() ? `耗时：${model.eta_hint.trim()}` : '',
+    model.eta_hint?.trim() ? `เวลาที่ใช้：${model.eta_hint.trim()}` : '',
     clip,
     model.pricing_hint?.trim() || '',
   ].filter(Boolean)
   return parts.join('\n')
 }
 
-/** 成片可选取时长文案 */
+/** 成片可选取ความยาว文案 */
 export function mediaModelClipDurationLabel(model: MediaModelOption): string {
   const lo = Number(model.duration_min)
   const hi = Number(model.duration_max)

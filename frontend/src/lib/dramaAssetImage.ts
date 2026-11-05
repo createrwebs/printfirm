@@ -1,16 +1,16 @@
-/** 漫剧资产是否已有形象图（AI 生成或本地上传；SVG 占位不算） */
+/** ละครซีรีส์แอสเซท是否已有形象图（AI 生成或本地อัปโหลด；SVG 占位不算） */
 import type { DramaAsset } from '../api/drama'
 
 const BITMAP_SUFFIXES = ['.png', '.jpg', '.jpeg', '.webp', '.gif', '.bmp']
 
-// 是否为可提交 Seedance 的位图 URL（排除 svg 占位）
+// 是否为可ส่ง Seedance 的位图 URL（排除 svg 占位）
 function isBitmapImageUrl(url: string): boolean {
   const path = url.trim().split('?', 1)[0].toLowerCase()
   if (!path) return false
   return BITMAP_SUFFIXES.some((suffix) => path.endsWith(suffix))
 }
 
-// 从 params 中读取可能存在的预览 URL（画布同步等）
+// 从 params 中读取可能存在的ดูตัวอย่าง URL（画布同步等）
 function readParamsMediaUrl(asset: DramaAsset): string {
   const params = asset.params
   if (!params || typeof params !== 'object') return ''
@@ -30,7 +30,7 @@ function readParamsMediaUrl(asset: DramaAsset): string {
   return ''
 }
 
-// 资产是否已有有效形象图（生成或上传的位图）
+// แอสเซท是否已有有效形象图（生成或อัปโหลด的位图）
 export function dramaAssetHasImage(asset: DramaAsset): boolean {
   const cover = (asset.cover || '').trim()
   const url = (asset.url || '').trim()
@@ -47,7 +47,7 @@ export function dramaAssetHasImage(asset: DramaAsset): boolean {
   return isBitmapImageUrl(candidate)
 }
 
-// 是否仍需生图（无图且非纯音频类资产时可批量入队）
+// 是否仍需生图（无图且非纯เสียง类แอสเซท时可批量入队）
 export function dramaAssetNeedsImageGeneration(asset: DramaAsset): boolean {
   const kind = (asset.type || '').toLowerCase()
   if (['voice', 'video', 'audio', 'text'].includes(kind)) return false
@@ -60,5 +60,5 @@ export function dramaAssetImageGenButtonLabel(
   queueLabel: string | null,
 ): string {
   if (queueLabel) return queueLabel
-  return dramaAssetHasImage(asset) ? '重新生成形象' : '生成形象'
+  return dramaAssetHasImage(asset) ? 'สร้างใหม่形象' : '生成形象'
 }

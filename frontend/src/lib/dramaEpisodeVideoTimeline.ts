@@ -1,7 +1,7 @@
-/** 分集视频预览：跨分镜全局时间轴工具 */
+/** 分集วิดีโอดูตัวอย่าง：跨分镜全局เวลา轴工具 */
 import type { DramaFragment } from '../api/drama'
 
-// DramaEpisodeVideoTimelineSegment 分集时间轴上的分镜区间
+// DramaEpisodeVideoTimelineSegment 分集เวลา轴上的分镜区间
 export type DramaEpisodeVideoTimelineSegment = {
   fragmentId: number
   index: number
@@ -11,7 +11,7 @@ export type DramaEpisodeVideoTimelineSegment = {
   hasVideo: boolean
 }
 
-// 从分镜正文合计 @duration 秒数
+// 从分镜正文合计 @duration วินาที数
 function sumFragmentContentDuration(content: string): number {
   const re = /@duration:(\d+)/g
   let total = 0
@@ -23,7 +23,7 @@ function sumFragmentContentDuration(content: string): number {
   return total
 }
 
-// 解析分镜在时间轴上的时长（秒）
+// 解析分镜在เวลา轴上的ความยาว（วินาที）
 function resolveEpisodeFragmentTimelineDuration(fragment: DramaFragment): number {
   const fromTags = sumFragmentContentDuration(fragment.content)
   if (fromTags > 0) return Math.min(15, Math.max(4, fromTags))
@@ -31,7 +31,7 @@ function resolveEpisodeFragmentTimelineDuration(fragment: DramaFragment): number
   return Math.min(15, Math.max(4, fallback))
 }
 
-// 根据分集全部分镜构建时间轴分段
+// 根据分集全部分镜构建เวลา轴分段
 export function buildEpisodeVideoTimelineSegments(
   fragments: DramaFragment[],
 ): DramaEpisodeVideoTimelineSegment[] {
@@ -62,7 +62,7 @@ export function buildEpisodeVideoTimelineSegments(
   })
 }
 
-// 计算分集时间轴总时长
+// 计算分集เวลา轴总ความยาว
 export function resolveEpisodeVideoTimelineTotalDuration(
   segments: DramaEpisodeVideoTimelineSegment[],
 ): number {
@@ -73,7 +73,7 @@ export function resolveEpisodeVideoTimelineTotalDuration(
   return segments[segments.length - 1]?.endSec ?? 0
 }
 
-// 将分镜内播放时间映射为全局时间轴位置
+// 将分镜内播放เวลา映射为全局เวลา轴位置
 export function resolveGlobalTimeFromFragmentPlayback(
   segment: DramaEpisodeVideoTimelineSegment,
   localTimeSec: number,
@@ -88,7 +88,7 @@ export function resolveGlobalTimeFromFragmentPlayback(
   return segment.startSec + ratio * segment.durationSec
 }
 
-// 将全局时间轴位置映射为分镜内播放时间
+// 将全局เวลา轴位置映射为分镜内播放เวลา
 export function resolveFragmentPlaybackFromGlobalTime(
   segments: DramaEpisodeVideoTimelineSegment[],
   globalTimeSec: number,
@@ -125,7 +125,7 @@ export function resolveFragmentPlaybackFromGlobalTime(
   }
 }
 
-// 解析当前全局时间所在的分镜索引
+// 解析当前全局เวลา所在的分镜索引
 export function resolveEpisodeVideoTimelineSegmentIndex(
   segments: DramaEpisodeVideoTimelineSegment[],
   globalTimeSec: number,
@@ -163,7 +163,7 @@ export function resolveEpisodeTimelineSegmentFillRatio(
   return (globalTimeSec - segment.startSec) / span
 }
 
-// 将秒数格式化为 mm:ss
+// 将วินาที数格式化为 mm:ss
 export function formatVideoTimelineClock(seconds: number): string {
   const safeSeconds = Math.max(0, Math.floor(seconds))
   const minutes = Math.floor(safeSeconds / 60)
@@ -172,7 +172,7 @@ export function formatVideoTimelineClock(seconds: number): string {
   return `${String(minutes).padStart(2, '0')}:${String(remainSeconds).padStart(2, '0')}`
 }
 
-// 将进度条点击比例映射为全局播放时间
+// 将进度条点击比例映射为全局播放เวลา
 export function resolveVideoTimelineSeekTime(ratio: number, totalDurationSec: number): number {
   if (totalDurationSec <= 0) {
     return 0
@@ -183,7 +183,7 @@ export function resolveVideoTimelineSeekTime(ratio: number, totalDurationSec: nu
   return clampedRatio * totalDurationSec
 }
 
-// 查找下一个可播放视频的分镜 ID
+// 查找下一个可播放วิดีโอ的分镜 ID
 export function resolveNextPlayableFragmentId(
   segments: DramaEpisodeVideoTimelineSegment[],
   currentFragmentId: number,

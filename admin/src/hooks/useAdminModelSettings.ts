@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { api, type AdminModelSettings } from "@/api/client";
 
-// 加载 / 保存管理端 flat 配置（DB 覆盖 env）
+// 加载 / บันทึก管理端 flat 配置（DB 覆盖 env）
 export function useAdminModelSettings() {
   const [form, setForm] = useState<AdminModelSettings | null>(null);
   const [loading, setLoading] = useState(true);
@@ -14,7 +14,7 @@ export function useAdminModelSettings() {
     try {
       setForm(await api<AdminModelSettings>("/api/admin/settings/models"));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "加载配置失败");
+      toast.error(err instanceof Error ? err.message : "加载配置ล้มเหลว");
     } finally {
       setLoading(false);
     }
@@ -28,7 +28,7 @@ export function useAdminModelSettings() {
     setForm((prev) => (prev ? { ...prev, [key]: value } : prev));
   }
 
-  async function save(body: Record<string, unknown>, successMessage = "配置已保存"): Promise<boolean> {
+  async function save(body: Record<string, unknown>, successMessage = "配置已บันทึก"): Promise<boolean> {
     if (pendingSave.current) return false;
     pendingSave.current = true;
     setSaving(true);
@@ -38,7 +38,7 @@ export function useAdminModelSettings() {
       toast.success(successMessage);
       return true;
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "保存失败");
+      toast.error(err instanceof Error ? err.message : "บันทึกไม่สำเร็จ");
       return false;
     } finally {
       pendingSave.current = false;

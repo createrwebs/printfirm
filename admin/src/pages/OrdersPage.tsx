@@ -33,7 +33,7 @@ function tabFromSearch(raw: string | null): string {
 
 // 充值订单、钱包流水与用量明细
 export function OrdersPage() {
-  // 列表筛选与分页分别保留，切换 Tab 不清空其他列表状态。
+  // 列表ตัวกรอง与分页分别保留，切换 Tab 不ล้างข้อมูล其他列表สถานะ。
   const [searchParams, setSearchParams] = useSearchParams();
   const [tab, setTab] = useState(() => tabFromSearch(searchParams.get("tab")));
   const [orderStatus, setOrderStatus] = useState("");
@@ -59,25 +59,25 @@ export function OrdersPage() {
   const [ledgerDetail, setLedgerDetail] = useState<AdminLedger | null>(null);
   const orderQuery = useAdminDetailQuery("order");
 
-  // 按当前筛选加载充值订单，分页仍由服务端完成。
+  // 按当前ตัวกรอง加载充值订单，分页仍由服务端เสร็จสิ้น。
   async function loadOrders(page = orderPage) {
     try {
       setOrders(await listAdminOrders(page, { status: orderStatus, userId: orderUserId }));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "加载订单失败");
+      toast.error(err instanceof Error ? err.message : "加载订单ล้มเหลว");
     }
   }
 
-  // 加载钱包流水；与调账页、用户详情共享请求参数映射。
+  // 加载钱包流水；与调账页、用户รายละเอียด共享请求参数映射。
   async function loadLedger(page = ledgerPage) {
     try {
       setLedger(await listAdminLedger(page, { kind: ledgerKind, userId: ledgerUserId }));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "加载流水失败");
+      toast.error(err instanceof Error ? err.message : "加载流水ล้มเหลว");
     }
   }
 
-  // 支持快捷筛选覆盖尚未提交到 React state 的用量条件。
+  // 支持快捷ตัวกรอง覆盖尚未ส่ง到 React state 的用量条件。
   async function loadUsage(
     page = usagePage,
     overrides?: { billing_key?: string; capability?: string; model?: string },
@@ -95,7 +95,7 @@ export function OrdersPage() {
         dateTo: usageDateTo,
       }));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "加载用量失败");
+      toast.error(err instanceof Error ? err.message : "加载用量ล้มเหลว");
     }
   }
 
@@ -137,13 +137,13 @@ export function OrdersPage() {
           orderQuery.open(hit.id);
         }
       } catch {
-        /* 深链失败时静默，用户仍可手动筛选 */
+        /* 深链ล้มเหลว时静默，用户仍可ด้วยตนเองตัวกรอง */
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
-  // 将激活列表同步到 URL，保证刷新和跨页深链保持一致。
+  // 将激活列表同步到 URL，保证รีเฟรช和跨页深链保持一致。
   function onTabChange(next: string) {
     setTab(next);
     const params = new URLSearchParams(searchParams);
@@ -154,20 +154,20 @@ export function OrdersPage() {
 
   return (
     <div className="admin-list-page">
-      <PageHeader title="订单流水" description="查看充值单、钱包流水与 AI 用量明细" />
+      <PageHeader title="ประวัติคำสั่งซื้อและการเงิน" description="ดู充值单、钱包流水与 AI 用量明细" />
       <Tabs value={tab} onValueChange={onTabChange}>
         <TabsList>
-          <TabsTrigger value="orders">充值订单</TabsTrigger>
-          <TabsTrigger value="ledger">钱包流水</TabsTrigger>
-          <TabsTrigger value="usage">用量明细</TabsTrigger>
+          <TabsTrigger value="orders">คำสั่งซื้อเติมเงิน</TabsTrigger>
+          <TabsTrigger value="ledger">ความเคลื่อนไหวในกระเป๋า</TabsTrigger>
+          <TabsTrigger value="usage">รายละเอียดการใช้งาน</TabsTrigger>
         </TabsList>
         <TabsContent value="orders" className="space-y-4">
           <AdminFilterBar>
             <Select value={orderStatus} onChange={(e) => setOrderStatus(e.target.value)}>
-              <option value="">全部状态</option>
-              <option value="pending">待支付</option>
-              <option value="paid">已支付</option>
-              <option value="closed">已关闭</option>
+              <option value="">全部สถานะ</option>
+              <option value="pending">รอชำระเงิน</option>
+              <option value="paid">ชำระแล้ว</option>
+              <option value="closed">ปิดแล้ว</option>
             </Select>
             <AdminUserSearchSelect value={orderUserId} onChange={(id) => setOrderUserId(id)} />
             <Button
@@ -179,7 +179,7 @@ export function OrdersPage() {
                 void loadOrders(1);
               }}
             >
-              筛选
+              ตัวกรอง
             </Button>
           </AdminFilterBar>
           <div className="rounded-lg border bg-background">
@@ -188,15 +188,15 @@ export function OrdersPage() {
                 <TableRow>
                   <TableHead>ID</TableHead>
                   <TableHead>商户单号</TableHead>
-                  <TableHead>用户</TableHead>
+                  <TableHead>ผู้ใช้</TableHead>
                   <TableHead>SKU</TableHead>
                   <TableHead>支付金额</TableHead>
                   <TableHead>入账（CNY）</TableHead>
                   <TableHead>支付</TableHead>
-                  <TableHead>状态</TableHead>
+                  <TableHead>สถานะ</TableHead>
                   <TableHead>渠道单号</TableHead>
-                  <TableHead>支付时间</TableHead>
-                  <TableHead>创建时间</TableHead>
+                  <TableHead>支付เวลา</TableHead>
+                  <TableHead>เวลาสร้าง</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -247,14 +247,14 @@ export function OrdersPage() {
         <TabsContent value="ledger" className="space-y-4">
           <AdminFilterBar>
             <Select value={ledgerKind} onChange={(e) => setLedgerKind(e.target.value)}>
-              <option value="">全部类型</option>
-              <option value="topup">充值</option>
-              <option value="grant">赠送</option>
-              <option value="adjust">调账</option>
-              <option value="freeze">冻结</option>
-              <option value="unfreeze">解冻</option>
-              <option value="settle">结算</option>
-              <option value="refund">退款</option>
+              <option value="">ทุกประเภท</option>
+              <option value="topup">เติมเงิน</option>
+              <option value="grant">โบนัส</option>
+              <option value="adjust">ปรับยอดเงิน</option>
+              <option value="freeze">ระงับชั่วคราว</option>
+              <option value="unfreeze">ปลดระงับ</option>
+              <option value="settle">หักชำระ</option>
+              <option value="refund">คืนเงิน</option>
             </Select>
             <AdminUserSearchSelect value={ledgerUserId} onChange={(id) => setLedgerUserId(id)} />
             <Button
@@ -266,7 +266,7 @@ export function OrdersPage() {
                 void loadLedger(1);
               }}
             >
-              筛选
+              ตัวกรอง
             </Button>
           </AdminFilterBar>
           <div className="rounded-lg border bg-background">
@@ -274,13 +274,13 @@ export function OrdersPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>ID</TableHead>
-                  <TableHead>用户</TableHead>
-                  <TableHead>变动</TableHead>
-                  <TableHead>余额后</TableHead>
-                  <TableHead>类型</TableHead>
-                  <TableHead>关联</TableHead>
-                  <TableHead>备注</TableHead>
-                  <TableHead>时间</TableHead>
+                  <TableHead>ผู้ใช้</TableHead>
+                  <TableHead>การเปลี่ยนแปลง</TableHead>
+                  <TableHead>ยอดคงเหลือหลังทำรายการ</TableHead>
+                  <TableHead>ประเภท</TableHead>
+                  <TableHead>การเชื่อมโยง</TableHead>
+                  <TableHead>หมายเหตุ</TableHead>
+                  <TableHead>เวลา</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -320,12 +320,12 @@ export function OrdersPage() {
         <TabsContent value="usage" className="space-y-4">
           <AdminFilterBar>
             <AdminUserSearchSelect value={usageUserId} onChange={(id) => setUsageUserId(id)} />
-            <Input placeholder="任务 ID" value={usageTaskId} onChange={(e) => setUsageTaskId(e.target.value)} />
+            <Input placeholder="ID คิวงาน" value={usageTaskId} onChange={(e) => setUsageTaskId(e.target.value)} />
             <Select value={usageDomain} onChange={(e) => setUsageDomain(e.target.value)}>
-              <option value="">全部领域</option>
-              <option value="kepu">科普</option>
-              <option value="drama">漫剧</option>
-              <option value="studio">工作室</option>
+              <option value="">ทุกหมวดหมู่</option>
+              <option value="kepu">วิดีโอสั้น AI</option>
+              <option value="drama">ละครสั้น AI</option>
+              <option value="studio">สตูดิโอ</option>
             </Select>
             <Input
               placeholder="billing_key"
@@ -333,23 +333,23 @@ export function OrdersPage() {
               onChange={(e) => setUsageBillingKey(e.target.value)}
             />
             <Select value={usageCapability} onChange={(e) => setUsageCapability(e.target.value)}>
-              <option value="">全部能力</option>
-              <option value="llm">LLM 文本</option>
-              <option value="image">生图</option>
-              <option value="video">视频</option>
-              <option value="tts">配音</option>
+              <option value="">ทุกความสามารถ</option>
+              <option value="llm">LLM ข้อความ</option>
+              <option value="image">สร้างภาพ</option>
+              <option value="video">สร้างวิดีโอ</option>
+              <option value="tts">เสียงพากย์</option>
             </Select>
             <Input
-              placeholder="模型（如 seedance-2.5）"
+              placeholder="โมเดล (เช่น seedance-2.5)"
               value={usageModel}
               onChange={(e) => setUsageModel(e.target.value)}
             />
             <Select value={usageBasis} onChange={(e) => setUsageBasis(e.target.value)}>
-              <option value="">全部计费依据</option>
-              <option value="estimate">估算</option>
-              <option value="upstream">实测</option>
-              <option value="upstream_usage">实测(token)</option>
-              <option value="upstream_cost">实测(费用)</option>
+              <option value="">เกณฑ์การคิดค่าบริการทั้งหมด</option>
+              <option value="estimate">ประมาณการ</option>
+              <option value="upstream">วัดจริง</option>
+              <option value="upstream_usage">วัดจริง (Token)</option>
+              <option value="upstream_cost">วัดจริง (ค่าใช้จ่าย)</option>
             </Select>
             <AdminDateRangeFilter
               from={usageDateFrom}
@@ -396,17 +396,17 @@ export function OrdersPage() {
                 void loadUsage(1);
               }}
             >
-              筛选
+              ตัวกรอง
             </Button>
           </AdminFilterBar>
           <div className="rounded-lg border bg-background">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>时间</TableHead>
-                  <TableHead>用户</TableHead>
+                  <TableHead>เวลา</TableHead>
+                  <TableHead>ผู้ใช้</TableHead>
                   <TableHead>任务</TableHead>
-                  <TableHead>项目</TableHead>
+                  <TableHead>โปรเจกต์</TableHead>
                   <TableHead>领域</TableHead>
                   <TableHead>能力</TableHead>
                   <TableHead>模型</TableHead>

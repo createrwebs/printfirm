@@ -39,7 +39,7 @@ type SettingsTabShellProps = {
 };
 
 // Both save entries submit the same form, so keyboard and button validation stay consistent.
-export function SettingsTabShell({ children, onSave, saving, saveLabel = "保存当前设置", disabled }: SettingsTabShellProps) {
+export function SettingsTabShell({ children, onSave, saving, saveLabel = "บันทึก当前ตั้งค่า", disabled }: SettingsTabShellProps) {
   const { registerSave } = useSettingsSaveSlot();
   const formRef = useRef<HTMLFormElement>(null);
   const onSaveRef = useRef(onSave);
@@ -80,15 +80,15 @@ export function SettingsTabShell({ children, onSave, saving, saveLabel = "保存
     <form ref={formRef} className="settings-tab-shell" noValidate onSubmit={(event) => { event.preventDefault(); void submit(); }}>
       <fieldset disabled={saving} className="settings-tab-body">{children}</fieldset>
       {hasSave ? <div className="settings-save-bar">
-        <div><strong>{saving ? "正在保存设置…" : "保存当前分区"}</strong><p>本页修改将在保存成功后生效。</p></div>
-        <Button type="submit" disabled={saving || disabled}>{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}{saving ? "保存中…" : saveLabel}</Button>
+        <div><strong>{saving ? "正在บันทึกการตั้งค่า…" : "บันทึก当前分区"}</strong><p>本页修改将在บันทึกสำเร็จ后生效。</p></div>
+        <Button type="submit" disabled={saving || disabled}>{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}{saving ? "กำลังบันทึก…" : saveLabel}</Button>
       </div> : null}
     </form>
   );
 }
 
 // 加载占位
-export function SettingsLoading({ label = "加载中…" }: { label?: string }) {
+export function SettingsLoading({ label = "กำลังโหลด…" }: { label?: string }) {
   return (
     <div className="settings-loading">
       <Loader2 className="h-4 w-4 animate-spin" />
@@ -107,7 +107,7 @@ export function SectionTitle({ icon, title }: { icon: ReactNode; title: string }
   );
 }
 
-// 表单标签 + 控件
+// 表单แท็ก + 控件
 export function LabeledControl({
   label,
   hint,
@@ -130,7 +130,7 @@ export function LabeledControl({
   );
 }
 
-// 内嵌子面板（浅灰底，用于状态条或独立分组）
+// 内嵌子面板（浅灰底，用于สถานะ条或独立分组）
 export function SettingsSurface({ children, className = "" }: { children: ReactNode; className?: string }) {
   return <div className={cn("settings-surface", className)}>{children}</div>;
 }
@@ -143,7 +143,7 @@ export type SettingsStatusItem = {
   pendingText?: string;
 };
 
-// 顶部就绪/状态条（与模型路由一致）
+// 顶部就绪/สถานะ条（与模型路由一致）
 export function SettingsStatusBar({
   title,
   items,

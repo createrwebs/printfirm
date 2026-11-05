@@ -1,7 +1,7 @@
 import { throwApiError } from '../lib/apiError'
 import { createJsonRequester } from './client'
 
-/** 任务 API 沿用 HTTP 状态回退文案，共用统一传输层。 */
+/** 任务 API 沿用 HTTP สถานะ回退文案，共用统一传输层。 */
 const request = createJsonRequester((response, detail) =>
   throwApiError(response.status, detail, `HTTP ${response.status}`),
 )
@@ -59,10 +59,10 @@ export type TaskListOut = {
 }
 
 export const tasksApi = {
-  // 单任务详情（含 steps / events）
+  // 单รายละเอียดงาน（含 steps / events）
   get: (taskId: number) => request<TaskRunOut>(`/api/tasks/${taskId}`),
 
-  // 按目标筛选最近任务（如 fragment）
+  // 按目标ตัวกรอง最近任务（如 fragment）
   list: (params: {
     page?: number
     page_size?: number

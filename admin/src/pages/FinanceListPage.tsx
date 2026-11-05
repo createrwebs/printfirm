@@ -30,7 +30,7 @@ export function FinanceListPage() {
       setData(res);
     } catch (err) {
       setData(null);
-      toast.error(err instanceof Error ? err.message : "财务列表加载失败");
+      toast.error(err instanceof Error ? err.message : "财务列表โหลดไม่สำเร็จ");
     } finally {
       setLoading(false);
     }
@@ -46,11 +46,11 @@ export function FinanceListPage() {
 
   return (
     <div className="admin-page">
-      <PageHeader title="财务列表" description="按日汇总用户扣费、调用次数与 Token 用量" />
+      <PageHeader title="บัญชีการเงิน" description="按日汇总用户扣费、调用次数与 Token 用量" />
 
       <AdminFilterBar>
         <AdminChipFilter
-          label="时间范围"
+          label="เวลา范围"
           value={days}
           options={DAY_OPTIONS}
           onChange={(v) => setDays(v as FinanceDays)}
@@ -59,10 +59,10 @@ export function FinanceListPage() {
       </AdminFilterBar>
 
       <PageSection
-        title="财务列表"
+        title="บัญชีการเงิน"
         description={
           rangeMismatch
-            ? "数据与当前时间范围不一致，请重新加载"
+            ? "数据与当前เวลา范围不一致，请โหลดใหม่"
             : `近 ${days} 日 · 用户扣费与用量汇总`
         }
         bodyClassName="!pt-0"
@@ -81,13 +81,13 @@ export function FinanceListPage() {
               {loading ? (
                 <TableRow>
                   <TableCell colSpan={4} className="!text-center text-[var(--admin-muted)]">
-                    加载中…
+                    กำลังโหลด…
                   </TableCell>
                 </TableRow>
               ) : rows.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={4} className="!text-center text-[var(--admin-muted)]">
-                    暂无数据
+                    ไม่มีข้อมูล
                   </TableCell>
                 </TableRow>
               ) : (

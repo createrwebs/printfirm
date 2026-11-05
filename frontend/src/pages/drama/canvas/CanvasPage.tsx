@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom'
 import RequireAuth from '../RequireAuth'
 import { CanvasWorkspace } from './CanvasWorkspace'
 
-/** 鉴权后渲染全屏自由画布 */
+/** 鉴权后เรนเดอร์全屏自由画布 */
 export default function CanvasPage() {
   return (
     <RequireAuth>
@@ -20,7 +20,7 @@ function CanvasPageInner() {
   if (!Number.isFinite(id) || id <= 0) {
     return (
       <div className="free-canvas-page" style={{ display: 'grid', placeItems: 'center' }}>
-        <p style={{ color: '#64748b' }}>无效的项目 ID</p>
+        <p style={{ color: '#64748b' }}>无效的โปรเจกต์ ID</p>
       </div>
     )
   }

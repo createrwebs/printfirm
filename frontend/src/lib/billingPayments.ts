@@ -23,7 +23,7 @@ export function paymentAmount(amountMinor: number): string {
 
 /**
  * 套餐卡付款金额统一展示「货币代码 + 两位小数」：
- * Stripe 选中时取服务端外币报价（报价无效返回 null，由页面拦截下单）；
+ * Stripe 选中时取服务端外币报价（报价无效กลับ null，由页面拦截下单）；
  * 支付宝/微信固定人民币，直接由分转元，浏览器不做任何汇率换算。
  */
 export function skuPriceDisplay(input: {

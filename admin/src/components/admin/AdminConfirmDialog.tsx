@@ -14,13 +14,13 @@ type AdminConfirmDialogProps = {
   onConfirm: () => void;
 };
 
-// 管理端确认弹窗（删除等二次确认）
+// 管理端确认弹窗（ลบ等二次确认）
 export function AdminConfirmDialog({
   open,
   title,
   description,
   confirmLabel = "确认",
-  cancelLabel = "取消",
+  cancelLabel = "ยกเลิก",
   loading = false,
   destructive = false,
   onOpenChange,

@@ -4,7 +4,11 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.services.drama.llm import drama_chat_json
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.services.agent.runner import run_task_json
+from app.services.drama.llm import DramaLlmJsonError, drama_chat_json
+from app.services.drama.language import detect_content_language, has_language_violation, language_instruction
 from app.services.drama.script_summary_prompt import (
     SCRIPT_SUMMARY_SYSTEM_PROMPT,
     build_script_summary_user_message,
@@ -20,16 +24,40 @@ MANUAL_EPISODE_ORIGIN = "manual"
 # 与创建项目上限对齐
 MAX_DRAMA_EPISODES = 120
 
+
+async def _chat_json(
+    system: str,
+    user: str,
+    *,
+    task: str = "script_rewrite",
+    db: AsyncSession | None = None,
+    user_id: int | None = None,
+    skill_ids: list[int] | None = None,
+    **kwargs: Any,
+) -> Any:
+    """Call a drama agent with its role skill when request context is available."""
+    if db is not None and user_id is not None:
+        return await run_task_json(
+            db,
+            user_id,
+            task=task,
+            system=system,
+            user=user,
+            skill_ids=skill_ids,
+            **kwargs,
+        )
+    return await drama_chat_json(system, user, **kwargs)
+
 # 与 manju episodeScript 对齐：先规划全集集名
 EPISODE_OUTLINE_SYSTEM = """你是专业的短剧/网剧编剧策划，负责根据原始创意与剧本摘要，规划全部分集的「集数 + 集名」大纲。
 
 输出要求：
 1. 必须严格按照用户给定的总集数生成，episodes 数组长度必须与总集数完全一致
 2. episodeNumber 从 1 开始连续递增，不得跳号、不得重复
-3. 每集 title 为 4-12 个汉字的集名，概括本集核心事件或冲突钩子，风格参考：金箍碎佛规、罪臣之子承玄圭
+3. 每集 title 为 4-12 个字符的集名，必须使用原始创意语言，概括本集核心事件或冲突钩子
 4. 全剧分集须覆盖剧本摘要中的起承转合：前期立人设与世界观、中期升级矛盾与反转、后期高潮与结局，节奏适合短剧连载
 5. 相邻集名之间要有因果衔接与追剧钩子，避免重复套路
-6. 语言使用简体中文
+6. 语言使用与用户输入或摘要相同的语言（如泰语/英语/中文）
 
 必须输出严格 JSON：
 {"episodes":[{"episodeNumber":1,"title":"集名"}, ...]}"""
@@ -43,18 +71,18 @@ EPISODE_BATCH_CONTENT_SYSTEM = """你是专业的短剧/网剧编剧，负责根
 3. 须携带并参考「已有剧集正文」保持剧情、人设与世界观连贯；首批次无已有正文时从第 1 集开篇写起
 4. 批次内各集之间须有因果衔接，末集结尾留追剧钩子
 5. 必须输出对象格式：{"episodes":[{"episodeNumber":数字,"title":"集名","summary":"本集梗概","content":"..."}]}，不要直接输出数组
-6. summary 为本集 120-300 字事件梗概；content 为正文主字段；creative 为可选创作备注，没有额外要求就省略，禁止再生成一份同义梗概
+6. summary 为本集 120-300 个字符的事件梗概，必须使用原始创意语言；content 为正文主字段；creative 为可选创作备注，没有额外要求就省略，禁止再生成一份同义梗概
 
 格式要求（每集 content 须严格遵守）：
-1. 按场次组织，场号格式为 ### 场{集数}-{场次}，如第 1 集第 2 场：### 场1-2
+1. 按场次组织；泰语使用 ### ฉาก{集数}-{场次}，如 ### ฉาก1-2；仅为兼容中文旧稿才使用 ### 场1-2
 2. 场头下一行写时间内外景，如：日 内 灵山大雄宝殿 / 夜 外 妖寨大门外 / 晨外 羽山刑场
-3. 下一行写：出场人物：角色A、角色B（只写可出镜人物名；不要写「某某（声音）」「某某音色」等音色标注）
+3. 下一行写：泰语使用 ตัวละครที่ออกฉาก：角色A、角色B；不要在新稿使用 出场人物（只写可出镜人物名；不要写「某某（声音）」「某某音色」等音色标注）
 4. 动作用 △ 开头，独占一行；动作须具体可拍（景别、调度、道具、表情），禁止一句带过
 5. 台词格式：角色名（情绪/vo/os/动作）：台词内容；旁白用 vo，内心独白用 os；台词要有潜台词与冲突；括号内写情绪/vo/os，不要写「声音」「音色」
 6. 关键镜头可用【空镜：描述】收尾一场或一段
 7. content 内不要输出「第X集」或「X.集名：」标题行，只输出场戏正文
-8. 每集 2-3 场；每场 2-3 段 △ 动作与 2-3 句台词（或对白+vo）；整集 content 约 450-600 汉字，节奏紧凑、不注水
-9. 语言使用简体中文，偏影视剧本风格，动作与台词可拍摄、有张力"""
+8. 每集 2-3 场；每场 2-3 段 △ 动作与 2-3 句台词（或对白+vo）；整集 content 约 450-600 个字符，必须使用原始创意语言，节奏紧凑、不注水
+9. 语言使用与剧本摘要相同的语言（如泰语/英语/中文），偏影视剧本风格，动作与台词可拍摄、有张力"""
 
 # 把用户草稿改写成可拍摄分集正文
 EPISODE_OPTIMIZE_SYSTEM = """你是专业的短剧/网剧编剧，负责把用户提供的分集剧本草稿，改写成可拍摄的分集正文。
@@ -67,15 +95,15 @@ EPISODE_OPTIMIZE_SYSTEM = """你是专业的短剧/网剧编剧，负责把用�
 5. 只输出用户指定的那一集，episodes 数组必须恰好 1 项
 
 格式要求（content 须严格遵守）：
-1. 按场次组织，场号格式为 ### 场{集数}-{场次}，如第 2 集第 1 场：### 场2-1
+1. 按场次组织；泰语使用 ### ฉาก{集数}-{场次}，如 ### ฉาก2-1；仅为兼容中文旧稿才使用 ### 场2-1
 2. 场头下一行写时间内外景，如：日 内 教室 / 夜 外 天台
-3. 下一行写：出场人物：角色A、角色B（只写可出镜人物名；不要写音色标注）
+3. 下一行写：泰语使用 ตัวละครที่ออกฉาก：角色A、角色B；不要在新稿使用 出场人物（只写可出镜人物名；不要写音色标注）
 4. 动作用 △ 开头，独占一行；动作须具体可拍
 5. 台词格式：角色名（情绪/vo/os/动作）：台词内容；旁白用 vo，内心独白用 os
 6. 关键镜头可用【空镜：描述】
 7. content 内不要输出「第X集」或「X.集名：」标题行，只输出场戏正文
-8. 每集 2-3 场；整集 content 约 450-600 汉字，节奏紧凑
-9. 语言使用简体中文
+8. 每集 2-3 场；整集 content 约 450-600 个字符，必须使用原始创意语言，节奏紧凑
+9. 语言使用与剧本摘要相同的语言（如泰语/英语/中文）
 
 必须输出严格 JSON：
 {"episodes":[{"episodeNumber":数字,"title":"集名","content":"..."}]}"""
@@ -86,11 +114,11 @@ EPISODE_SUMMARY_FROM_CREATIVE_SYSTEM = """你是专业的短剧/网剧编剧策�
 
 输出要求：
 1. 只输出用户指定的那一集，episodes 数组必须恰好 1 项
-2. summary 为本集 120-300 字剧情摘要：人物、冲突、转折、结尾钩子；不要写成场戏正文
-3. 可顺带优化 title（4-12 字集名）；不要输出 content/body
+2. summary 为本集 120-300 个字符的剧情摘要：人物、冲突、转折、结尾钩子；使用原始创意语言，不要写成场戏正文
+3. 可顺带优化 title（4-12 个字符的集名）；必须使用原始创意语言，不要输出 content/body
 4. 须参考整剧创意、全剧摘要、全集集名、邻集正文与邻集摘要，保持人设与世界观连贯
 5. 若提供「已有定妆角色名」，摘要中人物称呼须优先使用这些定妆名；新角色须写清全名
-6. 语言使用简体中文
+6. 语言使用与用户输入或摘要相同的语言（如泰语/英语/中文）
 
 必须输出严格 JSON：
 {"episodes":[{"episodeNumber":数字,"title":"集名","summary":"..."}]}"""
@@ -107,15 +135,15 @@ EPISODE_BODY_FROM_BRIEF_SYSTEM = """你是专业的短剧/网剧编剧，根据�
 5. 若提供「已有定妆角色名」，出场人物与台词角色名须优先使用这些定妆名；新角色须在出场人物行写清全名
 
 格式要求（content 须严格遵守）：
-1. 按场次组织，场号格式为 ### 场{集数}-{场次}，如第 2 集第 1 场：### 场2-1
+1. 按场次组织；泰语使用 ### ฉาก{集数}-{场次}，如 ### ฉาก2-1；仅为兼容中文旧稿才使用 ### 场2-1
 2. 场头下一行写时间内外景，如：日 内 教室 / 夜 外 天台 / 晨外 操场
-3. 下一行写：出场人物：角色A、角色B（只写可出镜人物名；不要写「某某（声音）」「某某音色」等音色标注）
+3. 下一行写：泰语使用 ตัวละครที่ออกฉาก：角色A、角色B；不要在新稿使用 出场人物（只写可出镜人物名；不要写「某某（声音）」「某某音色」等音色标注）
 4. 动作用 △ 开头，独占一行；动作须具体可拍（景别、调度、道具、表情），禁止一句带过
 5. 台词格式：角色名（情绪/vo/os/动作）：台词内容；旁白用 vo，内心独白用 os；台词要有潜台词与冲突；括号内写情绪/vo/os，不要写「声音」「音色」
 6. 关键镜头可用【空镜：描述】收尾一场或一段
 7. content 内不要输出「第X集」或「X.集名：」标题行，只输出场戏正文
-8. 每集 2-3 场；每场 2-3 段 △ 动作与 2-3 句台词（或对白+vo）；整集 content 约 450-600 汉字
-9. 语言使用简体中文，偏影视剧本风格，动作与台词可拍摄、有张力
+8. 每集 2-3 场；每场 2-3 段 △ 动作与 2-3 句台词（或对白+vo）；整集 content 约 450-600 个字符，必须使用原始创意语言
+9. 语言使用与剧本摘要相同的语言（如泰语/英语/中文），偏影视剧本风格，动作与台词可拍摄、有张力
 
 必须输出严格 JSON：
 {"episodes":[{"episodeNumber":数字,"title":"集名","content":"..."}]}"""
@@ -127,10 +155,10 @@ EPISODE_BRIEF_FROM_BODY_SYSTEM = """你是专业的短剧/网剧编剧策划。�
 输出要求：
 1. 只输出用户指定的那一集，episodes 数组必须恰好 1 项
 2. 只提取本集正文已有事件，不反推或补写 creative 创作备注
-3. summary 为本集 120-300 字剧情摘要：人物、冲突、转折、结尾钩子；不要写成场戏正文
-4. 可顺带优化 title（4-12 字集名）；不要输出 content/body
+3. summary 为本集 120-300 个字符的剧情摘要：人物、冲突、转折、结尾钩子；使用原始创意语言，不要写成场戏正文
+4. 可顺带优化 title（4-12 个字符的集名）；必须使用原始创意语言，不要输出 content/body
 5. 须忠实于正文已有情节，不要另起故事
-6. 语言使用简体中文
+6. 语言使用与用户输入或摘要相同的语言（如泰语/英语/中文）
 
 必须输出严格 JSON：
 {"episodes":[{"episodeNumber":数字,"title":"集名","summary":"..."}]}"""
@@ -150,12 +178,116 @@ EPISODE_BATCH_CONTENT_SYSTEM += _SCRIPT_ADAPTATION_RULES
 EPISODE_BODY_FROM_BRIEF_SYSTEM += _SCRIPT_ADAPTATION_RULES
 EPISODE_OPTIMIZE_SYSTEM += _SCRIPT_ADAPTATION_RULES
 
+THAI_EPISODE_BATCH_CONTENT_SYSTEM = """คุณเป็นนักเขียนบทละครซีรีส์สั้นมืออาชีพ มีหน้าที่เขียนบทการถ่ายทำ (shooting script) สำหรับตอนที่กำหนด โดยอ้างอิงจากแก่นเรื่องย่อ ข้อมูลตัวละคร และโครงเรื่อง
+
+ข้อกำหนดผลลัพธ์:
+1. ต้องส่งออกในรูปแบบ JSON ที่ถูกต้องเท่านั้น:
+{"episodes":[{"episodeNumber":ตัวเลข,"title":"ชื่อตอนภาษาไทย","summary":"เรื่องย่อของตอนนี้ภาษาไทย (100-250 ตัวอักษร)","content":"บทการถ่ายทำภาษาไทย"}]}
+2. ภาษาทั้งหมด (ทั้งบทบรรยาย, การกระทำ △, บทสนทนา, ชื่อฉาก) ต้องเป็นภาษาไทย 100% ห้ามมีภาษาจีนปนแม้แต่ตัวอักษรเดียว!
+3. โครงสร้างของ content ในแต่ละตอน (ต้องปฏิบัติตามอย่างเคร่งครัด):
+   - แบ่งเป็น 2-3 ฉาก โดยขึ้นต้นหัวฉากด้วยรูปแบบ: ### ฉาก{เลขตอน}-{เลขฉาก} (เช่น ### ฉาก1-1)
+   - บรรทัดถัดมาให้ระบุ เวลา สถานที่ ใน/นอก เป็นภาษาไทย เช่น: กลางวัน ใน ห้องตรวจคลินิกสัตว์ / กลางคืน นอก ถนนสายเก่า
+   - บรรทัดถัดมาให้ระบุตัวละครที่ปรากฏ: ตัวละครที่ออกฉาก: [ชื่อตัวละคร คั่นด้วยจุลภาค]
+   - การกระทำของตัวละครและภาพ ขึ้นต้นด้วยเครื่องหมาย △ อยู่เดี่ยวๆ หนึ่งบรรทัด บรรยายให้เห็นภาพชัดเจน ถ่ายทำได้จริง
+   - บทสนทนาใช้รูปแบบ: ชื่อตัวละคร (อารมณ์/ท่าทาง): บทพูดภาษาไทย
+   - เสียงบรรยายใช้: ผู้บรรยาย (vo): ข้อความ หรือ ชื่อตัวละคร (os): ข้อความคิดในใจ
+   - ช็อตว่างหรือทิวทัศน์ใช้: 【ภาพว่าง: คำอธิบาย】
+4. ห้ามใส่เครื่องหมายคำพูดภาษาอังกฤษคู่ (") ในเนื้อหา content หรือ summary ให้ใช้เครื่องหมายคำพูดเดี่ยว (') แทน เพื่อความถูกต้องของ JSON
+5. ความยาว content แต่ละตอนประมาณ 500-1000 ตัวอักษรภาษาไทย เนื้อเรื่องกระชับ ตื่นเต้น น่าติดตาม มีปมหรือจุดหักมุมท้ายตอน"""
+
+THAI_EPISODE_BODY_FROM_BRIEF_SYSTEM = """คุณเป็นนักเขียนบทละครซีรีส์สั้นมืออาชีพ เขียนบทการถ่ายทำที่สมบูรณ์สำหรับตอนที่กำหนด โดยอ้างอิงจากเรื่องย่อและแก่นเรื่องของตอน
+
+ข้อกำหนดผลลัพธ์:
+1. ส่งออกในรูปแบบ JSON:
+{"episodes":[{"episodeNumber":ตัวเลข,"title":"ชื่อตอนภาษาไทย","content":"บทการถ่ายทำภาษาไทย"}]}
+2. ภาษาทั้งหมดต้องเป็นภาษาไทย 100% ห้ามมีภาษาจีนเด็ดขาด!
+3. รูปแบบ content แต่ละตอน:
+   - หัวฉาก: ### ฉาก{เลขตอน}-{เลขฉาก} (เช่น ### ฉาก1-1)
+   - เวลา สถานที่: กลางวัน ใน [สถานที่] / กลางคืน นอก [สถานที่]
+   - ตัวละคร: ตัวละครที่ออกฉาก: [ชื่อตัวละคร]
+   - การกระทำ: △ [การกระทำที่เป็นภาพชัดเจน ถ่ายทำได้จริง]
+   - บทสนทนา: [ชื่อตัวละคร] ([อารมณ์/ท่าทาง]): [บทพูดภาษาไทย]
+   - เสียงบรรยาย: ผู้บรรยาย (vo): [ข้อความ] หรือ [ชื่อตัวละคร] (os): [ข้อความคิดในใจ]
+4. ห้ามใส่เครื่องหมายคำพูดคู่ (") ใน content ให้ใช้ (') แทน
+5. ความยาว content ประมาณ 500-1000 ตัวอักษรภาษาไทย"""
+
+THAI_EPISODE_SUMMARY_FROM_CREATIVE_SYSTEM = """คุณเป็นนักเขียนบทและนักวางแผนซีรีส์สั้น เขียนสรุปเนื้อเรื่องย่อสำหรับตอนที่กำหนด
+
+ข้อกำหนดผลลัพธ์:
+1. ส่งออกในรูปแบบ JSON:
+{"episodes":[{"episodeNumber":ตัวเลข,"title":"ชื่อตอนภาษาไทย","summary":"เรื่องย่อภาษาไทย 120-300 ตัวอักษร"}]}
+2. ภาษาไทย 100% ห้ามมีภาษาจีน
+3. ห้ามใส่เครื่องหมายคำพูดคู่ (") ใน JSON"""
+
+THAI_EPISODE_BRIEF_FROM_BODY_SYSTEM = """คุณเป็นนักเขียนบทและบรรณาธิการซีรีส์สั้น สรุปเรื่องย่อจากบทการถ่ายทำที่มีอยู่
+
+ข้อกำหนดผลลัพธ์:
+1. ส่งออกในรูปแบบ JSON:
+{"episodes":[{"episodeNumber":ตัวเลข,"title":"ชื่อตอนภาษาไทย","summary":"เรื่องย่อภาษาไทย 120-300 ตัวอักษร"}]}
+2. ภาษาไทย 100% ห้ามมีภาษาจีน
+3. ห้ามใส่เครื่องหมายคำพูดคู่ (") ใน JSON"""
+
+THAI_EPISODE_OPTIMIZE_SYSTEM = """คุณเป็นนักเขียนบทมืออาชีพ ปรับปรุงร่างบทละครของผู้ใช้ให้เป็นบทการถ่ายทำที่สมบูรณ์
+
+ข้อกำหนดผลลัพธ์:
+1. ส่งออกในรูปแบบ JSON:
+{"episodes":[{"episodeNumber":ตัวเลข,"title":"ชื่อตอนภาษาไทย","content":"บทการถ่ายทำภาษาไทย"}]}
+2. ภาษาไทย 100% ห้ามมีภาษาจีน
+3. หัวฉากใช้ ### ฉาก{ตอน}-{ฉาก}, กลางวัน/กลางคืน ใน/นอก [สถานที่], ตัวละครที่ออกฉาก: [ชื่อตัวละคร], △ การกระทำ, และ [ตัวละคร] ([อารมณ์]): [บทพูด]"""
+
+
+def get_episode_batch_system_prompt(source: str) -> str:
+    lang = detect_content_language(source)
+    if lang == "th":
+        return THAI_EPISODE_BATCH_CONTENT_SYSTEM
+    return EPISODE_BATCH_CONTENT_SYSTEM
+
+
+def get_episode_body_system_prompt(source: str) -> str:
+    lang = detect_content_language(source)
+    if lang == "th":
+        return THAI_EPISODE_BODY_FROM_BRIEF_SYSTEM
+    return EPISODE_BODY_FROM_BRIEF_SYSTEM
+
+
+def get_episode_summary_system_prompt(source: str) -> str:
+    lang = detect_content_language(source)
+    if lang == "th":
+        return THAI_EPISODE_SUMMARY_FROM_CREATIVE_SYSTEM
+    return EPISODE_SUMMARY_FROM_CREATIVE_SYSTEM
+
+
+def get_episode_brief_from_body_system_prompt(source: str) -> str:
+    lang = detect_content_language(source)
+    if lang == "th":
+        return THAI_EPISODE_BRIEF_FROM_BODY_SYSTEM
+    return EPISODE_BRIEF_FROM_BODY_SYSTEM
+
+
+def get_episode_optimize_system_prompt(source: str) -> str:
+    lang = detect_content_language(source)
+    if lang == "th":
+        return THAI_EPISODE_OPTIMIZE_SYSTEM
+    return EPISODE_OPTIMIZE_SYSTEM
+
+
 
 def _require_generated_episode_bodies(rows: list[dict[str, Any]]) -> None:
     """拒绝重试后仍不合格的短正文，避免继续自动分镜并显示成功。"""
     for row in rows:
         if _content_char_len(str(row.get("body") or "")) < MIN_EPISODE_CONTENT_CHARS:
             raise ValueError(f"第 {row.get('episodeNumber')} 集正文仍过短，请重试或手动完善剧本")
+
+
+def _require_generated_language(rows: list[dict[str, Any]], source: str) -> None:
+    """Prevent a Chinese/English body from being saved for a Thai source."""
+    visible = "\n".join(
+        f"{row.get('title', '')}\n{row.get('creative', '')}\n{row.get('body', '')}\n{row.get('summary', '')}"
+        for row in rows
+        if isinstance(row, dict)
+    )
+    if has_language_violation(source, visible):
+        raise ValueError("模型输出语言与原始创意不一致，已阻止保存；请重试")
 
 
 def _format_neighbor_episode_briefs(episodes: list[dict[str, Any]], number: int, limit: int = 3) -> str:
@@ -234,8 +366,10 @@ def build_single_episode_context(
     character_asset_names: list[str] | None = None,
 ) -> list[str]:
     """单集 summary/body/full/brief/optimize 共用的厚上下文块。"""
+    source = (project_source or "").strip()
     return [
-        f"整剧原始创意：\n{(project_source or '').strip() or '（无）'}",
+        language_instruction(source or format_summary_text(project_summary)),
+        f"整剧原始创意：\n{source or '（无）'}",
         f"全剧剧本摘要：\n{format_summary_text(project_summary)}",
         f"全剧分集规划：\n{_format_episode_title_list(existing)}",
         f"邻集正文（近 {3} 集节选）：\n{_format_neighbor_episode_bodies(existing, number)}",
@@ -253,6 +387,9 @@ async def run_episode_summary_from_creative(
     project_source: str = "",
     title: str | None = None,
     character_asset_names: list[str] | None = None,
+    db: AsyncSession | None = None,
+    user_id: int | None = None,
+    skill_ids: list[int] | None = None,
 ) -> list[dict[str, Any]]:
     """本集创意 → 集级 summary（可更新 title）。"""
     brief = (creative or "").strip()
@@ -272,10 +409,14 @@ async def run_episode_summary_from_creative(
         f"本集原始创意：\n{brief}",
         "请只输出本集 title 与 summary。",
     ]
-    data = await drama_chat_json(
-        EPISODE_SUMMARY_FROM_CREATIVE_SYSTEM,
+    sys_prompt = get_episode_summary_system_prompt(project_source or brief)
+    data = await _chat_json(
+        sys_prompt,
         "\n\n".join(user_parts),
         max_tokens=4096,
+        db=db,
+        user_id=user_id,
+        skill_ids=skill_ids,
     )
     episodes = data.get("episodes") if isinstance(data, dict) else None
     if not isinstance(episodes, list) or not episodes:
@@ -306,6 +447,9 @@ async def run_episode_body_from_brief(
     project_source: str = "",
     title: str | None = None,
     character_asset_names: list[str] | None = None,
+    db: AsyncSession | None = None,
+    user_id: int | None = None,
+    skill_ids: list[int] | None = None,
 ) -> list[dict[str, Any]]:
     """本集创意+摘要 → 拍摄正文 body。"""
     brief = (creative or "").strip()
@@ -327,10 +471,14 @@ async def run_episode_body_from_brief(
         f"本集剧情摘要：\n{syn or '（无，以创意为准）'}",
         "请撰写本集拍摄正文 content。",
     ]
-    data = await drama_chat_json(
-        EPISODE_BODY_FROM_BRIEF_SYSTEM,
+    sys_prompt = get_episode_body_system_prompt(project_source or brief or syn)
+    data = await _chat_json(
+        sys_prompt,
         "\n\n".join(user_parts),
         max_tokens=8192,
+        db=db,
+        user_id=user_id,
+        skill_ids=skill_ids,
     )
     episodes = data.get("episodes") if isinstance(data, dict) else None
     if not isinstance(episodes, list):
@@ -342,18 +490,28 @@ async def run_episode_body_from_brief(
     row = normalized[0]
     row["creative"] = brief or str(row.get("creative") or "")
     row["summary"] = syn or str(row.get("summary") or "")
-    if _content_char_len(str(row.get("body") or "")) < MIN_EPISODE_CONTENT_CHARS:
-        # 短则再试一次强调长度
-        retry = await drama_chat_json(
-            EPISODE_BODY_FROM_BRIEF_SYSTEM,
+    source_language = project_source or format_summary_text(project_summary)
+    needs_retry = (
+        _content_char_len(str(row.get("body") or "")) < MIN_EPISODE_CONTENT_CHARS
+        or has_language_violation(source_language, str(row.get("body") or ""))
+    )
+    if needs_retry:
+        # 过短或语言错时再试一次，明确要求原始语言
+        retry = await _chat_json(
+            sys_prompt,
             "\n\n".join(
                 user_parts
                 + [
-                    f"上一稿过短（不足 {MIN_EPISODE_CONTENT_CHARS} 字），请扩写至约 {TARGET_EPISODE_CONTENT_CHARS} 汉字，"
+                    f"上一稿过短（不足 {MIN_EPISODE_CONTENT_CHARS} 字），请扩写至约 {TARGET_EPISODE_CONTENT_CHARS} 个字符，"
                     f"含 {EPISODE_SCENE_COUNT_HINT}、每场 2-3 段 △ 与 2-3 句台词，仍只输出第 {number} 集。"
+                    + "\n"
+                    + language_instruction(source_language),
                 ]
             ),
             max_tokens=8192,
+            db=db,
+            user_id=user_id,
+            skill_ids=skill_ids,
         )
         retry_eps = retry.get("episodes") if isinstance(retry, dict) else None
         if isinstance(retry_eps, list):
@@ -361,6 +519,7 @@ async def run_episode_body_from_brief(
             row = normalized[0]
             row["creative"] = brief or str(row.get("creative") or "")
             row["summary"] = syn or str(row.get("summary") or "")
+    _require_generated_language([row], source_language)
     _require_generated_episode_bodies([row])
     return [row]
 
@@ -375,6 +534,9 @@ async def run_episode_full_from_creative(
     title: str | None = None,
     character_asset_names: list[str] | None = None,
     summary: str = "",
+    db: AsyncSession | None = None,
+    user_id: int | None = None,
+    skill_ids: list[int] | None = None,
 ) -> list[dict[str, Any]]:
     """优先按已确认梗概生成整集；无梗概时兼容旧创意→梗概→正文。"""
     synopsis = (summary or "").strip()
@@ -389,6 +551,9 @@ async def run_episode_full_from_creative(
             project_source=project_source,
             title=title,
             character_asset_names=character_asset_names,
+            db=db,
+            user_id=user_id,
+            skill_ids=skill_ids,
         )
     syn_row = summary_rows[0]
     body_rows = await run_episode_body_from_brief(
@@ -400,6 +565,9 @@ async def run_episode_full_from_creative(
         project_source=project_source,
         title=str(syn_row.get("title") or title or ""),
         character_asset_names=character_asset_names,
+        db=db,
+        user_id=user_id,
+        skill_ids=skill_ids,
     )
     out = body_rows[0]
     out["creative"] = str(syn_row.get("creative") or creative).strip()
@@ -417,6 +585,9 @@ async def run_episode_brief_from_body(
     project_source: str = "",
     title: str | None = None,
     character_asset_names: list[str] | None = None,
+    db: AsyncSession | None = None,
+    user_id: int | None = None,
+    skill_ids: list[int] | None = None,
 ) -> list[dict[str, Any]]:
     """已有拍摄正文 → 提取 summary，保留原有 creative 和 body。"""
     script_body = (body or "").strip()
@@ -436,10 +607,14 @@ async def run_episode_brief_from_body(
         f"本集拍摄正文：\n{script_body[:12000]}",
         "请只输出本集 title、summary；不要改写正文或补写创作备注。",
     ]
-    data = await drama_chat_json(
-        EPISODE_BRIEF_FROM_BODY_SYSTEM,
+    sys_prompt = get_episode_brief_from_body_system_prompt(project_source or script_body)
+    data = await _chat_json(
+        sys_prompt,
         "\n\n".join(user_parts),
         max_tokens=4096,
+        db=db,
+        user_id=user_id,
+        skill_ids=skill_ids,
     )
     episodes = data.get("episodes") if isinstance(data, dict) else None
     if not isinstance(episodes, list) or not episodes:
@@ -465,10 +640,100 @@ async def run_episode_brief_from_body(
     ]
 
 
+def normalize_summary_dict(data: Any, default_episode_count: int = 12) -> dict[str, Any]:
+    if not isinstance(data, dict):
+        return {"episodeCount": default_episode_count, "characters": []}
+
+    ep_count = data.get("episodeCount") or data.get("episode_count") or data.get("total_episodes") or default_episode_count
+    try:
+        ep_count = int(ep_count)
+    except (TypeError, ValueError):
+        ep_count = default_episode_count
+
+    title = data.get("seriesTitle") or data.get("series_title") or data.get("projectTitle") or data.get("project_title") or data.get("title") or ""
+    synopsis = data.get("synopsis") or data.get("core_concept") or data.get("projectDescription") or data.get("summary") or data.get("description") or data.get("plotSummary") or ""
+    one_line = data.get("oneLineStory") or data.get("one_line_story") or (synopsis[:100] if synopsis else "")
+    story_type = data.get("storyType") or data.get("story_type") or data.get("genre") or data.get("visualStyle") or "drama"
+    target_aud = data.get("targetAudience") or data.get("target_audience") or "general"
+    hook = data.get("coreHook") or data.get("core_hook") or data.get("hook") or ""
+
+    raw_chars = (
+        data.get("characters")
+        or data.get("protagonists")
+        or data.get("main_characters")
+        or data.get("coreCharacters")
+        or data.get("core_characters")
+        or []
+    )
+    norm_chars = []
+    if isinstance(raw_chars, list):
+        for c in raw_chars:
+            if not isinstance(c, dict):
+                continue
+            c_name = (c.get("name") or c.get("character_name") or c.get("characterName") or "").strip()
+            if not c_name:
+                continue
+            c_title = c.get("title") or c.get("role") or c.get("roleType") or c.get("role_type") or ""
+            c_role_type = c.get("roleType") or c.get("role_type") or c.get("role") or "supporting"
+            c_visual = c.get("visualImage") or c.get("visual_image") or c.get("appearance") or c.get("visual") or ""
+            c_tags = c.get("coreTags") or c.get("core_tags") or c.get("tags") or ""
+            c_bg = c.get("identityBackground") or c.get("identity_background") or c.get("background") or ""
+            c_exp = c.get("growthExperience") or c.get("growth_experience") or c.get("experience") or ""
+            c_pers = c.get("personality") or ""
+            c_rel = c.get("relationships") or c.get("relationship") or ""
+            c_arc = c.get("growthArc") or c.get("growth_arc") or c.get("storyArc") or c.get("story_arc") or c.get("arc") or ""
+
+            norm_chars.append({
+                "name": c_name,
+                "title": str(c_title),
+                "roleType": str(c_role_type),
+                "visualImage": str(c_visual),
+                "coreTags": str(c_tags),
+                "identityBackground": str(c_bg),
+                "growthExperience": str(c_exp),
+                "personality": str(c_pers),
+                "relationships": str(c_rel),
+                "growthArc": str(c_arc),
+            })
+
+    return {
+        "episodeCount": ep_count,
+        "seriesTitle": str(title),
+        "storyType": str(story_type),
+        "targetAudience": str(target_aud),
+        "coreHook": str(hook),
+        "oneLineStory": str(one_line),
+        "characters": norm_chars,
+        "synopsis": str(synopsis),
+    }
+
+
+def validate_summary_output(summary: dict[str, Any], source: str) -> None:
+    """Reject incomplete or language-switched summaries before downstream seeding."""
+    required = ("seriesTitle", "storyType", "oneLineStory", "synopsis")
+    if any(not str(summary.get(key) or "").strip() for key in required):
+        raise ValueError("模型返回的剧本摘要字段不完整")
+    characters = summary.get("characters")
+    if not isinstance(characters, list) or not characters:
+        raise ValueError("模型未返回完整角色列表")
+    visible = [str(summary.get(key) or "") for key in required]
+    for character in characters:
+        if not isinstance(character, dict):
+            raise ValueError("模型返回了无效角色项")
+        if any(not str(character.get(key) or "").strip() for key in ("name", "roleType", "visualImage")):
+            raise ValueError("模型返回的角色字段不完整")
+        visible.extend(str(character.get(key) or "") for key in character)
+    if has_language_violation(source, "\n".join(visible), strict=True):
+        raise ValueError("模型输出语言与原始创意不一致")
+
 async def run_script_summary(
     creative: str,
     episode_count: int | None = None,
     image_style_id: str | None = None,
+    *,
+    db: AsyncSession | None = None,
+    user_id: int | None = None,
+    skill_ids: list[int] | None = None,
 ) -> dict[str, Any]:
     # Build structured outline from creative brief
     trimmed = (creative or "").strip()
@@ -480,14 +745,38 @@ async def run_script_summary(
         episode_count=episode_count,
         image_style_id=image_style_id,
     )
-    data = await drama_chat_json(
+    data = await _chat_json(
         SCRIPT_SUMMARY_SYSTEM_PROMPT,
         user_message,
-        max_tokens=8192,
+        max_tokens=2500,
+        task="script_rewrite",
+        db=db,
+        user_id=user_id,
+        skill_ids=skill_ids,
     )
+    normalized = normalize_summary_dict(data, default_episode_count=episode_count or 24)
+    try:
+        validate_summary_output(normalized, trimmed)
+    except ValueError as first_error:
+        repair = await _chat_json(
+            SCRIPT_SUMMARY_SYSTEM_PROMPT,
+            user_message
+            + "\n\n上一次返回不符合要求："
+            + str(first_error)
+            + "。请重新输出完整 JSON；必须包含 seriesTitle、storyType、oneLineStory、synopsis、characters，"
+            + "每个角色必须有 name、roleType、visualImage、growthArc，并严格遵守原始创意语言。\n"
+            + language_instruction(trimmed),
+            max_tokens=2500,
+            task="script_rewrite",
+            db=db,
+            user_id=user_id,
+            skill_ids=skill_ids,
+        )
+        normalized = normalize_summary_dict(repair, default_episode_count=episode_count or 24)
+        validate_summary_output(normalized, trimmed)
     if episode_count:
-        data["episodeCount"] = episode_count
-    return data
+        normalized["episodeCount"] = episode_count
+    return normalized
 
 
 def resolve_episode_target(
@@ -691,7 +980,30 @@ def pick_auto_project_title(
     return series
 
 
-def format_summary_text(summary: dict[str, Any]) -> str:
+def format_summary_text(summary: dict[str, Any] | str) -> str:
+    if isinstance(summary, str):
+        return summary
+    probe = f"{summary.get('seriesTitle', '')} {summary.get('oneLineStory', '')} {summary.get('synopsis', '')}"
+    if detect_content_language(probe) == "th":
+        lines = [
+            f"ชื่อเรื่อง: {summary.get('seriesTitle', '')}",
+            f"จำนวนตอน: {summary.get('episodeCount', '')}",
+            f"แนวเรื่อง: {summary.get('storyType', '')}",
+            f"กลุ่มเป้าหมาย: {summary.get('targetAudience', '')}",
+            f"จุดขายหลัก: {summary.get('coreHook', '')}",
+            f"เรื่องย่อหนึ่งบรรทัด: {summary.get('oneLineStory', '')}",
+            "",
+            "ตัวละคร:",
+        ]
+        for c in summary.get("characters") or []:
+            if isinstance(c, dict):
+                lines.append(
+                    f"- {c.get('name', '')} ({c.get('roleType', '')}/{c.get('title', '')}): "
+                    f"{c.get('visualImage', '')}; แท็ก: {c.get('coreTags', '')}; "
+                    f"พัฒนาการ: {c.get('growthArc', '')}"
+                )
+        lines.extend(["", "เรื่องย่อ:", str(summary.get("synopsis") or "")])
+        return "\n".join(lines)
     # Human-readable outline for UI / LLM context
     lines = [
         f"剧名：{summary.get('seriesTitle', '')}",
@@ -723,13 +1035,19 @@ def _format_episode_title_list(episodes: list[dict[str, Any]]) -> str:
     return "\n".join(rows) if rows else "（暂无分集规划）"
 
 
-def _format_existing_episode_content(episodes: list[dict[str, Any]], limit: int = 3) -> str:
-    # 仅附最近若干集正文，控制上下文长度
-    completed = [
-        item
-        for item in episodes
-        if isinstance(item, dict) and str(item.get("body") or item.get("content") or "").strip()
-    ]
+def _format_existing_episode_content(episodes: list[dict[str, Any]], limit: int = 3, target_language_source: str = "") -> str:
+    # 仅附最近若干集正文，控制上下文长度；过滤语言不一致的旧稿，防止污染后续生成
+    target_lang = detect_content_language(target_language_source) if target_language_source else ""
+    completed = []
+    for item in episodes:
+        if not isinstance(item, dict):
+            continue
+        body = str(item.get("body") or item.get("content") or "").strip()
+        if not body:
+            continue
+        if target_lang == "th" and has_language_violation("เรื่องราวภาษาไทย", body):
+            continue
+        completed.append(item)
     completed.sort(key=lambda x: int(x.get("episodeNumber") or 0))
     if not completed:
         return "（暂无，本批次从开篇写起）"
@@ -776,11 +1094,16 @@ async def run_episode_outline(
     creative: str,
     summary: dict[str, Any],
     episode_count: int,
+    *,
+    db: AsyncSession | None = None,
+    user_id: int | None = None,
+    skill_ids: list[int] | None = None,
 ) -> list[dict[str, Any]]:
     # 生成全集集名大纲
     summary_text = format_summary_text(summary)
     user = "\n".join(
         [
+            language_instruction(creative or format_summary_text(summary)),
             f"总集数：{episode_count} 集（episodes 数组必须恰好 {episode_count} 项）",
             "",
             f"原始创意：\n{(creative or '').strip()}",
@@ -790,7 +1113,15 @@ async def run_episode_outline(
             "请输出全部分集的 episodeNumber 与 title。",
         ]
     )
-    data = await drama_chat_json(EPISODE_OUTLINE_SYSTEM, user, max_tokens=4096)
+    data = await _chat_json(
+        EPISODE_OUTLINE_SYSTEM,
+        user,
+        max_tokens=4096,
+        task="script_rewrite",
+        db=db,
+        user_id=user_id,
+        skill_ids=skill_ids,
+    )
     episodes = data.get("episodes") if isinstance(data, dict) else data
     if not isinstance(episodes, list) or not episodes:
         raise ValueError("分集大纲返回格式无效")
@@ -819,11 +1150,22 @@ async def ensure_episode_outline(
     summary: dict[str, Any],
     existing: list[dict[str, Any]],
     total: int,
+    *,
+    db: AsyncSession | None = None,
+    user_id: int | None = None,
+    skill_ids: list[int] | None = None,
 ) -> tuple[list[dict[str, Any]], bool]:
     """返回 (合并后分集列表, 是否实际调用 LLM 生成大纲)。"""
     if _titles_ready(existing, total):
         return existing, False
-    outline = await run_episode_outline(creative, summary, total)
+    outline = await run_episode_outline(
+        creative,
+        summary,
+        total,
+        db=db,
+        user_id=user_id,
+        skill_ids=skill_ids,
+    )
     return merge_episode_bodies(outline, existing), True
 
 
@@ -833,6 +1175,10 @@ async def run_episode_script_batch(
     batch_size: int = 1,
     total: int | None = None,
     creative: str = "",
+    *,
+    db: AsyncSession | None = None,
+    user_id: int | None = None,
+    skill_ids: list[int] | None = None,
 ) -> list[dict[str, Any]]:
     # 按缺失集号生成下一批正文（默认逐集）；手动空集不参与自动补写
     target = int(total or summary.get("episodeCount") or 12)
@@ -858,10 +1204,11 @@ async def run_episode_script_batch(
     summary_text = format_summary_text(summary)
     user = "\n".join(
         [
+            language_instruction(creative or format_summary_text(summary)),
             f"当前任务：撰写第 {start} 集至第 {end} 集（共 {batch_size_n} 集）的完整剧本正文",
             f"全剧共 {target} 集",
             f"episodes 输出数组必须恰好 {batch_size_n} 项，episodeNumber 从 {start} 到 {end}",
-            f"每集 content 约 {TARGET_EPISODE_CONTENT_CHARS} 汉字（不少于 {MIN_EPISODE_CONTENT_CHARS}），含 {EPISODE_SCENE_COUNT_HINT}、精简 △ 与台词",
+            f"每集 content 约 {TARGET_EPISODE_CONTENT_CHARS} 个字符（不少于 {MIN_EPISODE_CONTENT_CHARS}），含 {EPISODE_SCENE_COUNT_HINT}、精简 △ 与台词",
             "",
             f"原始创意：\n{(creative or '').strip() or '（无额外创意，以摘要为准）'}",
             "",
@@ -871,18 +1218,30 @@ async def run_episode_script_batch(
             "",
             f"本批次待撰写：\n{batch_titles}",
             "",
-            f"已有剧集正文：\n{_format_existing_episode_content(existing)}",
+            f"已有剧集正文：\n{_format_existing_episode_content(existing, target_language_source=creative or summary_text)}",
             "",
             f"请输出第 {start}–{end} 集各集的 content 字段（可附带 title）。",
         ]
     )
 
-    data = await drama_chat_json(
-        EPISODE_BATCH_CONTENT_SYSTEM,
-        user,
-        temperature=0.6,
-        max_tokens=16384,
-    )
+    try:
+        sys_prompt = get_episode_batch_system_prompt(creative or summary_text)
+        data = await _chat_json(
+            sys_prompt,
+            user,
+            temperature=0.6,
+            max_tokens=16384,
+            task="script_rewrite",
+            db=db,
+            user_id=user_id,
+            skill_ids=skill_ids,
+        )
+    except DramaLlmJsonError as exc:
+        raw_resp = getattr(exc, "raw_content", "") or ""
+        if "场" in raw_resp or "△" in raw_resp or "第" in raw_resp or "Scene" in raw_resp or "scene" in raw_resp:
+            data = {"episodes": [{"episodeNumber": start, "title": title_by_num.get(start) or f"第 {start} 集", "content": raw_resp}]}
+        else:
+            raise
 
     episodes = data.get("episodes") if isinstance(data, dict) else data
     if not isinstance(episodes, list):
@@ -895,18 +1254,24 @@ async def run_episode_script_batch(
         for item in normalized
         if _content_char_len(str(item.get("body") or "")) < MIN_EPISODE_CONTENT_CHARS
     ]
-    if too_short:
+    language_bad = has_language_violation(creative or summary_text, "\n".join(str(item.get("body") or "") for item in normalized))
+    if too_short or language_bad:
         retry_user = (
             user
-            + "\n\n上次输出过短。请重写本批次，每集 content 约 "
+            + "\n\n上次输出不符合要求。请重写本批次，每集 content 约 "
             + str(TARGET_EPISODE_CONTENT_CHARS)
-            + f" 汉字（不少于 {MIN_EPISODE_CONTENT_CHARS}），含 {EPISODE_SCENE_COUNT_HINT}、精简 △ 与台词，不得压缩成梗概。"
+            + f" 个字符（不少于 {MIN_EPISODE_CONTENT_CHARS}），含 {EPISODE_SCENE_COUNT_HINT}、精简 △ 与台词，不得压缩成梗概。\n"
+            + language_instruction(creative or summary_text)
         )
-        retry = await drama_chat_json(
-            EPISODE_BATCH_CONTENT_SYSTEM,
+        retry = await _chat_json(
+            sys_prompt,
             retry_user,
             temperature=0.6,
             max_tokens=16384,
+            task="script_rewrite",
+            db=db,
+            user_id=user_id,
+            skill_ids=skill_ids,
         )
         retry_eps = retry.get("episodes") if isinstance(retry, dict) else retry
         if isinstance(retry_eps, list):
@@ -914,6 +1279,7 @@ async def run_episode_script_batch(
 
     if not normalized:
         raise ValueError(f"模型未返回第 {start}–{end} 集正文")
+    _require_generated_language(normalized, creative or summary_text)
     _require_generated_episode_bodies(normalized)
     return normalized
 
@@ -925,6 +1291,10 @@ async def run_episode_script_from_draft(
     draft: str,
     creative: str = "",
     character_asset_names: list[str] | None = None,
+    *,
+    db: AsyncSession | None = None,
+    user_id: int | None = None,
+    skill_ids: list[int] | None = None,
 ) -> list[dict[str, Any]]:
     """把用户草稿优化成指定集的拍摄正文。"""
     number = int(episode_number)
@@ -952,17 +1322,22 @@ async def run_episode_script_from_draft(
             f"当前任务：把用户草稿优化为第 {number} 集完整拍摄剧本",
             f"episodeNumber 必须为 {number}，episodes 数组必须恰好 1 项",
             f"当前集名：{current_title}（可按草稿核心事件微调 title）",
-            f"每集 content 约 {TARGET_EPISODE_CONTENT_CHARS} 汉字（不少于 {MIN_EPISODE_CONTENT_CHARS}），含 {EPISODE_SCENE_COUNT_HINT}、精简 △ 与台词",
+            f"每集 content 约 {TARGET_EPISODE_CONTENT_CHARS} 个字符（不少于 {MIN_EPISODE_CONTENT_CHARS}），含 {EPISODE_SCENE_COUNT_HINT}、精简 △ 与台词",
             *ctx,
             f"用户提供的第 {number} 集草稿：\n{draft_text}",
             f"请输出第 {number} 集的 title 与 content。",
         ]
     )
-    data = await drama_chat_json(
-        EPISODE_OPTIMIZE_SYSTEM,
+    sys_prompt = get_episode_optimize_system_prompt(creative or draft_text)
+    data = await _chat_json(
+        sys_prompt,
         user,
         temperature=0.55,
         max_tokens=16384,
+        task="script_rewrite",
+        db=db,
+        user_id=user_id,
+        skill_ids=skill_ids,
     )
     episodes = data.get("episodes") if isinstance(data, dict) else data
     if not isinstance(episodes, list):
@@ -980,13 +1355,17 @@ async def run_episode_script_from_draft(
             + str(number)
             + " 集，content 约 "
             + str(TARGET_EPISODE_CONTENT_CHARS)
-            + f" 汉字（不少于 {MIN_EPISODE_CONTENT_CHARS}），含 {EPISODE_SCENE_COUNT_HINT}、精简 △ 与台词。"
+            + f" 个字符（不少于 {MIN_EPISODE_CONTENT_CHARS}），含 {EPISODE_SCENE_COUNT_HINT}、精简 △ 与台词。"
         )
-        retry = await drama_chat_json(
-            EPISODE_OPTIMIZE_SYSTEM,
+        retry = await _chat_json(
+            sys_prompt,
             retry_user,
             temperature=0.55,
             max_tokens=16384,
+            task="script_rewrite",
+            db=db,
+            user_id=user_id,
+            skill_ids=skill_ids,
         )
         retry_eps = retry.get("episodes") if isinstance(retry, dict) else retry
         if isinstance(retry_eps, list):

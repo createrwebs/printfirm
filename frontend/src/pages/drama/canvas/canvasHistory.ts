@@ -12,7 +12,7 @@ export type CanvasHistoryState = {
   future: CanvasSnapshot[]
 }
 
-/** 创建空历史栈 */
+/** สร้าง空历史栈 */
 export function createEmptyCanvasHistory(): CanvasHistoryState {
   return { past: [], future: [] }
 }
@@ -22,7 +22,7 @@ export function cloneCanvasSnapshot(snapshot: CanvasSnapshot): CanvasSnapshot {
   return JSON.parse(JSON.stringify(snapshot)) as CanvasSnapshot
 }
 
-/** 将快照压入 past 并清空 future */
+/** 将快照压入 past 并ล้างข้อมูล future */
 export function pushHistory(
   history: CanvasHistoryState,
   snapshot: CanvasSnapshot,

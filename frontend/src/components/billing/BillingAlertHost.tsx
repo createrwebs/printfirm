@@ -12,7 +12,7 @@ type BillingAlertItem = {
   created_at?: string | null
 }
 
-/** 轮询待展示的用户额度告警并弹窗提示。 */
+/** 轮询待展示的用户额度告警并弹窗คำแนะนำ。 */
 export default function BillingAlertHost() {
   // 在发起 pending 请求前就上锁，避免 focus/interval/StrictMode 并发重入
   const showingRef = useRef(false)
@@ -33,7 +33,7 @@ export default function BillingAlertHost() {
         try {
           await api.billingAlertAck(item.id)
         } catch {
-          // 已确认或并发 ack 导致 404 时忽略，避免反复重试刷屏
+          // 已确认或并发 ack 导致 404 时忽略，避免反复ลองใหม่刷屏
         }
       }
     } catch {

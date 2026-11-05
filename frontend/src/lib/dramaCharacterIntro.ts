@@ -1,4 +1,4 @@
-/** 分集人物介绍叠字开关：模型叠字 / 关闭。 */
+/** 分集人物介绍叠字开关：模型叠字 / ปิด。 */
 
 export type DramaCharacterIntroMode = 'model' | 'off'
 
@@ -7,7 +7,7 @@ export function characterIntroModeEnabled(mode: DramaCharacterIntroMode): boolea
   return mode === 'model'
 }
 
-// 兼容历史布尔值，读取分集人物介绍方式；默认关闭叠字。
+// 兼容历史布尔值，读取分集人物介绍方式；ค่าเริ่มต้นปิด叠字。
 export function readEpisodeCharacterIntroMode(
   params: Record<string, unknown> | null | undefined,
 ): DramaCharacterIntroMode {
@@ -16,7 +16,7 @@ export function readEpisodeCharacterIntroMode(
   return readEpisodeCharacterIntroEnabled(params) ? 'model' : 'off'
 }
 
-// 兼容历史字符串/数字布尔值，默认关闭人物介绍叠字。
+// 兼容历史字符串/数字布尔值，ค่าเริ่มต้นปิด人物介绍叠字。
 export function readEpisodeCharacterIntroEnabled(
   params: Record<string, unknown> | null | undefined,
 ): boolean {
@@ -46,7 +46,7 @@ export function stripCharacterIntroFromContent(content: string): string {
   return next.join('\n').replace(/\n{3,}/g, '\n\n').trimEnd()
 }
 
-// 按人物介绍开关批量改写分镜正文（关闭时去掉叠字；开启不回填，需重新分镜）。
+// 按人物介绍开关批量改写分镜正文（ปิด时去掉叠字；开启不回填，需重新分镜）。
 export function applyCharacterIntroModeToFragments<T extends { content?: string | null }>(
   fragments: T[],
   mode: DramaCharacterIntroMode,

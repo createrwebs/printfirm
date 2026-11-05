@@ -1,4 +1,4 @@
-/** 分集编辑：带分镜分段进度条的视频播放器（客户端顺序连播） */
+/** 分 ตอนแก้ไข：带分镜分段进度条的วิดีโอ播放器（客户端顺序连播） */
 import { Download, Maximize, Minimize, MonitorPlay, Pause, Play, Volume2, VolumeX } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { resolveDramaMediaUrl, type DramaFragment } from '../../api/drama'
@@ -19,12 +19,12 @@ type Props = {
   playingFragmentId: number | null
   onPlayingFragmentChange: (fragmentId: number) => void
   aspectRatio: string
-  /** 预览历史版本时覆盖当前镜视频地址 */
+  /** ดูตัวอย่าง历史版本时覆盖当前镜วิดีโอ地址 */
   overrideVideoUrl?: string | null
   overridePosterUrl?: string | null
 }
 
-// 渲染带分镜分段进度条的视频播放器
+// เรนเดอร์带分镜分段进度条的วิดีโอ播放器
 export function DramaFragmentSegmentedVideoPlayer({
   fragments,
   playingFragmentId,
@@ -33,9 +33,9 @@ export function DramaFragmentSegmentedVideoPlayer({
   overrideVideoUrl = null,
   overridePosterUrl = null,
 }: Props) {
-  // videoRef 视频元素引用
+  // videoRef วิดีโอ元素引用
   const videoRef = useRef<HTMLVideoElement | null>(null)
-  // screenRef 预览画面容器（全屏目标）
+  // screenRef ดูตัวอย่างภาพ容器（全屏目标）
   const screenRef = useRef<HTMLDivElement | null>(null)
   // trackRef 分段进度条容器引用
   const trackRef = useRef<HTMLDivElement | null>(null)
@@ -45,33 +45,33 @@ export function DramaFragmentSegmentedVideoPlayer({
   const autoLinkNextRef = useRef(true)
   // playingFragmentIdRef 当前播放分镜 ID
   const playingFragmentIdRef = useRef(playingFragmentId)
-  // timelineSegmentsRef 时间轴分段缓存
+  // timelineSegmentsRef เวลา轴分段缓存
   const timelineSegmentsRef = useRef(buildEpisodeVideoTimelineSegments(fragments))
   // shouldResumePlayRef 切换分镜后是否继续播放
   const shouldResumePlayRef = useRef(false)
-  // pendingSeekTimeRef 切换分镜后待跳转的本地时间
+  // pendingSeekTimeRef 切换分镜后待跳转的本地เวลา
   const pendingSeekTimeRef = useRef<number | null>(null)
-  // autoPlayAttemptedRef 当前视频是否已尝试自动播放
+  // autoPlayAttemptedRef 当前วิดีโอ是否已尝试自动播放
   const autoPlayAttemptedRef = useRef(false)
-  // playingSegmentRef 当前播放区间（供事件回调读取，避免轮询刷新 fragments 重绑事件）
+  // playingSegmentRef 当前播放区间（供事件回调读取，避免轮询รีเฟรช fragments 重绑事件）
   const playingSegmentRef = useRef<DramaEpisodeVideoTimelineSegment | null>(null)
   // prevPlayingFragmentIdRef 上次已处理的分镜切换
   const prevPlayingFragmentIdRef = useRef<number | null>(playingFragmentId)
   // isPlaying 是否正在播放
   const [isPlaying, setIsPlaying] = useState(false)
-  // globalCurrentTime 全局时间轴当前位置（秒）
+  // globalCurrentTime ทั่วไปเวลา轴当前位置（วินาที）
   const [globalCurrentTime, setGlobalCurrentTime] = useState(0)
   // autoLinkNext 当前片段播完后自动播放下一片段
   const [autoLinkNext, setAutoLinkNext] = useState(true)
   // muted 是否静音
   const [muted, setMuted] = useState(false)
-  // isFullscreen 预览是否处于全屏
+  // isFullscreen ดูตัวอย่าง是否处于全屏
   const [isFullscreen, setIsFullscreen] = useState(false)
 
   playingFragmentIdRef.current = playingFragmentId
   autoLinkNextRef.current = autoLinkNext
 
-  // timelineSegments 分集全部分镜时间轴分段
+  // timelineSegments 分 ตอน全部分镜เวลา轴分段
   const timelineSegments = useMemo(
     () => buildEpisodeVideoTimelineSegments(fragments),
     [fragments],
@@ -79,7 +79,7 @@ export function DramaFragmentSegmentedVideoPlayer({
 
   timelineSegmentsRef.current = timelineSegments
 
-  // totalDuration 分集时间轴总时长
+  // totalDuration 分 ตอนเวลา轴总ความยาว
   const totalDuration = useMemo(
     () => resolveEpisodeVideoTimelineTotalDuration(timelineSegments),
     [timelineSegments],
@@ -91,7 +91,7 @@ export function DramaFragmentSegmentedVideoPlayer({
     [fragments, playingFragmentId],
   )
 
-  // playingSegment 当前播放分镜在时间轴上的区间
+  // playingSegment 当前播放分镜在เวลา轴上的区间
   const playingSegment = useMemo(
     () => timelineSegments.find((segment) => segment.fragmentId === playingFragmentId) ?? null,
     [playingFragmentId, timelineSegments],
@@ -99,7 +99,7 @@ export function DramaFragmentSegmentedVideoPlayer({
 
   playingSegmentRef.current = playingSegment
 
-  // videoUrl 当前分镜视频地址（可被历史版本预览覆盖）
+  // videoUrl 当前分镜วิดีโอ地址（可被历史版本ดูตัวอย่าง覆盖）
   const videoUrl =
     overrideVideoUrl ||
     (playingFragment?.video ? resolveDramaMediaUrl(playingFragment.video) : null)
@@ -109,7 +109,7 @@ export function DramaFragmentSegmentedVideoPlayer({
     (playingFragment?.cover ? resolveDramaMediaUrl(playingFragment.cover) : null)
   // hasCurrentVideo 当前分镜是否可播放
   const hasCurrentVideo = Boolean(videoUrl)
-  // hasAnyVideo 是否存在任一分镜视频
+  // hasAnyVideo 是否存在任一分镜วิดีโอ
   const hasAnyVideo = timelineSegments.some((segment) => segment.hasVideo)
 
   // ratioClass 画幅 CSS 类名
@@ -131,7 +131,7 @@ export function DramaFragmentSegmentedVideoPlayer({
     video.pause()
   }, [hasCurrentVideo])
 
-  // 跳转到全局时间轴位置
+  // 跳转到ทั่วไปเวลา轴位置
   const seekToGlobalTime = useCallback(
     (globalTimeSec: number) => {
       const playback = resolveFragmentPlaybackFromGlobalTime(timelineSegments, globalTimeSec)
@@ -182,7 +182,7 @@ export function DramaFragmentSegmentedVideoPlayer({
     [seekToGlobalTime, totalDuration],
   )
 
-  // 绑定视频事件（仅在当前视频地址变化时重置）
+  // 绑定วิดีโอ事件（仅在当前วิดีโอ地址变化时รีเซ็ต）
   useEffect(() => {
     const video = videoRef.current
 
@@ -295,7 +295,7 @@ export function DramaFragmentSegmentedVideoPlayer({
     }
   }, [onPlayingFragmentChange, videoUrl])
 
-  // 仅在用户切换分镜时重置到该分镜起点（生成轮询刷新 fragments 不应打断播放）
+  // 仅在用户切换分镜时รีเซ็ต到该分镜起点（生成轮询รีเฟรช fragments 不应打断播放）
   useEffect(() => {
     if (playingFragmentId === prevPlayingFragmentIdRef.current) {
       return
@@ -333,7 +333,7 @@ export function DramaFragmentSegmentedVideoPlayer({
     video.muted = muted
   }, [muted])
 
-  // 同步浏览器全屏状态
+  // 同步浏览器全屏สถานะ
   useEffect(() => {
     const handleFullscreenChange = () => {
       setIsFullscreen(document.fullscreenElement === screenRef.current)
@@ -343,7 +343,7 @@ export function DramaFragmentSegmentedVideoPlayer({
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
   }, [])
 
-  // 切换预览画面全屏
+  // 切换ดูตัวอย่างภาพ全屏
   const handleToggleFullscreen = useCallback(async () => {
     const screen = screenRef.current
 
@@ -363,7 +363,7 @@ export function DramaFragmentSegmentedVideoPlayer({
     }
   }, [hasCurrentVideo])
 
-  // 下载当前分镜视频
+  // ดาวน์โหลด当前分镜วิดีโอ
   const handleDownloadVideo = useCallback(() => {
     if (!videoUrl) {
       return
@@ -401,7 +401,7 @@ export function DramaFragmentSegmentedVideoPlayer({
             <div className="drama-ep-video-overlay-actions">
               <button
                 type="button"
-                aria-label={isFullscreen ? '退出全屏' : '全屏预览'}
+                aria-label={isFullscreen ? 'ออกจากโหมดเต็มจอ' : 'ดูตัวอย่างเต็มจอ'}
                 className="drama-ep-video-overlay-btn"
                 onClick={() => void handleToggleFullscreen()}
               >
@@ -413,7 +413,7 @@ export function DramaFragmentSegmentedVideoPlayer({
               </button>
               <button
                 type="button"
-                aria-label="下载视频"
+                aria-label="ดาวน์โหลดวิดีโอ"
                 className="drama-ep-video-overlay-btn"
                 onClick={handleDownloadVideo}
               >
@@ -422,10 +422,10 @@ export function DramaFragmentSegmentedVideoPlayer({
             </div>
           </>
         ) : posterUrl ? (
-          <img src={posterUrl} alt="分镜预览" />
+          <img src={posterUrl} alt="ตัวอย่างช็อต" />
         ) : (
           <div className="drama-ep-player-placeholder">
-            <span>视频待生成</span>
+            <span>รอสร้างวิดีโอ</span>
           </div>
         )}
       </div>
@@ -438,7 +438,7 @@ export function DramaFragmentSegmentedVideoPlayer({
         <div className="drama-ep-video-toolbar">
           <button
             type="button"
-            aria-label={isPlaying ? '暂停' : '播放'}
+            aria-label={isPlaying ? 'หยุดชั่วคราว' : 'เล่น'}
             disabled={!hasCurrentVideo}
             className="drama-ep-video-icon-btn"
             onClick={handleTogglePlay}
@@ -497,9 +497,9 @@ export function DramaFragmentSegmentedVideoPlayer({
 
           <button
             type="button"
-            aria-label={autoLinkNext ? '关闭自动衔接下一片段' : '开启自动衔接下一片段'}
+            aria-label={autoLinkNext ? 'ปิดเล่นช็อตถัดไปอัตโนมัติ' : 'เปิดเล่นช็อตถัดไปอัตโนมัติ'}
             title={
-              autoLinkNext ? '关闭自动衔接下一片段' : '当前片段播放完后自动播放下一片段'
+              autoLinkNext ? 'ปิดเล่นช็อตถัดไปอัตโนมัติ' : 'เมื่อเล่นช็อตปัจจุบันจบจะเล่นช็อตถัดไปโดยอัตโนมัติ'
             }
             disabled={!hasAnyVideo}
             className={`drama-ep-video-autolink${autoLinkNext ? ' is-on' : ''}`}
@@ -511,7 +511,7 @@ export function DramaFragmentSegmentedVideoPlayer({
 
           <button
             type="button"
-            aria-label={muted ? '取消静音' : '静音'}
+            aria-label={muted ? 'เปิดเสียง' : 'ปิดเสียง'}
             disabled={!hasCurrentVideo}
             className="drama-ep-video-icon-btn is-muted"
             onClick={() => setMuted((value) => !value)}
@@ -525,8 +525,8 @@ export function DramaFragmentSegmentedVideoPlayer({
 
           <button
             type="button"
-            aria-label={isFullscreen ? '退出全屏' : '全屏预览'}
-            title={isFullscreen ? '退出全屏' : '全屏预览'}
+            aria-label={isFullscreen ? 'ออกจากโหมดเต็มจอ' : 'ดูตัวอย่างเต็มจอ'}
+            title={isFullscreen ? 'ออกจากโหมดเต็มจอ' : 'ดูตัวอย่างเต็มจอ'}
             disabled={!hasCurrentVideo}
             className="drama-ep-video-icon-btn"
             onClick={() => void handleToggleFullscreen()}

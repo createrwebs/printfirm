@@ -23,7 +23,7 @@ function isTabKey(value: string | null): value is TabKey {
   return TABS.includes(value as TabKey);
 }
 
-/** 漫剧项目二级详情：概览 / 分集 / 资产 / 任务 */
+/** โปรเจกต์ละครซีรีส์二级รายละเอียด：概览 / 分 ตอน / แอสเซท / 任务 */
 export function DramaProjectDetailPage() {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
@@ -45,7 +45,7 @@ export function DramaProjectDetailPage() {
     void api<AdminDramaProject>(`/api/admin/drama-projects/${id}`)
       .then(setDetail)
       .catch((err) => {
-        toast.error(err instanceof Error ? err.message : "加载失败");
+        toast.error(err instanceof Error ? err.message : "โหลดไม่สำเร็จ");
         navigate("/drama-projects", { replace: true });
       })
       .finally(() => setLoading(false));
@@ -61,7 +61,7 @@ export function DramaProjectDetailPage() {
   const usage = detail?.usage;
 
   if (loading && !detail) {
-    return <div className="admin-detail-page-loading">加载中…</div>;
+    return <div className="admin-detail-page-loading">กำลังโหลด…</div>;
   }
   if (!detail) return null;
 
@@ -71,24 +71,24 @@ export function DramaProjectDetailPage() {
         <Button variant="ghost" size="sm" className="admin-detail-back" asChild>
           <Link to="/drama-projects">
             <ArrowLeft className="h-4 w-4" />
-            返回列表
+            กลับ列表
           </Link>
         </Button>
         <div className="admin-detail-page-heading">
           <h2 className="admin-detail-page-title">
-            漫剧 #{detail.id} · {detail.title}
+            ละครซีรีส์ #{detail.id} · {detail.title}
           </h2>
           <p className="admin-detail-page-sub">
             <AdminEntityLink kind="user" id={detail.user_id} label={detail.user_email ?? undefined} />
-            {detail.summary_status ? ` · 摘要 ${detail.summary_status}` : ""}
+            {detail.summary_status ? ` · เรื่องย่อ ${detail.summary_status}` : ""}
           </p>
         </div>
         <div className="admin-detail-page-actions">
           <Button size="sm" variant="outline" asChild>
-            <Link to={`/drama-assets?project_id=${detail.id}`}>查看资产库</Link>
+            <Link to={`/drama-assets?project_id=${detail.id}`}>ดูแอสเซท库</Link>
           </Button>
           <Button size="sm" variant="outline" asChild>
-            <Link to={`/drama-episodes?project_id=${detail.id}`}>查看分集</Link>
+            <Link to={`/drama-episodes?project_id=${detail.id}`}>ดู分 ตอน</Link>
           </Button>
         </div>
       </div>
@@ -96,8 +96,8 @@ export function DramaProjectDetailPage() {
       <Tabs value={tab} onValueChange={(v) => setTab(v as TabKey)} className="admin-detail-tabs">
         <TabsList className="admin-detail-tabs-list">
           <TabsTrigger value="overview">概览</TabsTrigger>
-          <TabsTrigger value="episodes">分集（{detail.episode_count ?? 0}）</TabsTrigger>
-          <TabsTrigger value="assets">资产（{detail.asset_count ?? 0}）</TabsTrigger>
+          <TabsTrigger value="episodes">分 ตอน（{detail.episode_count ?? 0}）</TabsTrigger>
+          <TabsTrigger value="assets">แอสเซท（{detail.asset_count ?? 0}）</TabsTrigger>
           <TabsTrigger value="tasks">任务（{(detail.recent_tasks ?? []).length}）</TabsTrigger>
         </TabsList>
 
@@ -115,15 +115,15 @@ export function DramaProjectDetailPage() {
                     />
                   ),
                 },
-                { label: "描述", value: detail.description || "无描述", full: true },
-                { label: "摘要状态", value: detail.summary_status || "—" },
-                { label: "分集状态", value: detail.episode_content_status || "—" },
-                { label: "资产抽取", value: detail.assets_seed_status || "—" },
-                { label: "集数", value: detail.episode_count ?? 0 },
-                { label: "资产数", value: detail.asset_count ?? 0 },
+                { label: "คำอธิบาย", value: detail.description || "无คำอธิบาย", full: true },
+                { label: "เรื่องย่อสถานะ", value: detail.summary_status || "—" },
+                { label: "分 ตอนสถานะ", value: detail.episode_content_status || "—" },
+                { label: "แอสเซท抽取", value: detail.assets_seed_status || "—" },
+                { label: " ตอน数", value: detail.episode_count ?? 0 },
+                { label: "แอสเซท数", value: detail.asset_count ?? 0 },
                 { label: "分镜数", value: detail.fragment_count ?? 0 },
                 {
-                  label: "更新时间",
+                  label: "เวลาที่อัปเดต",
                   value: detail.updated_at ? new Date(detail.updated_at).toLocaleString() : "—",
                   full: true,
                 },
@@ -146,7 +146,7 @@ export function DramaProjectDetailPage() {
         </TabsContent>
 
         <TabsContent value="episodes" className="admin-detail-tab-panel">
-          <AdminDetailSection title={`分集列表（${(detail.episodes ?? []).length}）`}>
+          <AdminDetailSection title={`分 ตอน列表（${(detail.episodes ?? []).length}）`}>
             <AdminDetailTableWrap>
               <table>
                 <thead>
@@ -162,7 +162,7 @@ export function DramaProjectDetailPage() {
                   {(detail.episodes ?? []).length === 0 ? (
                     <tr>
                       <td colSpan={5} className="!text-center text-[var(--admin-muted)]">
-                        暂无分集
+                        ยังไม่มีตอน
                       </td>
                     </tr>
                   ) : (
@@ -174,7 +174,7 @@ export function DramaProjectDetailPage() {
                         <td>{ep.fragment_plan_status || "—"}</td>
                         <td>
                           <Button size="sm" variant="outline" asChild>
-                            <Link to={`/drama-episodes/${ep.id}`}>查看</Link>
+                            <Link to={`/drama-episodes/${ep.id}`}>ดู</Link>
                           </Button>
                         </td>
                       </tr>
@@ -187,13 +187,13 @@ export function DramaProjectDetailPage() {
         </TabsContent>
 
         <TabsContent value="assets" className="admin-detail-tab-panel">
-          <AdminDetailSection title={`项目资产（${(detail.assets ?? []).length}）`}>
+          <AdminDetailSection title={`โปรเจกต์แอสเซท（${(detail.assets ?? []).length}）`}>
             <AdminDetailTableWrap>
               <table>
                 <thead>
                   <tr>
                     <th>ID</th>
-                    <th>类型</th>
+                    <th>ประเภท</th>
                     <th>名称</th>
                     <th>封面</th>
                     <th>生成</th>
@@ -204,7 +204,7 @@ export function DramaProjectDetailPage() {
                   {(detail.assets ?? []).length === 0 ? (
                     <tr>
                       <td colSpan={6} className="!text-center text-[var(--admin-muted)]">
-                        暂无资产
+                        ไม่มีแอสเซท
                       </td>
                     </tr>
                   ) : (
@@ -217,7 +217,7 @@ export function DramaProjectDetailPage() {
                         <td>{formatDramaGenerationStatus(a.generation_status)}</td>
                         <td>
                           <Button size="sm" variant="outline" asChild>
-                            <Link to={`/drama-assets/${a.id}`}>查看</Link>
+                            <Link to={`/drama-assets/${a.id}`}>ดู</Link>
                           </Button>
                         </td>
                       </tr>
@@ -236,8 +236,8 @@ export function DramaProjectDetailPage() {
                 <thead>
                   <tr>
                     <th>ID</th>
-                    <th>类型</th>
-                    <th>状态</th>
+                    <th>ประเภท</th>
+                    <th>สถานะ</th>
                     <th>已扣 / 预估</th>
                   </tr>
                 </thead>

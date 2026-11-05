@@ -1,4 +1,4 @@
-/** 用户资料请求失败只在当前凭证明确过期时结束会话，临时故障不影响登录。 */
+/** 用户资料请求ล้มเหลว只在当前凭证明确过期时结束会话，临时故障不影响登录。 */
 export async function loadSessionUser<T>(options: {
   loadUser: () => Promise<T>
   getToken: () => string | null

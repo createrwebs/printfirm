@@ -2,6 +2,8 @@
 
 from pathlib import Path
 
+import pytest
+
 from app.models_agent import AgentSkill
 from app.services.agent.compose import render_skill_block, skill_matches_task
 from app.services.agent.parse import parse_skill_markdown
@@ -75,6 +77,71 @@ def test_builtin_skill_files_exist():
     files = builtin_skill_files()
     assert any(path.name == "SKILL.md" for path in files)
     assert (BUILTIN_SKILLS_DIR / "cinedance-seedance" / "SKILL.md").is_file()
+
+
+def test_all_printfilm_agent_role_skills_are_installed_and_adapted():
+    expected = {
+        "extractor": "extract_assets",
+        "script-rewriter": "script_rewrite",
+        "storyboard-breaker": "shot_plan",
+        "character-prompt": "character_prompt",
+        "scene-prompt": "scene_prompt",
+        "prop-prompt": "prop_prompt",
+        "video-prompt": "shot_plan",
+    }
+    files = {path.parent.name: path for path in builtin_skill_files()}
+    for slug, task in expected.items():
+        path = files[slug]
+        parsed = parse_skill_markdown(path.read_text(encoding="utf-8"))
+        assert parsed["tasks"] == (["shot_plan", "video_prompt"] if slug == "video-prompt" else [task])
+        assert "PRINTFILM runtime contract" in parsed["body"]
+
+
+def test_role_task_aliases_are_normalized():
+    markdown = """---
+name: role-aliases
+tasks:
+  - extractor
+  - script-rewriter
+  - character-prompt
+  - scene-prompt
+  - prop-prompt
+---
+
+# Role contract
+Use the runtime contract.
+"""
+    parsed = parse_skill_markdown(markdown)
+    assert parsed["tasks"] == [
+        "extract_assets",
+        "script_rewrite",
+        "character_prompt",
+        "scene_prompt",
+        "prop_prompt",
+    ]
+
+
+@pytest.mark.asyncio
+async def test_script_agent_uses_role_skill_runner_when_context_exists(monkeypatch):
+    from app.services.drama import agents
+
+    calls = []
+
+    async def fake_run_task_json(db, user_id, **kwargs):
+        calls.append((db, user_id, kwargs))
+        return {"episodes": []}
+
+    monkeypatch.setattr(agents, "run_task_json", fake_run_task_json)
+    result = await agents._chat_json(
+        "system",
+        "user",
+        task="script_rewrite",
+        db=object(),
+        user_id=42,
+    )
+    assert result == {"episodes": []}
+    assert calls[0][1] == 42
+    assert calls[0][2]["task"] == "script_rewrite"
 
 
 def test_parse_skill_ids_none_and_empty():

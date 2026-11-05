@@ -1,4 +1,4 @@
-/** 用户、科普项目、漫剧资产与模板的管理端接口契约。 */
+/** 用户、科普โปรเจกต์、ละครซีรีส์แอสเซท与模板的管理端接口契约。 */
 export type AdminProjectUsage = {
   charge_fen: number;
   tokens: number;

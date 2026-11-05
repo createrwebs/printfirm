@@ -1,4 +1,4 @@
-/** 画布空白处双击：弹出新建节点类型菜单 */
+/** 画布空白处双击：弹出สร้างใหม่节点ประเภท菜单 */
 import { useEffect, useRef } from 'react'
 import { ADD_NODE_OPTIONS, type CanvasNodeKind } from './canvasTypes'
 
@@ -9,7 +9,7 @@ type CanvasPaneAddMenuProps = {
   onClose: () => void
 }
 
-/** 在双击位置附近展示节点类型列表 */
+/** 在双击位置附近展示节点ประเภท列表 */
 export function CanvasPaneAddMenu({ screen, onSelect, onClose }: CanvasPaneAddMenuProps) {
   const rootRef = useRef<HTMLDivElement>(null)
 
@@ -40,7 +40,7 @@ export function CanvasPaneAddMenu({ screen, onSelect, onClose }: CanvasPaneAddMe
       className="fc-pane-add-menu"
       style={{ left, top }}
       role="menu"
-      aria-label="双击新建节点"
+      aria-label="双击สร้างใหม่节点"
     >
       {ADD_NODE_OPTIONS.map((option) => {
         const Icon = option.icon

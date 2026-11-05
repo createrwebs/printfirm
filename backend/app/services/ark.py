@@ -59,6 +59,8 @@ from app.services.tokenfree_video import (
     normalize_video_task_status,
     prepare_video_create_body,
     post_video_create,
+    poll_video_task_http,
+    create_and_wait_kie_image,
     remap_video_path,
     resolve_tokenfree_media_download_url,
     tokenfree_video_content_url,
@@ -1066,6 +1068,19 @@ class ArkGateway:
         try:
             async with httpx.AsyncClient(timeout=_upstream_timeout(IMAGE_GEN_READ_SEC)) as client:
                 async def _post():
+                    kie_img_resp = await create_and_wait_kie_image(
+                        client,
+                        self._route_url(path, route),
+                        model=chosen,
+                        prompt=full_prompt,
+                        aspect_ratio=str(aspect_ratio or ""),
+                        size=str(resolved_size or ""),
+                        ref_urls=subject_refs,
+                        style_ref_urls=style_refs,
+                        request_call=self._request_media,
+                    )
+                    if kie_img_resp is not None:
+                        return kie_img_resp
                     # 单次上游 POST，限流重试由外层包住
                     return await self._request_media(client, "POST",
                         self._route_url(path, route),
@@ -1641,7 +1656,7 @@ class ArkGateway:
         async with httpx.AsyncClient(timeout=_upstream_timeout(VIDEO_POLL_READ_SEC, connect=15.0)) as client:
             while time.monotonic() < deadline:
                 try:
-                    resp = await observed_request(client, "GET",
+                    resp = await poll_video_task_http(client, "GET",
                         self._route_url(f"/contents/generations/tasks/{task_id}", self._poll_route()),
                         headers=self._route_headers(self._poll_route()),
                     )
@@ -1701,7 +1716,7 @@ class ArkGateway:
             )
         try:
             async with httpx.AsyncClient(timeout=_upstream_timeout(VIDEO_FETCH_READ_SEC, connect=15.0)) as client:
-                resp = await observed_request(client, "GET",
+                resp = await poll_video_task_http(client, "GET",
                     self._route_url(f"/contents/generations/tasks/{task_id}", self._poll_route()),
                     headers=self._route_headers(self._poll_route()),
                 )

@@ -35,28 +35,28 @@ type DetailTab = "overview" | "upstream" | "billing" | "steps" | "events" | "jso
 const TERMINAL = new Set(["succeeded", "failed", "cancelled"]);
 
 const PAYLOAD_FIELD_LABELS: Record<string, string> = {
-  prompt: "提示词",
+  prompt: "คำแนะนำ词",
   name: "名称",
-  kind: "类型",
+  kind: "ประเภท",
   model_id: "模型",
-  image_style_id: "风格",
+  image_style_id: "สไตล์",
   aspect_ratio: "画幅",
-  resolution: "分辨率",
-  duration_sec: "时长(秒)",
-  duration: "时长",
-  force: "强制重跑",
+  resolution: "ความละเอียด",
+  duration_sec: "ความยาว(วินาที)",
+  duration: "ความยาว",
+  force: "强制รันใหม่",
   total: "总数",
-  project_id: "科普项目 ID",
+  project_id: "科普โปรเจกต์ ID",
   user_id: "用户 ID",
-  asset_id: "资产 ID",
-  episode_count: "集数",
+  asset_id: "แอสเซท ID",
+  episode_count: " ตอน数",
   phase: "阶段",
   sync: "同步",
-  refresh_prompts: "刷新提示词",
-  reextract_props: "重抽道具",
+  refresh_prompts: "รีเฟรชคำแนะนำ词",
+  reextract_props: "重抽อุปกรณ์/พร็อพ",
 };
 
-// 格式化时间为本地字符串
+// 格式化เวลา为本地字符串
 function fmtTime(value: string | null | undefined): string {
   if (!value) return "—";
   return new Date(value).toLocaleString();
@@ -71,7 +71,7 @@ function money(value: number | null | undefined): string {
   return value == null ? "未记录" : `¥${fenToYuan(value)}`;
 }
 
-// 仅在有值时渲染一行定义列表项
+// 仅在有值时เรนเดอร์一行定义列表项
 function DlRow({ label, children }: { label: string; children: ReactNode }) {
   if (children == null || children === "" || children === "—") return null;
   return (
@@ -82,7 +82,7 @@ function DlRow({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-// DlRow 未渲染时 children 仍是元素描述符；按 props 判断是否会出内容。
+// DlRow 未เรนเดอร์时 children 仍是元素คำอธิบาย符；按 props 判断是否会出内容。
 function dlRowWillShow(child: ReactNode): boolean {
   if (child == null || child === false) return false;
   if (!isValidElement(child)) return Boolean(child);
@@ -103,7 +103,7 @@ function DetailSection({ title, children }: { title: string; children: ReactNode
   );
 }
 
-// 从 payload 抽出可读字段摘要（其余仍看下方 JSON）
+// 从 payload 抽出可读字段เรื่องย่อ（其余仍看下方 JSON）
 function payloadSummaryRows(
   payload: Record<string, unknown> | null | undefined,
 ): Array<{ key: string; label: string; value: string }> {
@@ -124,7 +124,7 @@ function payloadSummaryRows(
   return rows;
 }
 
-// 任务详情弹窗：概览 / 步骤 / 事件 / 原始 JSON
+// รายละเอียดงาน弹窗：概览 / 步骤 / 事件 / 原始 JSON
 export function TaskDetailDialog({ taskId, open, onOpenChange, onCancelled }: TaskDetailDialogProps) {
   const [task, setTask] = useState<AdminTaskDetail | null>(null);
   const [loading, setLoading] = useState(false);
@@ -138,7 +138,7 @@ export function TaskDetailDialog({ taskId, open, onOpenChange, onCancelled }: Ta
     try {
       setTask(await api<AdminTaskDetail>(`/api/admin/tasks/${id}`));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "加载任务详情失败");
+      toast.error(err instanceof Error ? err.message : "加载รายละเอียดงานล้มเหลว");
       onOpenChange(false);
     } finally {
       setLoading(false);
@@ -190,21 +190,21 @@ export function TaskDetailDialog({ taskId, open, onOpenChange, onCancelled }: Ta
 
   async function handleCancel() {
     if (!task || !canCancel) return;
-    if (!window.confirm(`确定取消任务 #${task.id}？`)) return;
+    if (!window.confirm(`ตกลงยกเลิก任务 #${task.id}？`)) return;
     setCancelling(true);
     try {
       const updated = await api<AdminTaskDetail>(`/api/admin/tasks/${task.id}/cancel`, { method: "POST" });
       setTask(updated);
-      toast.success("已提交取消请求");
+      toast.success("已ส่งยกเลิก请求");
       onCancelled?.();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "取消失败");
+      toast.error(err instanceof Error ? err.message : "ยกเลิกล้มเหลว");
     } finally {
       setCancelling(false);
     }
   }
 
-  const title = task ? `任务 #${task.id} · ${taskDomainLabel(task.domain)}` : "任务详情";
+  const title = task ? `任务 #${task.id} · ${taskDomainLabel(task.domain)}` : "รายละเอียดงาน";
 
   return (
     <AdminModal
@@ -225,18 +225,18 @@ export function TaskDetailDialog({ taskId, open, onOpenChange, onCancelled }: Ta
       footer={
         <>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            关闭
+            ปิด
           </Button>
           {taskId ? (
             <Button variant="outline" disabled={loading} onClick={() => void loadDetail(taskId)}>
               <RefreshCw className={cn("mr-2 h-4 w-4", loading && "animate-spin")} />
-              刷新
+              รีเฟรช
             </Button>
           ) : null}
           {canCancel ? (
             <Button variant="destructive" disabled={cancelling} onClick={() => void handleCancel()}>
               {cancelling ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Ban className="mr-2 h-4 w-4" />}
-              取消任务
+              ยกเลิก任务
             </Button>
           ) : null}
         </>
@@ -245,7 +245,7 @@ export function TaskDetailDialog({ taskId, open, onOpenChange, onCancelled }: Ta
       {loading && !task ? (
         <div className="task-detail-loading">
           <Loader2 className="h-6 w-6 animate-spin text-[#67c23a]" />
-          <span>加载任务详情…</span>
+          <span>加载รายละเอียดงาน…</span>
         </div>
       ) : task ? (
         <Tabs className="task-detail-body" value={tab} onValueChange={(value) => setTab(value as DetailTab)}>
@@ -276,7 +276,7 @@ export function TaskDetailDialog({ taskId, open, onOpenChange, onCancelled }: Ta
               <div className="task-detail-grid">
                 {waitingActivation || task.error_code || task.error_message ? (
                   <section className="task-detail-section task-detail-section--full">
-                    <h4>异常与提示</h4>
+                    <h4>异常与คำแนะนำ</h4>
                     {waitingActivation ? <p className="task-detail-meta !mt-0">任务尚未激活，等待前置条件或可用并发空位。</p> : null}
                     {task.error_code || task.error_message ? (
                       <pre className="task-detail-error">
@@ -302,16 +302,16 @@ export function TaskDetailDialog({ taskId, open, onOpenChange, onCancelled }: Ta
                   <DlRow label="用户">
                     <AdminEntityLink kind="user" id={task.requested_by} label={task.user_email ?? undefined} />
                   </DlRow>
-                  <DlRow label="漫剧项目">
+                  <DlRow label="โปรเจกต์ละครซีรีส์">
                     {task.drama_project_id ? <AdminEntityLink kind="drama" id={task.drama_project_id} /> : null}
                   </DlRow>
-                  <DlRow label="资产">
+                  <DlRow label="แอสเซท">
                     {task.asset_id ? <AdminEntityLink kind="drama_asset" id={task.asset_id} /> : null}
                   </DlRow>
                   <DlRow label="剧本">{task.script_id ? `#${task.script_id}` : null}</DlRow>
-                  <DlRow label="分集">{task.episode_id ? `#${task.episode_id}` : null}</DlRow>
+                  <DlRow label="分 ตอน">{task.episode_id ? `#${task.episode_id}` : null}</DlRow>
                   <DlRow label="分镜">{task.fragment_id ? `#${task.fragment_id}` : null}</DlRow>
-                  <DlRow label="科普项目">
+                  <DlRow label="科普โปรเจกต์">
                     {task.project_id ? <AdminEntityLink kind="project" id={task.project_id} /> : null}
                   </DlRow>
                   <DlRow label="镜头">{task.shot_id ? `#${task.shot_id}` : null}</DlRow>
@@ -332,14 +332,14 @@ export function TaskDetailDialog({ taskId, open, onOpenChange, onCancelled }: Ta
                 </DetailSection>
 
                 <section className="task-detail-section task-detail-section--full">
-                  <h4>时间线</h4>
+                  <h4>เวลา线</h4>
                   <ol className="task-timeline">
                     {(
                       [
-                        ["创建", task.created_at],
+                        ["สร้าง", task.created_at],
                         ["开始", task.started_at],
                         ["结束", task.finished_at],
-                        ["更新", task.updated_at],
+                        ["อัปเดต", task.updated_at],
                       ] as const
                     ).map(([label, value]) => (
                       <li key={label} className={cn(value && "is-reached")}>
@@ -352,7 +352,7 @@ export function TaskDetailDialog({ taskId, open, onOpenChange, onCancelled }: Ta
 
                 <section className="task-detail-section task-detail-section--full">
                   <h4>任务参数（入队 payload）</h4>
-                  <p className="mb-3 text-xs text-[var(--admin-muted)]">这是内部调度参数；实际发往上游的请求请查看“上游请求”。</p>
+                  <p className="mb-3 text-xs text-[var(--admin-muted)]">这是内部调度参数；实际发往上游的请求请ดู“上游请求”。</p>
                   {payloadRows.length > 0 ? (
                     <dl className="task-detail-dl task-detail-dl--payload mb-3">
                       {payloadRows.map((row) => (
@@ -377,7 +377,7 @@ export function TaskDetailDialog({ taskId, open, onOpenChange, onCancelled }: Ta
                   {hasJsonContent(task.result_payload) ? (
                     <pre className="task-detail-json">{fmtJson(task.result_payload)}</pre>
                   ) : (
-                    <p className="task-detail-meta">暂无结果（未完成或未回写 result_payload）</p>
+                    <p className="task-detail-meta">暂无结果（未เสร็จสิ้น或未回写 result_payload）</p>
                   )}
                 </section>
               </div>
@@ -388,10 +388,10 @@ export function TaskDetailDialog({ taskId, open, onOpenChange, onCancelled }: Ta
             {tab === "billing" ? (
               <div className="task-detail-grid">
                 <section className="task-detail-section">
-                  <h4>结算摘要</h4>
+                  <h4>结算เรื่องย่อ</h4>
                   <dl className="task-detail-dl">
                     <div>
-                      <dt>计费状态</dt>
+                      <dt>计费สถานะ</dt>
                       <dd><Badge variant={billing.settled ? "success" : "warning"}>{billing.label}</Badge></dd>
                     </div>
                     <div>
@@ -416,15 +416,15 @@ export function TaskDetailDialog({ taskId, open, onOpenChange, onCancelled }: Ta
                 <section className="task-detail-section task-detail-section--full">
                   <h4>用量明细</h4>
                   {task.billing_snapshot && <div className="mb-3 text-xs text-[var(--admin-muted)]">
-                    <p>受理时计费模式：{task.billing_snapshot.mode === 'fixed_media' ? `站内价格 #${task.billing_snapshot.price_version}` : '原计费规则'} · 路由固定，失败不自动切换</p>
-                    {task.billing_snapshot.items.map((item, index) => <p key={index}>{item.model_id} · {item.params.resolution} · {item.params.duration ? `${item.params.duration} 秒` : `${item.params.count} 张`} · {item.route.channel_name || item.route.channel_id} → {item.route.upstream_model}</p>)}
+                    <p>受理时计费模式：{task.billing_snapshot.mode === 'fixed_media' ? `站内价格 #${task.billing_snapshot.price_version}` : '原计费规则'} · 路由固定，ล้มเหลว不自动切换</p>
+                    {task.billing_snapshot.items.map((item, index) => <p key={index}>{item.model_id} · {item.params.resolution} · {item.params.duration ? `${item.params.duration} วินาที` : `${item.params.count} 张`} · {item.route.channel_name || item.route.channel_id} → {item.route.upstream_model}</p>)}
                   </div>}
-                  <p className="mb-3 text-xs text-[var(--admin-muted)]">用量记录表示调用计费依据；钱包实际扣款与退还以任务结算摘要为准。</p>
+                  <p className="mb-3 text-xs text-[var(--admin-muted)]">用量记录表示调用计费依据；钱包实际扣款与退还以任务结算เรื่องย่อ为准。</p>
                   <div className="admin-table-wrap">
                     <table>
                       <thead>
                         <tr>
-                          <th>时间</th>
+                          <th>เวลา</th>
                           <th>能力</th>
                           <th>billing_key</th>
                           <th>模型</th>
@@ -450,7 +450,7 @@ export function TaskDetailDialog({ taskId, open, onOpenChange, onCancelled }: Ta
                               <td>{line.total_tokens ?? 0}</td>
                               <td>¥{fenToYuan(line.charge_fen ?? 0)}</td>
                               <td>{line.billing_detail?.mode === 'fixed_media' ? <>
-                                <div>{line.billing_detail.resolution} · ¥{line.billing_detail.unit_price_yuan} × {line.billing_detail.duration ?? 1}{line.billing_detail.duration ? ' 秒' : ' 张'}</div>
+                                <div>{line.billing_detail.resolution} · ¥{line.billing_detail.unit_price_yuan} × {line.billing_detail.duration ?? 1}{line.billing_detail.duration ? ' วินาที' : ' 张'}</div>
                                 <div className="text-xs text-[var(--admin-muted)]">价格 #{line.billing_detail.price_version} · {line.billing_detail.route.channel_name || line.billing_detail.route.channel_id} · {line.billing_detail.delivered ? '已交付' : '未交付'}</div>
                               </> : line.billing_basis_label ?? (line.estimated ? "估算" : "实测")}</td>
                             </tr>
@@ -469,11 +469,11 @@ export function TaskDetailDialog({ taskId, open, onOpenChange, onCancelled }: Ta
                   <thead>
                     <tr>
                       <th>步骤</th>
-                      <th>状态</th>
+                      <th>สถานะ</th>
                       <th>尝试</th>
                       <th>Provider</th>
                       <th>错误</th>
-                      <th>时间</th>
+                      <th>เวลา</th>
                     </tr>
                   </thead>
                   <tbody>

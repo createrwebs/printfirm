@@ -1,4 +1,4 @@
-/** 分集编辑右侧：分段视频预览 + 入口打开全屏分镜画布 */
+/** 分 ตอนแก้ไข右侧：分段วิดีโอดูตัวอย่าง + 入口打开全屏分镜画布 */
 import { useState } from 'react'
 import { Download, Loader2 } from 'lucide-react'
 import DramaPublishModal from '../../features/marketplace/DramaPublishModal'
@@ -23,7 +23,7 @@ type Props = {
   projectId?: string
   episodeName?: string
   onOpenStoryboard: () => void
-  /** 预览历史版本时覆盖当前镜 video src */
+  /** ดูตัวอย่าง历史版本时覆盖当前镜 video src */
   previewVideoUrl?: string | null
   previewPosterUrl?: string | null
   previewLabel?: string
@@ -33,14 +33,14 @@ type Props = {
 
 /** 把合成进度转成按钮文案 */
 function composeProgressLabel(progress: EpisodeComposeProgress | null, busy: boolean) {
-  if (!busy) return '全片合成下载'
-  if (!progress) return '全片合成中…'
-  if (progress.phase === 'download') return `拉取分镜 ${progress.done}/${progress.total}`
-  if (progress.phase === 'server') return '服务端统一重编码拼接…'
-  return '正在拼接…'
+  if (!busy) return 'รวมวิดีโอทั้งตอนและดาวน์โหลด'
+  if (!progress) return 'กำลังรวมวิดีโอทั้งตอน…'
+  if (progress.phase === 'download') return `ดึงข้อมูลช็อต ${progress.done}/${progress.total}`
+  if (progress.phase === 'server') return 'เซิร์ฟเวอร์กำลังแปลงรหัสและรวมวิดีโอ…'
+  return 'กำลังเชื่อมต่อคลิปวิดีโอ…'
 }
 
-// 渲染分集右侧预览与画布入口
+// เรนเดอร์分 ตอน右侧ดูตัวอย่าง与画布入口
 export function EpisodeEditSidePane({
   fragments,
   playingFragmentId,
@@ -48,7 +48,7 @@ export function EpisodeEditSidePane({
   aspectRatio,
   episodeId,
   projectId,
-  episodeName = '本集',
+  episodeName = 'ตอนนี้',
   onOpenStoryboard,
   previewVideoUrl = null,
   previewPosterUrl = null,
@@ -60,7 +60,7 @@ export function EpisodeEditSidePane({
   /*
    * composeBusy 本地拼接中
    * composeProgress 拉取/拼接进度
-   * composeError 失败原因
+   * composeError ล้มเหลว原因
    */
   const { capabilities } = useMarketplace()
   const [publishOpen, setPublishOpen] = useState(false)
@@ -70,14 +70,14 @@ export function EpisodeEditSidePane({
   const composeClips = listEpisodeComposeClips(fragments)
   const missingCount = fragments.length - composeClips.length
 
-  // 浏览器内拼接已生成镜头并下载成片
+  // 浏览器内拼接已生成镜头并ดาวน์โหลด成片
   async function handleComposeDownload() {
     if (composeBusy || composeClips.length === 0) return
     if (missingCount > 0) {
       const ok = await dialog.confirm({
-        title: '部分分镜尚未生成',
-        message: `有 ${missingCount} 镜还没有视频，将只拼接已生成的 ${composeClips.length} 镜。是否继续？`,
-        confirmText: '继续合成',
+        title: 'บางช็อตยังไม่ได้สร้างวิดีโอ',
+        message: `มี ${missingCount} ช็อตที่ยังไม่มีวิดีโอ จะรวมเฉพาะ ${composeClips.length} ช็อตที่สร้างเสร็จแล้ว ต้องการดำเนินการต่อหรือไม่?`,
+        confirmText: 'ดำเนินการรวมวิดีโอต่อ',
       })
       if (!ok) return
     }
@@ -90,7 +90,7 @@ export function EpisodeEditSidePane({
       })
       triggerBlobDownload(blob, episodeComposeFilename(episodeName))
     } catch (err) {
-      setComposeError(err instanceof Error ? err.message : '全片合成失败')
+      setComposeError(err instanceof Error ? err.message : 'รวมวิดีโอทั้งตอนล้มเหลว')
     } finally {
       setComposeBusy(false)
       setComposeProgress(null)
@@ -100,12 +100,12 @@ export function EpisodeEditSidePane({
   return (
     <aside className="drama-ep-preview">
       <div className="drama-ep-side-header">
-        <div className="drama-ep-side-tabs" role="tablist" aria-label="右侧面板">
+        <div className="drama-ep-side-tabs" role="tablist" aria-label="พาเนลด้านขวา">
           <button type="button" role="tab" aria-selected className="active">
-            预览
+            ดูตัวอย่าง
           </button>
           <button type="button" role="tab" onClick={onOpenStoryboard}>
-            画布
+            แคนวาส
           </button>
         </div>
         <button
@@ -114,8 +114,8 @@ export function EpisodeEditSidePane({
           disabled={composeBusy || composeClips.length === 0}
           title={
             composeClips.length === 0
-              ? '请先生成分镜视频'
-              : '在浏览器里把本集已生成镜头拼成一条成片并下载'
+              ? 'กรุณาสร้างวิดีโอสตอรี่บอร์ดก่อน'
+              : 'รวมวิดีโอของทุกช็อตในตอนนี้และดาวน์โหลด'
           }
           onClick={() => void handleComposeDownload()}
         >
@@ -132,7 +132,7 @@ export function EpisodeEditSidePane({
             className="drama-ep-compose-btn drama-ep-compose-btn--header"
             onClick={() => setPublishOpen(true)}
           >
-            发布到数字资产市场
+            เผยแพร่สู่ตลาดดิจิทัลแอสเซท
           </button>
         ) : null}
       </div>
@@ -140,16 +140,16 @@ export function EpisodeEditSidePane({
 
       {previewVideoUrl ? (
         <div className="drama-ep-preview-banner">
-          <span>预览历史版本{previewLabel ? ` · ${previewLabel}` : ''}</span>
+          <span>ดูตัวอย่างเวอร์ชันย้อนหลัง{previewLabel ? ` · ${previewLabel}` : ''}</span>
           <div className="drama-ep-preview-banner-actions">
             {onActivatePreview ? (
               <button type="button" className="drama-ep-preview-banner-btn" onClick={onActivatePreview}>
-                设为当前
+                ตั้งเป็นปัจจุบัน
               </button>
             ) : null}
             {onClearPreview ? (
               <button type="button" className="drama-ep-preview-banner-btn is-ghost" onClick={onClearPreview}>
-                退出预览
+                ออกจากโหมดดูตัวอย่าง
               </button>
             ) : null}
           </div>
@@ -157,7 +157,7 @@ export function EpisodeEditSidePane({
       ) : null}
 
       {!hasSelection || fragments.length === 0 ? (
-        <p className="drama-ep-empty">请选择底部分镜</p>
+        <p className="drama-ep-empty">กรุณาเลือกช็อตจากแถบด้านล่าง</p>
       ) : (
         <div className="drama-ep-preview-inner">
           <DramaFragmentSegmentedVideoPlayer
@@ -170,7 +170,7 @@ export function EpisodeEditSidePane({
           />
           {!fragments.some((f) => f.video) && (
             <button type="button" className="drama-ep-open-canvas" onClick={onOpenStoryboard}>
-              打开分镜画布
+              เปิดแคนวาสสตอรี่บอร์ด
             </button>
           )}
         </div>

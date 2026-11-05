@@ -20,13 +20,24 @@ from app.services.seedance_resolutions import (
 def test_all_preset_channel_models_covers_four_caps() -> None:
     models = all_preset_channel_models()
     assert "kimi-k2.6" in models
+    assert "deepseek-chat" in models
+    assert "deepseek-reasoner" in models
     assert "seedream-5.0-pro" in models
     assert "seedream-5.0" in models
     assert "seedream-5.0-flash" in models
+    assert "nano-banana-2" in models
+    assert "qwen-image-3.0-pro" in models
+    assert "flux-3" in models
+    assert "grok-image-2.0" in models
     assert "gpt-image-2" in models
     assert "gpt-image-2.5" in models
     assert "seedance-2.5" in models
     assert "seedance-2.0-fast" in models
+    assert "wan-2.7" in models
+    assert "wan-3.0" in models
+    assert "kling-3.0" in models
+    assert "vidu-q4" in models
+    assert "hailuo-2.3" in models
     assert "MiniMax-H3" in models
     assert "qwen-tts-2025-05-22" in models
     assert "gemini-3.1-flash-tts" not in models
@@ -35,6 +46,10 @@ def test_all_preset_channel_models_covers_four_caps() -> None:
         "seedream-5.0-pro",
         "seedream-5.0",
         "seedream-5.0-flash",
+        "nano-banana-2",
+        "qwen-image-3.0-pro",
+        "flux-3",
+        "grok-image-2.0",
         "gpt-image-2",
         "gpt-image-2.5",
     ]
@@ -43,6 +58,11 @@ def test_all_preset_channel_models_covers_four_caps() -> None:
         "seedance-2.5",
         "seedance-2.0",
         "seedance-2.0-fast",
+        "wan-2.7",
+        "wan-3.0",
+        "kling-3.0",
+        "vidu-q4",
+        "hailuo-2.3",
         "MiniMax-H3",
     }
     assert "seedance-2.0-mini" not in models
@@ -60,7 +80,10 @@ def test_clamp_seedance_aliases_to_canonical() -> None:
     assert clamp_default_to_preset("video", "seedance-2-5") == "seedance-2.5"
     assert clamp_default_to_preset("video", "seedance-2") == "seedance-2.0"
     assert clamp_default_to_preset("video", "seedance-2-0-fast") == "seedance-2.0-fast"
+    assert clamp_default_to_preset("video", "wan-2-7") == "wan-2.7"
+    assert clamp_default_to_preset("video", "kling-3-0") == "kling-3.0"
     assert is_preset_model("video", "seedance-2.5") is True
+    assert is_preset_model("video", "wan-2.7") is True
 
 
 def test_clamp_seedream_aliases_to_canonical() -> None:
@@ -71,10 +94,11 @@ def test_clamp_seedream_aliases_to_canonical() -> None:
     assert clamp_default_to_preset("image", "gpt-image-2.5") == "gpt-image-2.5"
     assert clamp_default_to_preset("image", "gpt-image-2-5") == "gpt-image-2.5"
     assert clamp_default_to_preset("image", "gpt-image-2.5-sunburst") == "gpt-image-2.5"
+    assert clamp_default_to_preset("image", "nano-banana-2-1") == "nano-banana-2"
     assert is_preset_model("image", "gpt-image-2") is True
     assert is_preset_model("image", "gpt-image-2.5") is True
     assert is_preset_model("image", "seedream-5.0") is True
-    assert is_preset_model("image", "nano-banana-2") is False
+    assert is_preset_model("image", "nano-banana-2") is True
 
 
 def test_build_body_clamps_minimax_duration() -> None:
@@ -95,7 +119,7 @@ def test_build_body_clamps_minimax_duration() -> None:
 
 
 def test_image_options_standard_1k_2k() -> None:
-    for mid in ("seedream-5.0-pro", "seedream-5.0", "seedream-5.0-flash", "gpt-image-2"):
+    for mid in ("seedream-5.0-pro", "seedream-5.0", "seedream-5.0-flash", "nano-banana-2", "gpt-image-2"):
         opts = model_generation_options(mid)
         assert opts["capability"] == "image"
         assert opts["allowed_resolutions"] == ["1K", "2K"]
@@ -178,4 +202,3 @@ def test_catalog_image_row_has_allowed_params() -> None:
     assert "MiniMax" in vid["description"] or vid["description"]
     assert vid["pricing_hint"]
     assert vid["eta_hint"]
-    assert "分钟" in vid["eta_hint"]

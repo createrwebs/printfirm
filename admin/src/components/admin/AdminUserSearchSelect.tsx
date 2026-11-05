@@ -14,11 +14,11 @@ type AdminUserSearchSelectProps = {
   className?: string;
 };
 
-/** 远程搜索用户（账号 ID + 邮箱） */
+/** 远程ค้นหา用户（账号 ID + 邮箱） */
 export function AdminUserSearchSelect({
   value,
   onChange,
-  placeholder = "搜索用户邮箱 / 账号 ID",
+  placeholder = "ค้นหา用户邮箱 / 账号 ID",
   className,
 }: AdminUserSearchSelectProps) {
   const [query, setQuery] = useState("");
@@ -153,10 +153,10 @@ export function AdminUserSearchSelect({
       {open ? (
         <div className="admin-user-search-dropdown admin-user-combobox-popover">
           <div className="admin-user-combobox-heading"><Search size={13} aria-hidden="true" /><span>{query.trim() ? "匹配用户" : "查找用户"}</span>{options.length ? <span className="admin-user-combobox-count">{options.length} 位</span> : null}</div>
-          <div id={listId} role="listbox" aria-label="搜索用户" className="admin-user-combobox-list" aria-busy={loading}>
+          <div id={listId} role="listbox" aria-label="ค้นหา用户" className="admin-user-combobox-list" aria-busy={loading}>
           {loading ? <div className="admin-user-search-empty" role="status"><LoaderCircle size={17} className="admin-control-spinner" />正在查找用户…</div> : null}
           {!loading && options.length === 0 ? (
-            <div className="admin-user-search-empty" role="status">{error ? "搜索失败，请重新输入后重试" : query.trim() ? "没有找到匹配用户" : "输入邮箱、昵称或账号 ID 搜索"}</div>
+            <div className="admin-user-search-empty" role="status">{error ? "ค้นหาล้มเหลว，请重新输入后ลองใหม่" : query.trim() ? "没有找到匹配用户" : "输入邮箱、昵称或账号 ID ค้นหา"}</div>
           ) : null}
           {options.map((u, index) => (
             <button
@@ -182,7 +182,7 @@ export function AdminUserSearchSelect({
             </button>
           ))}
           </div>
-          <div className="admin-user-combobox-footer"><span><kbd>↑</kbd><kbd>↓</kbd> 选择</span><span><kbd>Enter</kbd> 确认</span></div>
+          <div className="admin-user-combobox-footer"><span><kbd>↑</kbd><kbd>↓</kbd> เลือก</span><span><kbd>Enter</kbd> 确认</span></div>
         </div>
       ) : null}
     </div>

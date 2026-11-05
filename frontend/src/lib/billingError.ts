@@ -16,7 +16,7 @@ export function goToTopup() {
 }
 
 /**
- * 弹出余额不足提示；若用户选择去充值则跳转定价页。
+ * 弹出余额不足คำแนะนำ；若用户เลือก去充值则跳转定价页。
  * @returns 是否已按计费错误处理
  */
 export async function handleBillingError(
@@ -26,12 +26,12 @@ export async function handleBillingError(
   const message = err instanceof Error ? err.message : String(err || '')
   if (!isBillingError(message)) return false
   if (workspaceScope.teamId !== null) {
-    await dialog.alert({ title: '团队消费受限', message: `${message}。请在团队钱包查看本人额度；团队余额与充值由所有者管理。`, confirmText: '知道了' })
+    await dialog.alert({ title: '团队消费受限', message: `${message}。请在团队钱包ดู本人额度；团队余额与充值由เจ้าของ (Owner)管理。`, confirmText: '知道了' })
     return true
   }
   const go = await dialog.confirm({
     title: '余额不足',
-    message: message || '当前余额不足以开始生成，请先充值。',
+    message: message || '当前余额不足以เริ่มสร้าง，请先充值。',
     confirmText: '去充值',
     cancelText: '知道了',
     tone: 'danger',

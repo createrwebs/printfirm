@@ -1,7 +1,7 @@
 /** Shared helpers for drama project workspace steps. */
 import type { DramaEpisodeBody, DramaProject, DramaScript } from '../../api/drama'
 
-/** 与后端 MIN_EPISODE_CONTENT_CHARS 对齐：过短正文视为未完成 */
+/** 与后端 MIN_EPISODE_CONTENT_CHARS 对齐：过短เนื้อหาหลัก视为未เสร็จสิ้น */
 export const MIN_EPISODE_BODY_CHARS = 500
 export const MIN_EPISODE_CREATIVE_CHARS = 20
 
@@ -14,7 +14,7 @@ export type OutlineDirectoryEpisode = {
   origin?: string
 }
 
-// 解析 episode_content 为分集数组
+// 解析 episode_content 为分 ตอน数组
 export function parseEpisodeBodies(script: DramaScript | null | undefined): DramaEpisodeBody[] {
   const raw = script?.episode_content
   if (!raw) return []
@@ -23,17 +23,17 @@ export function parseEpisodeBodies(script: DramaScript | null | undefined): Dram
   return []
 }
 
-// 去空白后的正文字数
+// 去空白后的เนื้อหาหลัก字数
 export function episodeBodyCharLen(text: string | undefined): number {
   return (text || '').replace(/\s/g, '').length
 }
 
-// 手动加集（等待用户贴剧本）不会被自动流水线填满
+// ด้วยตนเอง加 ตอน（等待用户贴剧本）不会被自动流水线填满
 export function isManualEpisode(ep: DramaEpisodeBody | undefined): boolean {
   return ep?.origin === 'manual'
 }
 
-// 正文是否达到可进入下一步的长度
+// เนื้อหาหลัก是否达到可เข้าสู่ถัดไป的长度
 export function isSubstantialEpisodeBody(body: string | undefined): boolean {
   return episodeBodyCharLen(body) >= MIN_EPISODE_BODY_CHARS
 }
@@ -42,12 +42,12 @@ export function isSubstantialEpisodeCreative(creative: string | undefined): bool
   return episodeBodyCharLen(creative) >= MIN_EPISODE_CREATIVE_CHARS
 }
 
-// 是否已有至少一集可用正文
+// 是否已有至少一 ตอน可用เนื้อหาหลัก
 export function hasSubstantialEpisode(bodies: DramaEpisodeBody[]): boolean {
   return bodies.some((ep) => isSubstantialEpisodeBody(ep.body))
 }
 
-// 自动流水线仍缺的集数（跳过手动空集）
+// 自动流水线仍缺的 ตอน数（跳过ด้วยตนเอง空 ตอน）
 export function autoMissingEpisodeCount(bodies: DramaEpisodeBody[], target: number): number {
   const byNumber = new Map<number, DramaEpisodeBody>()
   for (const ep of bodies) {
@@ -69,7 +69,7 @@ export function autoMissingEpisodeCount(bodies: DramaEpisodeBody[], target: numb
   return missing
 }
 
-// 按目标集数铺满目录
+// 按目标 ตอน数铺满目录
 export function buildOutlineDirectory(
   bodies: DramaEpisodeBody[],
   episodeCount: number,
@@ -87,7 +87,7 @@ export function buildOutlineDirectory(
     const ep = byNumber.get(episodeNumber)
     return {
       episodeNumber,
-      title: ep?.title || `第 ${episodeNumber} 集`,
+      title: ep?.title || `ตอนที่  ${episodeNumber}  ตอน`,
       creative: ep?.creative,
       summary: ep?.summary,
       body: ep?.body,
@@ -96,7 +96,7 @@ export function buildOutlineDirectory(
   })
 }
 
-// 目录项与正文合并（保留 creative / summary）
+// 目录项与เนื้อหาหลัก合并（保留 creative / summary）
 export function mergeDirectoryEpisodeBodies(
   directory: OutlineDirectoryEpisode[],
   bodies: DramaEpisodeBody[],
@@ -115,24 +115,24 @@ export function mergeDirectoryEpisodeBodies(
   })
 }
 
-// 读取摘要状态
+// 读取เรื่องย่อสถานะ
 export function getSummaryStatus(script: DramaScript | null | undefined): string {
   return String((script?.params || {}).summary_status || (script?.summary ? 'completed' : 'pending'))
 }
 
-// 读取分集剧本状态
+// 读取บทละครแต่ละตอนสถานะ
 export function getEpisodeContentStatus(script: DramaScript | null | undefined): string {
   return String((script?.params || {}).episode_content_status || 'pending')
 }
 
-// 读取项目资产抽取状态（整剧摘要后 / 分集后）
+// 读取โปรเจกต์แอสเซท抽取สถานะ（ทั้งเรื่องเรื่องย่อ后 / 分 ตอน后）
 export function getAssetsSeedStatus(
   project: DramaProject | null | undefined,
 ): string {
   return String((project?.params as Record<string, unknown> | undefined)?.assets_seed_status || '')
 }
 
-// 读取画面风格 ID
+// 读取สไตล์ภาพ ID
 export function getImageStyleId(
   script: DramaScript | null | undefined,
   project: DramaProject | null,
@@ -142,7 +142,7 @@ export function getImageStyleId(
   return String(fromScript || fromProject || '')
 }
 
-// 写回分集正文时保持与原结构一致（数组或 { episodes }）
+// 写回เนื้อหาบทละครแต่ละตอน时保持与原结构一致（数组或 { episodes }）
 export function buildEpisodeContentUpdate(
   script: DramaScript | null | undefined,
   bodies: DramaEpisodeBody[],

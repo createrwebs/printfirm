@@ -1,4 +1,4 @@
-/** 漫剧 / 自由画布项目列表，共享项目管理与空间隔离。 */
+/** ละครซีรีส์ / 自由画布รายการโปรเจกต์，共享โปรเจกต์管理与空间隔离。 */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -37,9 +37,9 @@ import './drama.css'
 import './project-list.css'
 
 const CANVAS_PLACEHOLDER =
-  '自由画布创作项目，稍后在画布中完善故事与资产。'
+  'โปรเจกต์ผืนผ้าใบอิสระ สามารถต่อเติมเรื่องราวและแอสเซทบนแคนวาสได้ในภายหลัง'
 
-// 格式化更新时间
+// 格式化เวลาที่อัปเดต
 function formatUpdatedAt(raw?: string) {
   if (!raw) return ''
   const d = new Date(raw)
@@ -50,7 +50,7 @@ function formatUpdatedAt(raw?: string) {
 
 const FILTER_KEYS: DramaProjectFilter[] = ['all', 'running', 'done', 'draft']
 
-// 每页条数选项：卡片网格一行 3 个，6 / 9 恰好整行；默认 9
+// 每页条数选项：卡片网格一行 3 个，6 / 9 恰好整行；ค่าเริ่มต้น 9
 const PAGE_SIZE_OPTIONS = [6, 9] as const
 const PAGE_SIZE_DEFAULT = 9
 
@@ -62,7 +62,7 @@ export default function DramaListPage({ workflow = 'script' }: { workflow?: Dram
   )
 }
 
-// 渲染 Agent 首页内容
+// เรนเดอร์ Agent 首页内容
 function DramaListInner({ workflow }: { workflow: DramaWorkflow }) {
   const navigate = useNavigate()
   const { capabilities } = useMarketplace()
@@ -91,16 +91,16 @@ function DramaListInner({ workflow }: { workflow: DramaWorkflow }) {
   const [debouncedQuery, setDebouncedQuery] = useState('')
   const [showCreate, setShowCreate] = useState(false)
 
-  // 搜索防抖，避免每敲一个字就请求一次
+  // ค้นหา防抖，避免每敲一个字就请求一次
   useEffect(() => {
     const timer = window.setTimeout(() => setDebouncedQuery(query.trim()), 300)
     return () => window.clearTimeout(timer)
   }, [query])
 
-  // 请求序号：筛选/页码连续变化时按序号丢弃过期响应，避免旧数据覆盖新页
+  // 请求序号：ตัวกรอง/页码连续变化时按序号丢弃过期响应，避免旧数据覆盖新页
   const loadSeq = useRef(0)
 
-  // 加载当前页项目：筛选与分页均在服务端完成
+  // 加载当前页โปรเจกต์：ตัวกรอง与分页均在服务端เสร็จสิ้น
   const loadProjects = useCallback(async () => {
     const seq = ++loadSeq.current
     try {
@@ -115,11 +115,11 @@ function DramaListInner({ workflow }: { workflow: DramaWorkflow }) {
       setItems(res.items)
       setTotal(res.meta.total)
       setError('')
-      // 服务端会对越界页码收口（如删除后末页变空），同步回真实页码
+      // 服务端会对越界页码收口（如ลบ后末页变空），同步回真实页码
       if (res.meta.page !== page) setPage(res.meta.page)
     } catch (err) {
       if (seq !== loadSeq.current) return
-      setError(err instanceof Error ? err.message : '加载失败')
+      setError(err instanceof Error ? err.message : 'โหลดไม่สำเร็จ')
     } finally {
       if (seq === loadSeq.current) setLoading(false)
     }
@@ -131,7 +131,7 @@ function DramaListInner({ workflow }: { workflow: DramaWorkflow }) {
   }, [loadProjects])
 
   const pageCount = pageCountOf(total, pageSize)
-  // 筛选后若当前页超出范围则回退
+  // ตัวกรอง后若当前页超出范围则回退
   useEffect(() => {
     if (page > pageCount) setPage(pageCount)
   }, [page, pageCount])
@@ -151,7 +151,7 @@ function DramaListInner({ workflow }: { workflow: DramaWorkflow }) {
   }
 
   const selectionMode = selected.size > 0
-  // 未加任何筛选且结果为空时才展示「还没有项目」大空态
+  // 未加任何ตัวกรอง且结果为空时才展示「还没有โปรเจกต์」大空态
   const pristineEmpty = total === 0 && filter === 'all' && !debouncedQuery
 
   // 切换选中
@@ -164,7 +164,7 @@ function DramaListInner({ workflow }: { workflow: DramaWorkflow }) {
     })
   }, [])
 
-  // 打开项目：自由画布进画布，普通项目进工作台
+  // 打开โปรเจกต์：自由画布进画布，普通โปรเจกต์进เวิร์กสเตชัน
   function openProject(item: DramaProjectListItem) {
     if (selectionMode) {
       toggleSelect(item.id)
@@ -190,7 +190,7 @@ function DramaListInner({ workflow }: { workflow: DramaWorkflow }) {
     }
   }
 
-  // 删除单个
+  // ลบ单个
   async function handleDeleteOne(item: DramaProjectListItem) {
     const ok = await dialog.confirm({
       title: t('dramaList.deleteTitle'),
@@ -212,7 +212,7 @@ function DramaListInner({ workflow }: { workflow: DramaWorkflow }) {
     }
   }
 
-  // 批量删除
+  // 批量ลบ
   async function handleDeleteSelected() {
     const ids = [...selected]
     if (ids.length === 0) return
@@ -225,7 +225,7 @@ function DramaListInner({ workflow }: { workflow: DramaWorkflow }) {
     if (!ok) return
     setDeleting(true)
     try {
-      // allSettled 保证单项失败不影响其余删除；已被删除（404）的视为完成并移出选择
+      // allSettled 保证单项ล้มเหลว不影响其余ลบ；已被ลบ（404）的视为เสร็จสิ้น并移出เลือก
       const results = await Promise.allSettled(ids.map((id) => dramaApi.deleteProject(id)))
       const gone = new Set<number>()
       let failed = 0
@@ -257,11 +257,11 @@ function DramaListInner({ workflow }: { workflow: DramaWorkflow }) {
           </Button>
         </header>
 
-        <section className="pf-project-list-panel" aria-label={canvasMode ? '我的画布' : '我的项目'}>
+        <section className="pf-project-list-panel" aria-label={canvasMode ? 'ผืนผ้าใบของฉัน' : 'โปรเจกต์ของฉัน'}>
           <div className="pf-project-list-heading">
             <div>
-              <h2>{canvasMode ? '我的画布' : '我的项目'}{!loading && <span>{total}</span>}</h2>
-              <p>{canvasMode ? '收集灵感，自由连接每一个创作节点。' : '让每一个好故事，稳步成为作品。'}</p>
+              <h2>{canvasMode ? 'ผืนผ้าใบของฉัน' : 'โปรเจกต์ของฉัน'}{!loading && <span>{total}</span>}</h2>
+              <p>{canvasMode ? 'รวบรวมแรงบันดาลใจ เชื่อมโยงทุกโหนดการสร้างสรรค์ได้อย่างอิสระ' : 'เปลี่ยนทุกเรื่องราวดีๆ ให้กลายเป็นผลงานจริงอย่างมั่นคง'}</p>
             </div>
             <Button variant="lime" onClick={() => setShowCreate(true)}>
               <Plus size={19} strokeWidth={1.8} aria-hidden />{createLabel}
@@ -288,7 +288,7 @@ function DramaListInner({ workflow }: { workflow: DramaWorkflow }) {
 
           {error ? <BillingErrorNotice message={error} className="drama-error" /> : null}
           {loading ? (
-            <div aria-busy="true" aria-label="正在加载项目">
+            <div aria-busy="true" aria-label="กำลังโหลดโปรเจกต์…">
               <ProjectGrid>{Array.from({ length: pageSize }).map((_, i) => <div key={i} className="pf-project-list-skeleton" aria-hidden />)}</ProjectGrid>
             </div>
           ) : pristineEmpty ? (
@@ -300,8 +300,8 @@ function DramaListInner({ workflow }: { workflow: DramaWorkflow }) {
             </div>
           ) : items.length === 0 ? (
             <div className="pf-empty-state is-compact">
-              <p className="pf-muted">没有符合筛选的项目</p>
-              <Button variant="ghost" size="sm" onClick={() => { setFilter('all'); setQuery('') }}>清除筛选</Button>
+              <p className="pf-muted">ไม่มีโปรเจกต์ที่ตรงกับตัวกรอง</p>
+              <Button variant="ghost" size="sm" onClick={() => { setFilter('all'); setQuery('') }}>ล้างตัวกรอง</Button>
             </div>
           ) : (
             <>
@@ -309,21 +309,21 @@ function DramaListInner({ workflow }: { workflow: DramaWorkflow }) {
               {items.map((item) => {
                 const canvas = isCanvasWorkflow(item)
                 const active = canvas ? item.asset_count > 0 : item.has_script
-                const status = item.cover_pending && !canvas ? '封面生成中' : active ? (canvas ? '创作中' : '已写剧本') : (canvas ? '空画布' : '构思中')
+                const status = item.cover_pending && !canvas ? 'กำลังสร้างภาพหน้าปก' : active ? (canvas ? 'กำลังสร้างสรรค์' : 'เขียนบทแล้ว') : (canvas ? 'ผ้าใบว่างเปล่า' : 'กำลังวางโครงเรื่อง')
                 return <ProjectCard
                   key={item.id}
                   title={item.title}
                   kind={canvas ? 'canvas' : 'drama'}
                   coverUrl={item.cover_url ? resolveDramaMediaUrl(item.cover_url) : undefined}
-                  category={canvas ? '自由画布' : `漫剧项目 · ${item.episode_count} 集`}
+                  category={canvas ? 'ผืนผ้าใบอิสระ' : `ซีรีส์ละครสั้น · ${item.episode_count} ตอน`}
                   status={{ label: status, tone: active || item.cover_pending ? 'producing' : 'draft' }}
-                  description={item.description || (canvas ? '在画布中添加图片、视频与灵感，展开自由创作。' : '从故事到分镜，在项目中继续完善你的作品。')}
+                  description={item.description || (canvas ? 'เพิ่มรูปภาพ วิดีโอ และแรงบันดาลใจบนผืนผ้าใบเพื่อต่อยอดการสร้างสรรค์อย่างไร้ขีดจำกัด' : 'ตั้งแต่เนื้อเรื่องจนถึงสตอรี่บอร์ด พัฒนาผลงานของคุณให้สมบูรณ์ในโปรเจกต์')}
                   meta={<>
                     <span className="pf-project-list-card-meta"><Layers size={14} aria-hidden />{formatDramaCardMeta(item)}</span>
-                    <span title={canvasMode ? t('canvasList.usageTitle') : '本剧累计费用与生成次数'}>{formatDramaUsageBrief(item.usage)}</span>
+                    <span title={canvasMode ? t('canvasList.usageTitle') : 'ค่าใช้จ่ายสะสมและจำนวนครั้งที่สร้างในเรื่องนี้'}>{formatDramaUsageBrief(item.usage)}</span>
                   </>}
                   footer={<>
-                    <span><UserRound size={13} aria-hidden />个人项目</span>
+                    <span><UserRound size={13} aria-hidden />โปรเจกต์ส่วนตัว</span>
                     <time dateTime={item.updated_at || item.created_at}>{formatUpdatedAt(item.updated_at || item.created_at)}</time>
                   </>}
                   menu={<DramaProjectCardMenu
@@ -331,9 +331,9 @@ function DramaListInner({ workflow }: { workflow: DramaWorkflow }) {
                     onDelete={() => void handleDeleteOne(item)}
                     onPublish={capabilities?.enabled ? () => setPublishProjectId(item.id) : undefined}
                   />}
-                  selection={{ checked: selected.has(item.id), visible: selectionMode, onChange: () => toggleSelect(item.id), label: `选择 ${item.title}` }}
+                  selection={{ checked: selected.has(item.id), visible: selectionMode, onChange: () => toggleSelect(item.id), label: `เลือก ${item.title}` }}
                   onOpen={() => openProject(item)}
-                  openLabel={selectionMode ? `切换选择 ${item.title}` : `打开 ${item.title}`}
+                  openLabel={selectionMode ? `สลับการเลือก ${item.title}` : `เปิด ${item.title}`}
                 />
               })}
             </ProjectGrid>
@@ -357,14 +357,14 @@ function DramaListInner({ workflow }: { workflow: DramaWorkflow }) {
         {selected.size > 0 ? (
           <div className="drama-project-selection-bar">
             <div className="drama-project-selection-inner">
-              <span>已选择 {selected.size} 个项目</span>
+              <span>เลือกแล้ว {selected.size} โปรเจกต์</span>
               <button
                 type="button"
                 className="drama-project-selection-cancel"
                 disabled={deleting}
                 onClick={() => setSelected(new Set())}
               >
-                取消选择
+                ยกเลิกเลือก
               </button>
               <button
                 type="button"
@@ -373,7 +373,7 @@ function DramaListInner({ workflow }: { workflow: DramaWorkflow }) {
                 onClick={() => void handleDeleteSelected()}
               >
                 <Trash2 size={16} strokeWidth={1.8} />
-                {deleting ? '删除中…' : '删除'}
+                {deleting ? 'กำลังลบ…' : 'ลบ'}
               </button>
             </div>
           </div>

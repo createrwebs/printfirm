@@ -14,7 +14,7 @@ type Props = {
   inline?: boolean
 }
 
-/** 错误提示：余额不足时附带快速跳转充值链接 */
+/** 错误คำแนะนำ：余额不足时附带快速跳转充值链接 */
 export default function BillingErrorNotice({
   message,
   className = 'pf-error',
@@ -36,7 +36,7 @@ export default function BillingErrorNotice({
     <Tag className={className} style={style} role={inline ? undefined : 'alert'}>
       {text}{' '}
       <Link to={workspaceScope.teamId === null ? PRICING_PATH : `/teams/${workspaceScope.teamId}?tab=billing`} className="pf-link pf-billing-topup-link">
-        {workspaceScope.teamId === null ? linkText : '查看团队用量 →'}
+        {workspaceScope.teamId === null ? linkText : 'ดู团队用量 →'}
       </Link>
     </Tag>
   )

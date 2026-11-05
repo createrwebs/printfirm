@@ -40,7 +40,7 @@ function clampFabPos(pos: FabCornerPos, btnSize = 56): FabCornerPos {
 }
 
 /**
- * 固定右下角浮钮拖动：返回 style 与绑定到按钮的 pointer 事件。
+ * 固定右下角浮钮拖动：กลับ style 与绑定到按钮的 pointer 事件。
  * 拖动后 suppressClickUntil 用于忽略紧随其后的 click。
  */
 export function useFabDragPosition(
@@ -55,7 +55,7 @@ export function useFabDragPosition(
     onPointerUp: (e: ReactPointerEvent<HTMLElement>) => void
     onPointerCancel: (e: ReactPointerEvent<HTMLElement>) => void
   }
-  /** 若刚拖过，返回 true 并清除标记（调用方应跳过 toggle） */
+  /** 若刚拖过，กลับ true 并清除标记（调用方应跳过 toggle） */
   consumeDragSuppressClick: () => boolean
 } {
   const [pos, setPos] = useState<FabCornerPos>(() => {

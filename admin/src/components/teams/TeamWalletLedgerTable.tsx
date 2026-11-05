@@ -17,7 +17,7 @@ import { fenToYuan } from "@/lib/utils";
 
 /** 团队钱包流水：独立于模型消费记录，包含充值、任务记账与后台调账。 */
 export function TeamWalletLedgerTable({ teamId }: { teamId: number }) {
-  /* draft 为输入搜索，q/adjustmentsOnly 为已应用的服务端筛选。 */
+  /* draft 为输入ค้นหา，q/adjustmentsOnly 为已应用的服务端ตัวกรอง。 */
   const [draft, setDraft] = useState("");
   const [q, setQ] = useState("");
   const [adjustmentsOnly, setAdjustmentsOnly] = useState(false);
@@ -28,15 +28,15 @@ export function TeamWalletLedgerTable({ teamId }: { teamId: number }) {
   return <div className="space-y-4">
     <form onSubmit={(event) => { event.preventDefault(); setQ(draft.trim()); setPage(1); reload(); }}>
       <AdminFilterBar>
-        <AdminSearchInput value={draft} onChange={setDraft} placeholder="搜索调整备注、操作人或关联号" />
+        <AdminSearchInput value={draft} onChange={setDraft} placeholder="ค้นหา调整备注、การดำเนินการ人或关联号" />
         <AdminFilterField label="流水范围"><Select value={String(adjustmentsOnly)} onChange={(event) => { setAdjustmentsOnly(event.target.value === "true"); setPage(1); }}><option value="false">全部钱包流水</option><option value="true">仅后台调账</option></Select></AdminFilterField>
-        <Button type="submit" size="sm" disabled={loading}>搜索</Button>
+        <Button type="submit" size="sm" disabled={loading}>ค้นหา</Button>
       </AdminFilterBar>
     </form>
-    <p className="text-xs text-[var(--admin-muted)]">每条流水记录变动金额及当时的调整后余额；后台调账展示实际操作人。</p>
+    <p className="text-xs text-[var(--admin-muted)]">每条流水记录变动金额及当时的调整后余额；后台调账展示实际การดำเนินการ人。</p>
     <TeamQueryFeedback loading={loading} error={error} empty={!data?.items.length} onRetry={reload} />
     {data && data.items.length > 0 && <Table><TableHeader><TableRow>
-      <TableHead>时间（上海）</TableHead><TableHead>类型</TableHead><TableHead>变动金额</TableHead><TableHead>变动后余额</TableHead><TableHead>操作人</TableHead><TableHead>备注 / 关联</TableHead>
+      <TableHead>เวลา（上海）</TableHead><TableHead>ประเภท</TableHead><TableHead>变动金额</TableHead><TableHead>变动后余额</TableHead><TableHead>การดำเนินการ人</TableHead><TableHead>备注 / 关联</TableHead>
     </TableRow></TableHeader><TableBody>{data.items.map((row) => <TableRow key={row.id}>
       <TableCell className="whitespace-nowrap text-xs">{teamDate(row.created_at)}</TableCell>
       <TableCell><Badge variant={row.ref_type === "admin_adjust" ? "warning" : "info"}>{kindLabels[row.kind] || row.kind}</Badge></TableCell>

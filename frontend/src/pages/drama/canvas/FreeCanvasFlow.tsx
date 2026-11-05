@@ -24,7 +24,7 @@ type PaneAddMenuState = {
   flow: { x: number; y: number }
 }
 
-/** 渲染 React Flow 无限画布 */
+/** เรนเดอร์ React Flow 无限画布 */
 export function FreeCanvasFlow({ projectId }: FreeCanvasFlowProps) {
   const nodeTypes = useMemo(() => ({ asset: CanvasAssetNode }), [])
   const {
@@ -43,7 +43,7 @@ export function FreeCanvasFlow({ projectId }: FreeCanvasFlowProps) {
   const { fitView, setCenter, getNode, screenToFlowPosition } = useReactFlow()
   const wrapperRef = useRef<HTMLDivElement>(null)
   const dragSnapshotPushed = useRef(false)
-  // paneAddMenu 空白双击后的新建菜单
+  // paneAddMenu 空白双击后的สร้างใหม่菜单
   const [paneAddMenu, setPaneAddMenu] = useState<PaneAddMenuState | null>(null)
 
   /* 聚焦文件夹选中的节点 */
@@ -72,7 +72,7 @@ export function FreeCanvasFlow({ projectId }: FreeCanvasFlowProps) {
     setPaneAddMenu(null)
   }, [])
 
-  /** 空白处双击：在落点弹出新建节点菜单（需关闭 zoomOnDoubleClick） */
+  /** 空白处双击：在落点弹出สร้างใหม่节点菜单（需ปิด zoomOnDoubleClick） */
   const handlePaneDoubleClick = useCallback(
     (event: MouseEvent) => {
       const target = event.target as HTMLElement | null
@@ -104,7 +104,7 @@ export function FreeCanvasFlow({ projectId }: FreeCanvasFlowProps) {
     [screenToFlowPosition],
   )
 
-  /** 从双击菜单创建节点，居中落在点击位置 */
+  /** 从双击菜单สร้าง节点，居中落在点击位置 */
   const handlePaneAddSelect = useCallback(
     (kind: CanvasNodeKind) => {
       if (!paneAddMenu) return

@@ -1,4 +1,4 @@
-/** 画布提示词：键入 @ 后选择角色/场景等节点插入（不 portal，避免点选时画布取消选中） */
+/** 画布คำแนะนำ词：键入 @ 后เลือกตัวละคร/ฉาก等节点插入（不 portal，避免点选时画布ยกเลิก选中） */
 import { Landmark, UserRound, Image as ImageIcon, PlaySquare } from 'lucide-react'
 import { resolveDramaMediaUrl } from '../../../../api/drama'
 import type { CanvasNodeKind } from '../canvasTypes'
@@ -21,7 +21,7 @@ type CanvasMentionPopoverProps = {
   onClose: () => void
 }
 
-/** 按节点类型返回图标 */
+/** 按节点ประเภทกลับ图标 */
 function KindIcon({ kind }: { kind: CanvasNodeKind }) {
   if (kind === 'character') return <UserRound size={14} strokeWidth={1.8} />
   if (kind === 'scene') return <Landmark size={14} strokeWidth={1.8} />
@@ -29,13 +29,13 @@ function KindIcon({ kind }: { kind: CanvasNodeKind }) {
   return <ImageIcon size={14} strokeWidth={1.8} />
 }
 
-/** 类型中文标签 */
+/** ประเภท中文แท็ก */
 function kindLabel(kind: CanvasNodeKind) {
-  if (kind === 'character') return '角色'
-  if (kind === 'scene') return '场景'
-  if (kind === 'video') return '视频'
-  if (kind === 'image') return '图片'
-  return '资产'
+  if (kind === 'character') return 'ตัวละคร'
+  if (kind === 'scene') return 'ฉาก'
+  if (kind === 'video') return 'วิดีโอ'
+  if (kind === 'image') return 'รูปภาพ'
+  return 'แอสเซท'
 }
 
 /** 按查询过滤可引用节点 */
@@ -49,7 +49,7 @@ export function filterCanvasMentionItems(items: CanvasMentionItem[], query: stri
   })
 }
 
-/** 渲染 @ 引用候选列表 */
+/** เรนเดอร์ @ 引用候选列表 */
 export function CanvasMentionPopover({
   open,
   query,
@@ -87,13 +87,13 @@ export function CanvasMentionPopover({
             e.stopPropagation()
             onClose()
           }}
-          aria-label="关闭"
+          aria-label="ปิด"
         >
           ×
         </button>
       </div>
       {filtered.length === 0 ? (
-        <div className="fc-mention-empty">无已连线节点 · 先把角色/场景连到本节点</div>
+        <div className="fc-mention-empty">无已连线节点 · 先把ตัวละคร/ฉาก连到本节点</div>
       ) : (
         <ul className="fc-mention-list">
           {filtered.map((item, index) => {

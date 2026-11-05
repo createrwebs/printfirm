@@ -2,8 +2,8 @@
 export function creationApiErrorDetail(status: number, detail: unknown): unknown {
   if (status !== 404) return detail
   if (typeof detail === 'string' && detail.trim().toLowerCase() === 'not found')
-    return '创作服务接口尚未加载，请重启后端服务后重试。'
+    return '创作服务接口尚未加载，请重启后端服务后ลองใหม่。'
   if (detail === '创作会话不存在')
-    return '创作会话不存在或已被删除，请返回我的短片或新建对话。'
+    return '创作会话不存在或已被ลบ，请กลับ我的短片或สร้างใหม่对话。'
   return detail
 }

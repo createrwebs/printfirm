@@ -42,7 +42,7 @@ const HERO_FEATURES = [
 
 /** 定价与充值页 */
 export default function PricingPage() {
-  /* 路由与语言、账户数据、充值配置及支付弹窗的展示状态。 */
+  /* 路由与语言、账户数据、充值配置及支付弹窗的展示สถานะ。 */
   const nav = useNavigate()
   const { t, m, locale } = useI18n()
   const [params] = useSearchParams()
@@ -74,7 +74,7 @@ export default function PricingPage() {
     }))
   }, [skus])
 
-  // 加载余额与本次消耗，失败时保留已经取得的数据并提供重试。
+  // 加载余额与本次消耗，ล้มเหลว时保留已经取得的数据并提供ลองใหม่。
   const refresh = useCallback(async () => {
     if (!loggedIn) {
       setWallet(null)
@@ -98,7 +98,7 @@ export default function PricingPage() {
     }
   }, [loggedIn])
 
-  // 独立加载服务端 SKU，重试时不影响账户余额或当前支付方式。
+  // 独立加载服务端 SKU，ลองใหม่时不影响ยอดเงินคงเหลือในบัญชี或当前支付方式。
   const loadSkus = useCallback(async () => {
     const requestId = ++skuRequest.current
     setSkusLoading(true)
@@ -209,12 +209,12 @@ export default function PricingPage() {
     }
   }
 
-  // 选择已经开放的支付渠道。
+  // เลือก已经开放的支付渠道。
   function pickPay(type: BillingPayType) {
     setPayType(type)
   }
 
-  // 支付成功后关闭结算弹窗并刷新账户数据。
+  // 支付สำเร็จ后ปิด结算弹窗并รีเฟรช账户数据。
   async function onPaid() {
     setHint(t('pricing.paidOk'))
     setCheckout(null)

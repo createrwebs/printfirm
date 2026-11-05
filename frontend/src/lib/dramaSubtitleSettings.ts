@@ -1,13 +1,13 @@
-/** 分集字幕生成方式：兼容历史设置，并同步分镜正文中的模型字幕提示词。 */
+/** 分集คำบรรยาย (ซับไตเติล)生成方式：兼容历史ตั้งค่า，并同步分镜正文中的模型คำบรรยาย (ซับไตเติล)คำแนะนำ词。 */
 
 export type DramaSubtitleMode = 'model' | 'post'
 
-// 判断当前字幕方式是否由模型直接出字幕。
+// 判断当前คำบรรยาย (ซับไตเติล)方式是否由模型直接出คำบรรยาย (ซับไตเติล)。
 export function subtitleModeUsesModelOutput(mode: DramaSubtitleMode): boolean {
   return mode === 'model'
 }
 
-// 兼容历史布尔值，读取分集字幕方式；默认后期拼接字幕。
+// 兼容历史布尔值，读取分集คำบรรยาย (ซับไตเติล)方式；ค่าเริ่มต้น后期拼接คำบรรยาย (ซับไตเติล)。
 export function readEpisodeSubtitleMode(
   params: Record<string, unknown> | null | undefined,
 ): DramaSubtitleMode {
@@ -16,7 +16,7 @@ export function readEpisodeSubtitleMode(
   return readEpisodeSubtitleEnabled(params) ? 'model' : 'post'
 }
 
-// 兼容历史字符串/数字布尔值，默认关闭模型烧录字幕（后期拼接）。
+// 兼容历史字符串/数字布尔值，ค่าเริ่มต้นปิด模型烧录คำบรรยาย (ซับไตเติล)（后期拼接）。
 export function readEpisodeSubtitleEnabled(params: Record<string, unknown> | null | undefined): boolean {
   const value = params?.subtitleEnabled
   if (value == null) return false
@@ -30,24 +30,24 @@ export function readEpisodeSubtitleEnabled(params: Record<string, unknown> | nul
   return Boolean(value)
 }
 
-const DRAMA_SUBTITLE_CUE = '【字幕：底部居中·简体中文·逐句轮换·与口播同步】'
+const DRAMA_SUBTITLE_CUE = '【คำบรรยาย (ซับไตเติล)：底部居中·简体中文·逐句轮换·与口播同步】'
 const LEGACY_SUBTITLE_CUES = [
-  '【字幕：底部居中·简体中文·仅标记段落同步】',
-  '【字幕：底部居中·简体中文】',
-  '【字幕：全程简体中文字幕，旁白逐句同步烧录】',
+  '【คำบรรยาย (ซับไตเติล)：底部居中·简体中文·仅标记段落同步】',
+  '【คำบรรยาย (ซับไตเติล)：底部居中·简体中文】',
+  '【คำบรรยาย (ซับไตเติล)：全程简体中文คำบรรยาย (ซับไตเติล)，เสียงบรรยาย逐句同步烧录】',
 ]
 
 const STRIP_PREFIX_MAP: Array<[string, string]> = [
-  ['【对白·慢速清晰·同步字幕】', '【对白·慢速清晰】'],
-  ['【旁白·慢速清晰·同步字幕】', '【旁白·慢速清晰】'],
-  ['【旁白·自然语速·同步字幕】', '【旁白·自然语速】'],
-  ['【内心独白·同步字幕】', '【内心独白】'],
+  ['【对白·慢速清晰·同步คำบรรยาย (ซับไตเติล)】', '【对白·慢速清晰】'],
+  ['【เสียงบรรยาย·慢速清晰·同步คำบรรยาย (ซับไตเติล)】', '【เสียงบรรยาย·慢速清晰】'],
+  ['【เสียงบรรยาย·自然语速·同步คำบรรยาย (ซับไตเติล)】', '【เสียงบรรยาย·自然语速】'],
+  ['【内心独白·同步คำบรรยาย (ซับไตเติล)】', '【内心独白】'],
 ]
 
-// 判断是否为字幕 cue 行（含历史文案）。
+// 判断是否为คำบรรยาย (ซับไตเติล) cue 行（含历史文案）。
 function isSubtitleCueLine(line: string): boolean {
   const trimmed = line.trim()
-  if (!trimmed.startsWith('【字幕')) return false
+  if (!trimmed.startsWith('【คำบรรยาย (ซับไตเติล)')) return false
   return (
     trimmed === DRAMA_SUBTITLE_CUE ||
     LEGACY_SUBTITLE_CUES.includes(trimmed) ||
@@ -55,7 +55,7 @@ function isSubtitleCueLine(line: string): boolean {
   )
 }
 
-// 从单条分镜正文去掉模型字幕提示词，保留对白/旁白本身。
+// 从单条分镜正文去掉模型คำบรรยาย (ซับไตเติล)คำแนะนำ词，保留对白/เสียงบรรยาย本身。
 export function stripSubtitlePromptsFromContent(content: string): string {
   const lines = String(content || '')
     .replace(/\r\n/g, '\n')
@@ -80,7 +80,7 @@ export function stripSubtitlePromptsFromContent(content: string): string {
   return next.join('\n').replace(/\n{3,}/g, '\n\n').trimEnd()
 }
 
-// 为单条分镜正文补回模型字幕提示词（已有则不重复）。
+// 为单条分镜正文补回模型คำบรรยาย (ซับไตเติล)คำแนะนำ词（已有则不重复）。
 export function applySubtitlePromptsToContent(content: string): string {
   const source = String(content || '').replace(/\r\n/g, '\n')
   if (!source.trim()) return source
@@ -117,7 +117,7 @@ export function applySubtitlePromptsToContent(content: string): string {
   return next.join('\n').replace(/\n{3,}/g, '\n\n').trimEnd()
 }
 
-// 按字幕方式批量改写分镜正文。
+// 按คำบรรยาย (ซับไตเติล)方式批量改写分镜正文。
 export function applySubtitleModeToFragments<T extends { content?: string | null }>(
   fragments: T[],
   mode: DramaSubtitleMode,

@@ -22,7 +22,7 @@ function syncDocumentMeta(m: Messages) {
   if (desc) desc.setAttribute('content', m.meta.description)
 }
 
-/** 全站语言：浏览器自动识别，手动选择后写入 localStorage */
+/** 全站语言：浏览器自动识别，手动เลือก后写入 localStorage */
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>(() => {
     const next = detectLocale()

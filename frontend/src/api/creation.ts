@@ -10,7 +10,7 @@ const request = createJsonRequester((response, detail) =>
 const path = (id: number | string) =>
   `/api/creation-sessions/${encodeURIComponent(id)}`
 
-/** 历史会话移交分步工作台时仍需保留此兼容接口。 */
+/** 历史会话移交分步เวิร์กสเตชัน时仍需保留此兼容接口。 */
 export const creationApi = {
   openEditor(id: number | string, signal?: AbortSignal, projectId?: number) {
     const query = projectId ? `?project_id=${projectId}` : ''

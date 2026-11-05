@@ -7,29 +7,29 @@ function scalar(value: unknown): string | number | boolean | undefined {
   return typeof value === 'string' || typeof value === 'boolean' || (typeof value === 'number' && Number.isFinite(value)) ? value : undefined
 }
 
-/** 时长允许旧记录的“8s”，但不得把空值或布尔值变成秒数。 */
+/** ความยาว允许旧记录的“8s”，但不得把空值或布尔值变成วินาที数。 */
 function seconds(value: unknown): number | undefined {
   if (typeof value !== 'string' && typeof value !== 'number') return undefined
   const parsed = Number(String(value).replace(/\s*s$/i, ''))
   return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined
 }
 
-/** 将独立生成记录适配为全局资产详情，预览和下载始终使用所选正式结果。 */
+/** 将独立生成记录适配为全局รายละเอียดแอสเซท，ดูตัวอย่าง和ดาวน์โหลด始终使用所选正式结果。 */
 export function toolRunDetailAsset(record: ToolRunRecord, resultIndex = 0): AssetDetailRecord {
-  // 原始提示词与参数来自已提交的任务，不能使用当前生成表单覆盖。
+  // 原始คำแนะนำ词与参数来自已ส่ง的任务，不能使用当前生成表单覆盖。
   const params = record.params || {}
   const url = record.kind === 'text' ? null : record.urls[resultIndex] || record.urls[0] || null
   const duration = seconds(params.duration_sec ?? params.duration)
-  const labels: Record<string, string> = { video: '视频生成', image: '图片生成', audio: '音频生成', text: '文字生成' }
-  const statuses: Record<string, string> = { queued: '任务正在排队，结果会自动更新。', running: '任务正在生成，结果会自动更新。', succeeded: '任务已完成，暂无可预览的媒体结果。', failed: '生成失败。', cancelled: '任务已取消。' }
-  const textContent = record.text_content || formatGenerationErrorMessage(record.error) || statuses[record.status] || `任务状态：${record.status}`
+  const labels: Record<string, string> = { video: 'วิดีโอ生成', image: 'รูปภาพ生成', audio: 'เสียง生成', text: '文字生成' }
+  const statuses: Record<string, string> = { queued: '任务正在排队，结果会自动更新。', running: '任务正在生成，结果会自动更新。', succeeded: '任务เสร็จสมบูรณ์，暂无可ดูตัวอย่าง的媒体结果。', failed: 'สร้างไม่สำเร็จ。', cancelled: '任务ยกเลิกแล้ว。' }
+  const textContent = record.text_content || formatGenerationErrorMessage(record.error) || statuses[record.status] || `任务สถานะ：${record.status}`
 
   return {
     id: record.id,
     name: labels[record.kind] || '生成记录',
     type: record.kind === 'text' || !url ? 'text' : record.kind,
     url,
-    // 视频首帧只作已有视频的 poster；尚无成片时不能把图片作为视频下载或播放。
+    // วิดีโอ首帧只作已有วิดีโอ的 poster；尚无成片时不能把รูปภาพ作为วิดีโอดาวน์โหลด或播放。
     cover: record.kind === 'image' ? url || record.preview_url
       : record.kind === 'video' && url && record.preview_url !== url ? record.preview_url : null,
     updated_at: record.finished_at || record.created_at,

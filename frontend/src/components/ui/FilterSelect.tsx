@@ -16,7 +16,7 @@ type Props = {
   disabled?: boolean
 }
 
-/** 品牌风格自定义下拉，避免原生 option 的蓝色高亮 */
+/** 品牌สไตล์กำหนดเอง下拉，避免原生 option 的蓝色高亮 */
 export default function FilterSelect({
   label,
   options,
@@ -59,7 +59,7 @@ export default function FilterSelect({
         disabled={disabled}
         onClick={() => setOpen((v) => !v)}
       >
-        <span className="pf-filter-trigger-label">{current?.label || '请选择'}</span>
+        <span className="pf-filter-trigger-label">{current?.label || '请เลือก'}</span>
         <ChevronDown size={15} strokeWidth={2} className="pf-filter-chevron" aria-hidden />
       </button>
       {open ? (

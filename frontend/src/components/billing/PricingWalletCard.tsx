@@ -15,16 +15,16 @@ type Props = {
   onHistory: () => void
 }
 
-// 账户更新时间使用浏览器本地时区。
+// 账户เวลาที่อัปเดต使用浏览器本地时区。
 function formatUpdated(d: Date | null) {
   if (!d) return '—'
   const pad = (n: number) => String(n).padStart(2, '0')
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
-/** 定价页深色余额卡片：余额、本月消耗、冻结、充值记录 */
+/** 定价页深色余额卡片：余额、本月消耗、冻结、ประวัติการเติมเงิน */
 export default function PricingWalletCard({ wallet, usage, loggedIn, updatedAt, loading, error, onRetry, onHistory }: Props) {
-  /* 余额隐私开关与服务端返回的余额、冻结和本次消耗；尚未取得数据时不展示虚假的零余额。 */
+  /* 余额隐私开关与服务端กลับ的余额、冻结和本次消耗；尚未取得数据时不展示虚假的零余额。 */
   const { t } = useI18n()
   const [balanceVisible, setBalanceVisible] = useState(true)
   const hasBalance = loggedIn && Boolean(wallet || usage)

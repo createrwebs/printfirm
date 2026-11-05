@@ -13,7 +13,7 @@ import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 
 type ListRes = { items: AdminDramaEpisode[]; meta: PageMeta };
 
-/** 全站漫剧分集列表 */
+/** 全站ละครซีรีส์分 ตอน列表 */
 export function DramaEpisodesPage() {
   const [searchParams] = useSearchParams();
   const initialProjectId = searchParams.get("project_id");
@@ -32,7 +32,7 @@ export function DramaEpisodesPage() {
       if (projectId.trim()) params.set("project_id", projectId.trim());
       setData(await api<ListRes>(`/api/admin/drama-episodes?${params}`));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "加载失败");
+      toast.error(err instanceof Error ? err.message : "โหลดไม่สำเร็จ");
     }
   }
 
@@ -43,11 +43,11 @@ export function DramaEpisodesPage() {
 
   return (
     <div className="admin-list-page">
-      <PageHeader title="分集管理" description="全站漫剧分集：按项目与用户筛选，可进入分镜明细" />
+      <PageHeader title="จัดการตอน (Episodes)" description="全站ละครซีรีส์分 ตอน：按โปรเจกต์与用户ตัวกรอง，可เข้าสู่分镜明细" />
       <AdminFilterBar>
-        <Input placeholder="集名 / 项目标题" value={q} onChange={(e) => setQ(e.target.value)} />
+        <Input placeholder=" ตอน名 / โปรเจกต์标题" value={q} onChange={(e) => setQ(e.target.value)} />
         <AdminUserSearchSelect value={userId} onChange={setUserId} />
-        <Input placeholder="项目 ID" value={projectId} onChange={(e) => setProjectId(e.target.value)} />
+        <Input placeholder="โปรเจกต์ ID" value={projectId} onChange={(e) => setProjectId(e.target.value)} />
         <Button
           size="sm"
           variant="secondary"
@@ -57,7 +57,7 @@ export function DramaEpisodesPage() {
             void load(1);
           }}
         >
-          筛选
+          ตัวกรอง
         </Button>
       </AdminFilterBar>
 
@@ -67,11 +67,11 @@ export function DramaEpisodesPage() {
             <tr>
               <th>ID</th>
               <th>名称</th>
-              <th>项目</th>
+              <th>โปรเจกต์</th>
               <th>用户</th>
               <th>分镜数</th>
               <th>分镜计划</th>
-              <th>更新时间</th>
+              <th>เวลาที่อัปเดต</th>
               <th></th>
             </tr>
           </thead>
@@ -97,7 +97,7 @@ export function DramaEpisodesPage() {
                 </td>
                 <td>
                   <Button size="sm" variant="outline" asChild>
-                    <Link to={`/drama-episodes/${row.id}`}>查看</Link>
+                    <Link to={`/drama-episodes/${row.id}`}>ดู</Link>
                   </Button>
                 </td>
               </tr>
@@ -105,7 +105,7 @@ export function DramaEpisodesPage() {
             {(data?.items.length ?? 0) === 0 ? (
               <tr>
                 <td colSpan={8} className="!text-center text-[var(--admin-muted)]">
-                  暂无分集
+                  ยังไม่มีตอน
                 </td>
               </tr>
             ) : null}

@@ -1,4 +1,4 @@
-/** 漫剧画布 / 分集：视频生成选项（模型列表来自后台 TokenFree 目录） */
+/** ละครซีรีส์画布 / 分集：วิดีโอ生成选项（模型列表来自后台 TokenFree 目录） */
 import type { MediaModelOption, MediaModelsCatalog } from '../api'
 
 export type VideoGenerationModelId = string
@@ -18,7 +18,7 @@ export const VIDEO_ASPECT_RATIO_OPTIONS: VideoAspectRatio[] = ['9:16', '16:9', '
 export const VIDEO_RESOLUTION_OPTIONS: VideoResolution[] = ['480p', '720p', '768p', '1080p']
 /** 目录未到 / 未知模型时的保守档（与后端 SAFE 一致） */
 export const SAFE_VIDEO_RESOLUTION_OPTIONS: VideoResolution[] = ['480p', '720p']
-/** 时长快捷档；按模型 duration_min/max 过滤（2.0≤15，2.5≤30） */
+/** ความยาว快捷档；按模型 duration_min/max 过滤（2.0≤15，2.5≤30） */
 export const VIDEO_DURATION_PRESETS = [5, 8, 10, 15, 20, 25, 30] as const
 export const VIDEO_DURATION_MIN = 4
 export const VIDEO_DURATION_MAX = 30
@@ -40,7 +40,7 @@ function findVideoModelRow(
   return id ? models.find((m) => m.id === id) : undefined
 }
 
-/** 当前模型时长上下限 */
+/** 当前模型ความยาว上下限 */
 export function durationBoundsForModel(
   modelId: string | undefined | null,
   catalog?: MediaModelsCatalog | null,
@@ -52,7 +52,7 @@ export function durationBoundsForModel(
   return { min, max }
 }
 
-/** 夹紧时长到模型允许区间 */
+/** 夹紧ความยาว到模型允许区间 */
 export function clampVideoDuration(
   sec: number,
   modelId?: string | null,
@@ -94,7 +94,7 @@ export function clampVideoAspectRatioForModel(
   return allowed[0] || '9:16'
 }
 
-/** 格式化比例 · 清晰度 */
+/** 格式化比例 · ความคมชัด */
 export function formatVideoOutputLabel(
   aspectRatio: VideoAspectRatio,
   resolution: VideoResolution,
@@ -105,15 +105,15 @@ export function formatVideoOutputLabel(
 /** 解析模型展示名（无目录时回退 id） */
 export function getVideoModelLabel(modelId: string | undefined | null) {
   const id = (modelId || '').trim()
-  return id || '视频模型'
+  return id || 'วิดีโอ模型'
 }
 
-/** 任意非空字符串均可作为视频模型 id（后台 TokenFree 目录） */
+/** 任意非空字符串均可作为วิดีโอ模型 id（后台 TokenFree 目录） */
 export function isVideoGenerationModelId(id: string): id is VideoGenerationModelId {
   return Boolean((id || '').trim())
 }
 
-/** 当前模型允许的清晰度列表（目录行优先；未知时保守两档，仅展示勿静默落库） */
+/** 当前模型允许的ความคมชัด列表（目录行优先；未知时保守两档，仅展示勿静默落库） */
 export function resolutionsForModel(
   modelId: string | undefined | null,
   catalog: MediaModelsCatalog | null | undefined,
@@ -131,7 +131,7 @@ export function resolutionsForModel(
   return [...SAFE_VIDEO_RESOLUTION_OPTIONS]
 }
 
-/** 目录已加载且能匹配到带清晰度白名单的视频模型行 */
+/** 目录已加载且能匹配到带ความคมชัด白名单的วิดีโอ模型行 */
 export function hasKnownVideoModelResolutions(
   modelId: string | undefined | null,
   catalog: MediaModelsCatalog | null | undefined,
@@ -143,7 +143,7 @@ export function hasKnownVideoModelResolutions(
   return Array.isArray(raw) && raw.length > 0
 }
 
-/** 将清晰度钳到模型允许列表；非法取列表最高档 */
+/** 将ความคมชัด钳到模型允许列表；非法取列表最高档 */
 export function clampVideoResolutionForModel(
   modelId: string | undefined | null,
   resolution: string | undefined | null,
@@ -156,7 +156,7 @@ export function clampVideoResolutionForModel(
   return allowed[allowed.length - 1] || '720p'
 }
 
-/** 从节点 data 恢复视频选项 */
+/** 从节点 data 恢复วิดีโอ选项 */
 export function readVideoGenerationOptions(raw: unknown): VideoGenerationOptions {
   const row = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {}
   const modelId = String(row.model_id || '').trim()

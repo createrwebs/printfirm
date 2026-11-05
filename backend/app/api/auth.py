@@ -1,11 +1,17 @@
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+import secrets
+from urllib.parse import quote, urlencode
+
+import httpx
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
+from fastapi.responses import RedirectResponse
+from fastapi.security import HTTPAuthorizationCredentials
 from pathlib import Path
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
-from app.database import get_db
-from app.deps import get_current_user
+from app.database import AsyncSessionLocal, get_db
+from app.deps import get_current_user, security
 from app.models import User, WalletLedger
 from app.schemas import (
     ChangePasswordRequest,
@@ -20,6 +26,8 @@ from app.schemas import (
 from app.services import storage
 from app.services.auth import (
     create_access_token,
+    create_oauth_state,
+    decode_oauth_state,
     get_user_by_email,
     hash_password,
     verify_password,
@@ -34,6 +42,187 @@ from app.services.profile import ProfileError, prepare_profile_update
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 settings = get_settings()
+
+
+def _is_local_request(request: Request) -> bool:
+    """Return true only for loopback hosts; never expose local debug data publicly."""
+    return request.url.hostname in {"127.0.0.1", "localhost", "::1"}
+
+
+def _safe_next_path(raw: str | None) -> str:
+    value = (raw or "/").strip()
+    if not value.startswith("/") or value.startswith("//") or "://" in value:
+        return "/"
+    return value
+
+
+def _frontend_url(path: str = "/auth", *, query: dict[str, str] | None = None, token: str = "") -> str:
+    base = settings.auth_frontend_url.rstrip("/") or "http://127.0.0.1:5173"
+    url = f"{base}{path}"
+    if query:
+        url += "?" + urlencode(query)
+    if token:
+        # Fragment is not sent in HTTP requests or server logs; the frontend removes it after use.
+        url += f"#access_token={quote(token, safe='')}"
+    return url
+
+
+def _google_redirect_uri(request: Request) -> str:
+    return (
+        settings.google_oauth_redirect_uri.strip()
+        or f"{str(request.base_url).rstrip('/')}/api/auth/google/callback"
+    )
+
+
+@router.get(
+    "/providers",
+    summary="查询可用登录方式",
+    description="返回当前部署启用的 OAuth 登录方式；不会返回客户端密钥。",
+)
+async def auth_providers(request: Request) -> dict[str, object]:
+    local = _is_local_request(request)
+    return {
+        "google": {
+            "enabled": bool(settings.google_oauth_client_id and settings.google_oauth_client_secret),
+            "label": "Google",
+        },
+        "chatgpt": {
+            "enabled": False,
+            "label": "ChatGPT",
+            "reason": "Sign in with ChatGPT 目前仅对参与 partner 开放，且不会向应用提供 ChatGPT/API token",
+        },
+        "local_token_debug": bool(local and settings.debug and settings.auth_local_token_debug),
+    }
+
+
+@router.get(
+    "/google/start",
+    summary="开始 Google 登录",
+    description="使用 Google OpenID Connect 登录；未配置 OAuth 客户端时仅返回 503。",
+)
+async def google_login_start(request: Request, next: str = "/") -> RedirectResponse:
+    if not settings.google_oauth_client_id or not settings.google_oauth_client_secret:
+        raise HTTPException(status_code=503, detail="Google 登录尚未配置 OAuth 客户端")
+    redirect_uri = _google_redirect_uri(request)
+    params = {
+        "client_id": settings.google_oauth_client_id,
+        "redirect_uri": redirect_uri,
+        "response_type": "code",
+        "scope": "openid email profile",
+        "state": create_oauth_state("google", _safe_next_path(next)),
+        "access_type": "offline",
+        "prompt": "select_account",
+    }
+    return RedirectResponse(
+        "https://accounts.google.com/o/oauth2/v2/auth?" + urlencode(params),
+        status_code=status.HTTP_302_FOUND,
+    )
+
+
+@router.get(
+    "/google/callback",
+    summary="完成 Google 登录",
+    description="交换 Google authorization code，按验证后的邮箱创建或复用 PRINTFILM 账号。",
+)
+async def google_login_callback(
+    request: Request,
+    code: str | None = None,
+    state: str | None = None,
+    error: str | None = None,
+) -> RedirectResponse:
+    if error:
+        return RedirectResponse(_frontend_url(query={"oauth_error": "Google 登录已取消"}))
+    payload = decode_oauth_state(state or "", "google")
+    if payload is None:
+        return RedirectResponse(_frontend_url(query={"oauth_error": "Google 登录状态无效或已过期"}))
+    next_path = str(payload["next"])
+    if not code or not settings.google_oauth_client_id or not settings.google_oauth_client_secret:
+        return RedirectResponse(_frontend_url(query={"oauth_error": "Google 登录尚未配置"}))
+
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            token_response = await client.post(
+                "https://oauth2.googleapis.com/token",
+                data={
+                    "code": code,
+                    "client_id": settings.google_oauth_client_id,
+                    "client_secret": settings.google_oauth_client_secret,
+                    "redirect_uri": _google_redirect_uri(request),
+                    "grant_type": "authorization_code",
+                },
+            )
+            token_response.raise_for_status()
+            token_payload = token_response.json()
+            google_access_token = str(token_payload.get("access_token") or "")
+            if not google_access_token:
+                raise ValueError("Google 未返回 access token")
+            user_response = await client.get(
+                "https://openidconnect.googleapis.com/v1/userinfo",
+                headers={"Authorization": f"Bearer {google_access_token}"},
+            )
+            user_response.raise_for_status()
+            profile = user_response.json()
+    except (httpx.HTTPError, ValueError) as exc:
+        return RedirectResponse(_frontend_url(query={"oauth_error": f"Google 登录失败：{str(exc)[:120]}"}))
+
+    email = str(profile.get("email") or "").strip().lower()
+    if not email or profile.get("email_verified") is not True:
+        return RedirectResponse(_frontend_url(query={"oauth_error": "Google 邮箱未验证，无法登录"}))
+
+    async with AsyncSessionLocal() as db:
+        user = await get_user_by_email(db, email)
+        if user is None:
+            grant = int(settings.billing_signup_grant_fen or 0)
+            user = User(
+                email=email,
+                nickname=str(profile.get("name") or email.split("@", 1)[0])[:64],
+                hashed_password=hash_password(secrets.token_urlsafe(32)),
+                quota_left=settings.new_user_quota,
+                balance_fen=grant,
+                plan="free",
+                avatar_url=str(profile.get("picture") or "")[:512],
+            )
+            db.add(user)
+            await db.flush()
+            if grant > 0:
+                db.add(
+                    WalletLedger(
+                        user_id=user.id,
+                        delta_fen=grant,
+                        balance_after=grant,
+                        kind="grant",
+                        ref_type="signup",
+                        ref_id=str(user.id),
+                        note="signup_grant",
+                    )
+                )
+            await db.commit()
+            await db.refresh(user)
+        app_token = create_access_token(str(user.id))
+    return RedirectResponse(_frontend_url(query={"next": next_path}, token=app_token))
+
+
+@router.get(
+    "/dev-token",
+    summary="读取本地测试令牌",
+    description="仅 loopback + DEBUG + AUTH_LOCAL_TOKEN_DEBUG=true 时返回当前 PRINTFILM JWT。",
+)
+async def dev_token(
+    request: Request,
+    creds: HTTPAuthorizationCredentials | None = Depends(security),
+    user: User = Depends(get_current_user),
+) -> dict[str, object]:
+    _ = user
+    if not (_is_local_request(request) and settings.debug and settings.auth_local_token_debug):
+        raise HTTPException(status_code=404, detail="Not found")
+    if creds is None:
+        raise HTTPException(status_code=401, detail="未登录")
+    return {
+        "access_token": creds.credentials,
+        "token_type": "bearer",
+        "expires_in": int(settings.access_token_expire_minutes) * 60,
+        "local_only": True,
+    }
 
 
 @router.post(

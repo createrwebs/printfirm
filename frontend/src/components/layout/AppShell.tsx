@@ -10,7 +10,7 @@ type Props = {
   active?: NavActive
   wide?: boolean
   flush?: boolean
-  /** 隐藏页脚（全屏工作台） */
+  /** 隐藏页脚（全屏เวิร์กสเตชัน） */
   hideFooter?: boolean
 }
 

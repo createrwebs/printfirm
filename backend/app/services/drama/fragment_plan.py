@@ -28,6 +28,7 @@ from app.services.drama.build_fragments import (
     split_episode_content_into_scenes,
 )
 from app.services.drama.agents import MIN_EPISODE_CONTENT_CHARS
+from app.services.drama.language import detect_content_language
 from app.services.seedance_segments import is_production_meta_line
 from app.services.drama.fragment_asset_limit import (
     FRAGMENT_MAX_CHARACTERS,
@@ -199,6 +200,27 @@ def _build_opening_cue_lines(
     ep_no = int(episode_number or 0)
     title = (episode_name or "").strip()
     series = (project_title or "").strip()
+    genre = (story_type or "").strip()
+    bg = (background_blurb or one_line_story or "").strip()
+    is_thai = detect_content_language(f"{title} {series} {genre} {bg}") == "th"
+    if is_thai:
+        if ep_no > 0 and title:
+            cues.append(f"【ไตเติล·ชื่อตอน】ตอนที่ {ep_no}｜{title}")
+        elif ep_no > 0:
+            cues.append(f"【ไตเติล·ชื่อตอน】ตอนที่ {ep_no}")
+        elif title:
+            cues.append(f"【ไตเติล·ชื่อตอน】{title}")
+        if series:
+            cues.append(f"【ไตเติล·ชื่อเรื่อง】{series}")
+        if genre:
+            cues.append(f"【ไตเติล·แนวเรื่อง】{genre}")
+        if bg:
+            short = re.split(r"[。！？\n]", bg, maxsplit=1)[0].strip() or bg
+            if len(short) > 64:
+                short = short[:63] + "…"
+            cues.append(f"【แนะนำภูมิหลัง·ข้อความบนจอ】{short}")
+        return cues
+
     if ep_no > 0 and title:
         cues.append(f"【片头·集号叠字】第{ep_no}集｜{title}")
     elif ep_no > 0:
@@ -207,10 +229,8 @@ def _build_opening_cue_lines(
         cues.append(f"【片头·集名叠字】{title}")
     if series:
         cues.append(f"【片头·剧名叠字】{series}")
-    genre = (story_type or "").strip()
     if genre:
         cues.append(f"【片头·类型标注】{genre}")
-    bg = (background_blurb or one_line_story or "").strip()
     if bg:
         short = re.split(r"[。！？]", bg, maxsplit=1)[0].strip() or bg
         if len(short) > 48:
@@ -325,13 +345,26 @@ def normalize_llm_fragment_items(
     for index, item in enumerate(items):
         if not isinstance(item, dict):
             continue
-        lines = merge_wrapped_narrative_lines(
-            _coerce_lines(item.get("lines") or item.get("content"))
+        raw_line_source = (
+            item.get("lines")
+            or item.get("content")
+            or item.get("description")
+            or item.get("video_prompt")
+            or item.get("videoPrompt")
         )
+        lines = merge_wrapped_narrative_lines(_coerce_lines(raw_line_source))
         if not lines:
             continue
         llm_opening_extra: list[str] = []
-        scene_name = str(item.get("scene_name") or item.get("sceneName") or "").strip() or None
+        scene_name = (
+            str(
+                item.get("scene_name")
+                or item.get("sceneName")
+                or item.get("location")
+                or ""
+            ).strip()
+            or None
+        )
         character_names = _coerce_name_list(
             item.get("character_names") or item.get("characterNames") or []
         )
@@ -423,7 +456,7 @@ def normalize_llm_fragment_items(
         if not timed_blocks:
             continue
 
-        llm_target = _clamp_duration(int(item.get("duration_sec") or 0))
+        llm_target = _clamp_duration(int(item.get("duration_sec") or item.get("duration") or 0))
         block_sum = sum(d for d, _ in timed_blocks)
         # 仅在单镜可容纳范围内按 LLM 时长缩段；超硬上限仍走拆镜逻辑
         if (

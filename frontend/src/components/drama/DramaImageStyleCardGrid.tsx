@@ -1,4 +1,4 @@
-/** 画面风格卡片网格：无风格 + 缩略图选项 */
+/** สไตล์ภาพ卡片网格：无สไตล์ + 缩略图选项 */
 import { Check } from 'lucide-react'
 import { DramaImageStylePreviewImg } from './DramaImageStylePreviewImg'
 import { IMAGE_STYLE_OPTIONS, type ImageStyleId } from '../../lib/dramaImageStyles'
@@ -11,12 +11,12 @@ type Props = {
   className?: string
 }
 
-// 渲染可点选的画面风格卡片网格
+// เรนเดอร์可点选的สไตล์ภาพ卡片网格
 export function DramaImageStyleCardGrid({
   value,
   onChange,
   allowNone = true,
-  noneLabel = '无风格',
+  noneLabel = 'ไม่มีสไตล์',
   className,
 }: Props) {
   return (

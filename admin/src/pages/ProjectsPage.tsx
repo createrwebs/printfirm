@@ -23,6 +23,7 @@ import { PageHeader } from "@/components/ui/page";
 import { useAdminDetailQuery } from "@/hooks/useAdminDetailQuery";
 import { PROJECT_STATUS_OPTIONS, projectStatusLabel, taskStatusLabel, taskTypeLabel } from "@/lib/statusLabels";
 import { fenToYuan } from "@/lib/utils";
+import { useI18n } from "@/i18n";
 
 type ListRes = { items: AdminProject[]; meta: PageMeta };
 
@@ -41,8 +42,8 @@ function mediaSrc(url: string | null | undefined): string {
   return trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
 }
 
-// 科普项目列表与详情（镜头 / 任务 / 费用 / 媒体预览）
 export function ProjectsPage() {
+  const { locale } = useI18n();
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("");
   const [userId, setUserId] = useState<number | null>(null);
@@ -60,7 +61,7 @@ export function ProjectsPage() {
       if (userId) params.set("user_id", String(userId));
       setData(await api<ListRes>(`/api/admin/projects?${params}`));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "加载失败");
+      toast.error(err instanceof Error ? err.message : (locale === "th" ? "โหลดข้อมูลล้มเหลว" : "Failed to load"));
     }
   }
 
@@ -75,7 +76,7 @@ export function ProjectsPage() {
     try {
       setDetail(await api<AdminProject>(`/api/admin/projects/${id}`));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "加载详情失败");
+      toast.error(err instanceof Error ? err.message : (locale === "th" ? "โหลดรายละเอียดล้มเหลว" : "Failed to load details"));
       projectDetail.close();
     } finally {
       setDetailLoading(false);
@@ -96,7 +97,10 @@ export function ProjectsPage() {
 
   return (
     <div className="admin-list-page">
-      <PageHeader title="科普项目" description="科普管线项目：状态、镜头、关联任务与费用" />
+      <PageHeader
+        title={locale === "th" ? "โปรเจกต์วิดีโอ" : "Video Projects"}
+        description={locale === "th" ? "โปรเจกต์ไปป์ไลน์วิดีโอ: สถานะ, ช็อต, คิวงานที่เกี่ยวข้อง และค่าใช้จ่าย" : "Video pipeline projects: status, shots, tasks, and charges"}
+      />
       <AdminFilterBar>
         <Select value={status} onChange={(e) => setStatus(e.target.value)}>
           {PROJECT_STATUS_OPTIONS.map((opt) => (
@@ -105,7 +109,7 @@ export function ProjectsPage() {
             </option>
           ))}
         </Select>
-        <Input placeholder="标题 / 错误信息" value={q} onChange={(e) => setQ(e.target.value)} />
+        <Input placeholder={locale === "th" ? "ชื่อเรื่อง / ข้อความผิดพลาด" : "Title / error message"} value={q} onChange={(e) => setQ(e.target.value)} />
         <AdminUserSearchSelect value={userId} onChange={(id) => setUserId(id)} />
         <Button
           size="sm"
@@ -116,7 +120,7 @@ export function ProjectsPage() {
             void load(1);
           }}
         >
-          筛选
+          {locale === "th" ? "กรอง" : "Filter"}
         </Button>
       </AdminFilterBar>
       <div className="rounded-lg border bg-background">
@@ -124,16 +128,16 @@ export function ProjectsPage() {
           <TableHeader>
             <TableRow>
               <TableHead>ID</TableHead>
-              <TableHead>标题</TableHead>
-              <TableHead>用户</TableHead>
-              <TableHead>模板</TableHead>
-              <TableHead>管线</TableHead>
-              <TableHead>状态</TableHead>
-              <TableHead>进度</TableHead>
-              <TableHead>镜头</TableHead>
-              <TableHead>费用</TableHead>
-              <TableHead>创建</TableHead>
-              <TableHead>更新</TableHead>
+              <TableHead>{locale === "th" ? "ชื่อเรื่อง" : "Title"}</TableHead>
+              <TableHead>{locale === "th" ? "ผู้ใช้" : "User"}</TableHead>
+              <TableHead>{locale === "th" ? "แม่แบบ" : "Template"}</TableHead>
+              <TableHead>{locale === "th" ? "ไปป์ไลน์" : "Pipeline"}</TableHead>
+              <TableHead>{locale === "th" ? "สถานะ" : "Status"}</TableHead>
+              <TableHead>{locale === "th" ? "ความคืบหน้า" : "Progress"}</TableHead>
+              <TableHead>{locale === "th" ? "ช็อต" : "Shots"}</TableHead>
+              <TableHead>{locale === "th" ? "ค่าใช้จ่าย" : "Cost"}</TableHead>
+              <TableHead>{locale === "th" ? "วันที่สร้าง" : "Created"}</TableHead>
+              <TableHead>{locale === "th" ? "วันที่อัปเดต" : "Updated"}</TableHead>
               <TableHead></TableHead>
             </TableRow>
           </TableHeader>
@@ -161,7 +165,7 @@ export function ProjectsPage() {
                 </TableCell>
                 <TableCell>
                   <Button size="sm" variant="outline" onClick={() => void openDetail(p.id)}>
-                    详情
+                    {locale === "th" ? "รายละเอียด" : "Details"}
                   </Button>
                 </TableCell>
               </TableRow>
@@ -187,20 +191,20 @@ export function ProjectsPage() {
           }
         }}
         size="full"
-        title={detail ? `科普项目 #${detail.id} · ${detail.title}` : "科普项目详情"}
-        subtitle={detail ? projectStatusLabel(detail.status) : detailLoading ? "加载中…" : undefined}
+        title={detail ? `${locale === "th" ? "โปรเจกต์วิดีโอ" : "Project"} #${detail.id} · ${detail.title}` : (locale === "th" ? "รายละเอียดโปรเจกต์" : "Project Details")}
+        subtitle={detail ? projectStatusLabel(detail.status) : detailLoading ? (locale === "th" ? "กำลังโหลด…" : "Loading…") : undefined}
         bodyClassName="space-y-3"
       >
         {detailLoading && !detail ? (
-          <div className="py-10 text-center text-sm text-[var(--admin-muted)]">加载中…</div>
+          <div className="py-10 text-center text-sm text-[var(--admin-muted)]">{locale === "th" ? "กำลังโหลด…" : "Loading…"}</div>
         ) : null}
         {detail ? (
           <>
-            <AdminDetailSection title="基本信息">
+            <AdminDetailSection title={locale === "th" ? "ข้อมูลพื้นฐาน" : "Basic Information"}>
               <AdminDetailMeta
                 items={[
                   {
-                    label: "用户",
+                    label: locale === "th" ? "ผู้ใช้" : "User",
                     value: (
                       <AdminEntityLink
                         kind="user"
@@ -210,29 +214,29 @@ export function ProjectsPage() {
                     ),
                   },
                   {
-                    label: "状态 / 进度",
-                    value: `${projectStatusLabel(detail.status)} · ${detail.progress}% · 镜头 ${detail.shot_count}`,
+                    label: locale === "th" ? "สถานะ / ความคืบหน้า" : "Status / Progress",
+                    value: `${projectStatusLabel(detail.status)} · ${detail.progress}% · ${locale === "th" ? "ช็อต" : "Shots"} ${detail.shot_count}`,
                   },
-                  { label: "模板", value: detail.template_id },
-                  { label: "管线", value: detail.pipeline_mode },
-                  { label: "来源", value: detail.source_type || "—" },
+                  { label: locale === "th" ? "แม่แบบ" : "Template", value: detail.template_id },
+                  { label: locale === "th" ? "ไปป์ไลน์" : "Pipeline", value: detail.pipeline_mode },
+                  { label: locale === "th" ? "ที่มา" : "Source", value: detail.source_type || "—" },
                   {
-                    label: "分辨率 / 比例",
+                    label: locale === "th" ? "ความละเอียด / สัดส่วน" : "Resolution / Ratio",
                     value: `${detail.resolution_mode || "—"} · ${detail.output_ratio || "—"}`,
                   },
-                  { label: "配音", value: detail.voice_id || "—", full: true },
+                  { label: locale === "th" ? "เสียงพากย์" : "Voice", value: detail.voice_id || "—", full: true },
                 ]}
               />
               <AdminDetailNote empty={!detail.error_msg} className="mt-3">
-                {detail.error_msg || "无错误信息"}
+                {detail.error_msg || (locale === "th" ? "ไม่มีข้อความผิดพลาด" : "No errors")}
               </AdminDetailNote>
             </AdminDetailSection>
 
             {(detail.cover_url || detail.final_video_url) ? (
-              <AdminDetailSection title="媒体预览">
+              <AdminDetailSection title={locale === "th" ? "ตัวอย่างสื่อ" : "Media Preview"}>
                 <div className="admin-detail-media">
                   {detail.cover_url ? (
-                    <img src={mediaSrc(detail.cover_url)} alt="封面" />
+                    <img src={mediaSrc(detail.cover_url)} alt="Cover" />
                   ) : null}
                   {detail.final_video_url ? (
                     <video src={mediaSrc(detail.final_video_url)} controls className="max-w-full" />
@@ -241,38 +245,38 @@ export function ProjectsPage() {
               </AdminDetailSection>
             ) : null}
 
-            <AdminDetailSection title="费用汇总">
+            <AdminDetailSection title={locale === "th" ? "สรุปค่าใช้จ่าย" : "Cost Summary"}>
               <AdminDetailStatGrid
                 items={[
-                  { label: "扣费", value: `¥${fenToYuan(usage?.charge_fen ?? detail.charge_fen ?? 0)}` },
-                  { label: "调用", value: usage?.calls ?? 0 },
+                  { label: locale === "th" ? "ยอดเงินที่หัก" : "Charged", value: `¥${fenToYuan(usage?.charge_fen ?? detail.charge_fen ?? 0)}` },
+                  { label: locale === "th" ? "จำนวนครั้งที่เรียก" : "Calls", value: usage?.calls ?? 0 },
                   { label: "Tokens", value: usage?.tokens ?? 0 },
                   {
-                    label: "图/视/LLM/TTS",
+                    label: locale === "th" ? "ภาพ/วิดีโอ/LLM/TTS" : "Img/Vid/LLM/TTS",
                     value: `${usage?.image_gens ?? 0}/${usage?.video_gens ?? 0}/${usage?.llm_calls ?? 0}/${usage?.tts_gens ?? 0}`,
                   },
                 ]}
               />
             </AdminDetailSection>
 
-            <AdminDetailSection title={`镜头（${(detail.shots ?? []).length}）`}>
+            <AdminDetailSection title={`${locale === "th" ? "ช็อตสตอรี่บอร์ด" : "Shots"} (${(detail.shots ?? []).length})`}>
               <AdminDetailTableWrap>
                 <table>
                   <thead>
                     <tr>
                       <th>#</th>
-                      <th>状态</th>
-                      <th>时长</th>
-                      <th>图</th>
-                      <th>视频</th>
-                      <th>音频</th>
+                      <th>{locale === "th" ? "สถานะ" : "Status"}</th>
+                      <th>{locale === "th" ? "ความยาว" : "Duration"}</th>
+                      <th>{locale === "th" ? "ภาพ" : "Image"}</th>
+                      <th>{locale === "th" ? "วิดีโอ" : "Video"}</th>
+                      <th>{locale === "th" ? "เสียง" : "Audio"}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {(detail.shots ?? []).length === 0 ? (
                       <tr>
                         <td colSpan={6} className="!text-center text-[var(--admin-muted)]">
-                          暂无镜头
+                          {locale === "th" ? "ไม่มีช็อต" : "No shots"}
                         </td>
                       </tr>
                     ) : (
@@ -281,9 +285,9 @@ export function ProjectsPage() {
                           <td>{s.shot_no}</td>
                           <td>{s.status}</td>
                           <td>{s.duration}s</td>
-                          <td>{s.has_image ? "有" : "—"}</td>
-                          <td>{s.has_video ? "有" : "—"}</td>
-                          <td>{s.has_audio ? "有" : "—"}</td>
+                          <td>{s.has_image ? "✓" : "—"}</td>
+                          <td>{s.has_video ? "✓" : "—"}</td>
+                          <td>{s.has_audio ? "✓" : "—"}</td>
                         </tr>
                       ))
                     )}
@@ -292,22 +296,22 @@ export function ProjectsPage() {
               </AdminDetailTableWrap>
             </AdminDetailSection>
 
-            <AdminDetailSection title={`关联任务（最近 ${(detail.recent_tasks ?? []).length}）`}>
+            <AdminDetailSection title={`${locale === "th" ? "คิวงานที่เกี่ยวข้อง" : "Related Tasks"} (${(detail.recent_tasks ?? []).length})`}>
               <AdminDetailTableWrap className="max-h-[200px]">
                 <table>
                   <thead>
                     <tr>
                       <th>ID</th>
-                      <th>类型</th>
-                      <th>状态</th>
-                      <th>已扣 / 预估</th>
+                      <th>{locale === "th" ? "ประเภท" : "Type"}</th>
+                      <th>{locale === "th" ? "สถานะ" : "Status"}</th>
+                      <th>{locale === "th" ? "หักจริง / ประมาณการ" : "Charged / Est"}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {(detail.recent_tasks ?? []).length === 0 ? (
                       <tr>
                         <td colSpan={4} className="!text-center text-[var(--admin-muted)]">
-                          暂无任务
+                          {locale === "th" ? "ไม่มีคิวงาน" : "No tasks"}
                         </td>
                       </tr>
                     ) : (
@@ -330,7 +334,7 @@ export function ProjectsPage() {
             </AdminDetailSection>
 
             {detail.source_text ? (
-              <AdminDetailSection title="源文本">
+              <AdminDetailSection title={locale === "th" ? "ข้อความต้นฉบับ" : "Source Text"}>
                 <AdminDetailNote>{detail.source_text}</AdminDetailNote>
               </AdminDetailSection>
             ) : null}

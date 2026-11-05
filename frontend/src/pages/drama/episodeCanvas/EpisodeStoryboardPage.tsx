@@ -1,6 +1,6 @@
 import { TeamEpisodeEditingBoundary } from '../../../features/teams/TeamEditingBoundary'
 import { useTeamReadOnly } from '../../../features/teams/readOnlyContext'
-/** 分集分镜故事板全屏画布：按分镜连线，节点含视频 / 出境资产 / 提示词 */
+/** 分 ตอน分镜故事板全屏画布：按分镜连线，节点含วิดีโอ / 出境แอสเซท / คำแนะนำ词 */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Background,
@@ -43,7 +43,7 @@ import './episodeCanvas.css'
 
 const SAVE_DEBOUNCE_MS = 800
 
-// 正文补上 @asset 提及
+// เนื้อหาหลัก补上 @asset 提及
 function ensureAssetMention(content: string, assetId: number): string {
   const token = `@asset:${assetId}`
   if ((content || '').includes(token)) return content || ''
@@ -51,7 +51,7 @@ function ensureAssetMention(content: string, assetId: number): string {
   return trimmed ? `${trimmed} ${token}` : token
 }
 
-// 正文去掉 @asset 提及
+// เนื้อหาหลัก去掉 @asset 提及
 function removeAssetMention(content: string, assetId: number): string {
   return (content || '')
     .replace(new RegExp(`\\s*@asset:${assetId}\\b`, 'g'), ' ')
@@ -60,7 +60,7 @@ function removeAssetMention(content: string, assetId: number): string {
     .trim()
 }
 
-// 鉴权后进入分镜故事板
+// 鉴权后เข้าสู่分镜故事板
 export default function EpisodeStoryboardPage() {
   return (
     <RequireAuth>
@@ -71,7 +71,7 @@ export default function EpisodeStoryboardPage() {
   )
 }
 
-// 加载分集并渲染全屏故事板
+// 加载分 ตอน并เรนเดอร์全屏故事板
 function EpisodeStoryboardInner() {
   const readOnly = useTeamReadOnly()
   const readOnlyRef = useRef(readOnly)
@@ -84,8 +84,8 @@ function EpisodeStoryboardInner() {
 
   /*
    * episode / fragments / assets 数据
-   * linkTargetFragId 正在选资产关联的分镜
-   * dirty / busy / error / status 状态
+   * linkTargetFragId 正在选แอสเซท关联的分镜
+   * dirty / busy / error / status สถานะ
    */
   const [episode, setEpisode] = useState<DramaEpisode | null>(null)
   const [fragments, setFragments] = useState<DramaFragment[]>([])
@@ -111,7 +111,7 @@ function EpisodeStoryboardInner() {
     assetsRef.current = assets
   }, [assets])
 
-  // 结构键：成片 + 关联资产变化时重建；提示词编辑走局部更新
+  // 结构键：成片 + 关联แอสเซท变化时重建；คำแนะนำ词แก้ไข走局部อัปเดต
   const structureKey = fragments
     .map((f) => {
       const aids = collectFragmentAssetIds(f).join(',')
@@ -135,7 +135,7 @@ function EpisodeStoryboardInner() {
     void fitView({ padding: 0.22, duration: 280 })
   }, [nodes.length, fitView])
 
-  // 拉取分集 + 项目资产
+  // 拉取分 ตอน + โปรเจกต์แอสเซท
   useEffect(() => {
     if (!eid || !pid) return
     let cancelled = false
@@ -149,7 +149,7 @@ function EpisodeStoryboardInner() {
         setAssets(assetList || [])
       })
       .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : '加载分集失败')
+        if (!cancelled) setError(err instanceof Error ? err.message : '加载分 ตอนล้มเหลว')
       })
       .finally(() => {
         if (!cancelled) setBusy(false)
@@ -189,10 +189,10 @@ function EpisodeStoryboardInner() {
         setEpisode(saved)
         setFragments(saved.fragments || [])
         setDirty(false)
-        setStatus('已保存')
+        setStatus('已บันทึก')
         window.setTimeout(() => setStatus(''), 1600)
       } catch (err) {
-        setError(err instanceof Error ? err.message : '保存失败')
+        setError(err instanceof Error ? err.message : 'บันทึกไม่สำเร็จ')
       } finally {
         setBusy(false)
       }
@@ -200,7 +200,7 @@ function EpisodeStoryboardInner() {
     [eid],
   )
 
-  // 防抖保存
+  // 防抖บันทึก
   const scheduleSave = useCallback(() => {
     if (readOnlyRef.current) return
     setDirty(true)
@@ -210,7 +210,7 @@ function EpisodeStoryboardInner() {
     }, SAVE_DEBOUNCE_MS)
   }, [persistFragments])
 
-  // 刷新单个分镜节点提示词（关联资产变化靠 structureKey 重建）
+  // รีเฟรช单个分镜节点คำแนะนำ词（关联แอสเซท变化靠 structureKey 重建）
   const patchFragmentPrompt = useCallback(
     (fragmentId: number, content: string) => {
       if (readOnlyRef.current) return
@@ -226,7 +226,7 @@ function EpisodeStoryboardInner() {
     [setNodes],
   )
 
-  // 改提示词
+  // 改คำแนะนำ词
   const handlePromptChange = useCallback(
     (fragmentId: number, content: string) => {
       if (readOnlyRef.current) return
@@ -243,7 +243,7 @@ function EpisodeStoryboardInner() {
     [patchFragmentPrompt, scheduleSave],
   )
 
-  // 取消关联出境资产
+  // ยกเลิก关联出境แอสเซท
   const handleUnlinkAsset = useCallback(
     (fragmentId: number, assetId: number) => {
       if (readOnlyRef.current) return
@@ -260,13 +260,13 @@ function EpisodeStoryboardInner() {
     [scheduleSave],
   )
 
-  // 打开关联选择
+  // 打开关联เลือก
   const handleRequestLinkAsset = useCallback((fragmentId: number) => {
       if (readOnlyRef.current) return
     setLinkTargetFragId(fragmentId)
   }, [])
 
-  // 确认关联资产
+  // 确认关联แอสเซท
   const handlePickAsset = useCallback(
     (asset: DramaAsset) => {
       if (readOnlyRef.current) return
@@ -318,17 +318,17 @@ function EpisodeStoryboardInner() {
           <button
             type="button"
             className="ep-storyboard-back"
-            aria-label="返回分集"
-            title="返回分集"
+            aria-label="กลับ分 ตอน"
+            title="กลับ分 ตอน"
             onClick={() => navigate(backHref)}
           >
             <ChevronLeft size={20} strokeWidth={1.8} />
           </button>
           <div className="ep-storyboard-title">
-            <strong>{episode?.name || `分集 ${eid}`}</strong>
+            <strong>{episode?.name || `分 ตอน ${eid}`}</strong>
             <span>
               分镜故事板 · {fragments.length} 镜
-              {dirty ? ' · 未保存' : status ? ` · ${status}` : ''}
+              {dirty ? ' · 未บันทึก' : status ? ` · ${status}` : ''}
             </span>
           </div>
         </div>
@@ -338,7 +338,7 @@ function EpisodeStoryboardInner() {
             className="ep-storyboard-btn ghost"
             onClick={() => navigate(`/drama/projects/${pid}/canvas`)}
           >
-            资产画布
+            แอสเซท画布
           </button>
           <button
             type="button"
@@ -346,7 +346,7 @@ function EpisodeStoryboardInner() {
             disabled={readOnly || busy || !dirty}
             onClick={() => void persistFragments(fragments)}
           >
-            {busy ? '保存中…' : '保存'}
+            {busy ? 'กำลังบันทึก…' : 'บันทึก'}
           </button>
         </div>
       </header>
@@ -355,7 +355,7 @@ function EpisodeStoryboardInner() {
         {fragments.length === 0 && !busy ? (
           <div className="ep-storyboard-empty">
             <strong>暂无分镜</strong>
-            <span>请先回分集编辑页添加分镜</span>
+            <span>请先回分 ตอนแก้ไข页เพิ่มสตอรี่บอร์ด</span>
           </div>
         ) : null}
         <ReactFlow
@@ -382,19 +382,19 @@ function EpisodeStoryboardInner() {
           </p>
         ) : null}
         {busy && fragments.length === 0 ? (
-          <p className="ep-storyboard-toast">加载中…</p>
+          <p className="ep-storyboard-toast">กำลังโหลด…</p>
         ) : null}
       </div>
 
       <Modal
         open={linkTargetFragId != null}
         onClose={() => setLinkTargetFragId(null)}
-        title="关联出境资产"
+        title="关联出境แอสเซท"
         size="lg"
       >
-        <p className="ep-storyboard-picker-hint">选择本镜出场的角色 / 场景 / 道具</p>
+        <p className="ep-storyboard-picker-hint">เลือก本镜出ฉาก的ตัวละคร / ฉาก / อุปกรณ์/พร็อพ</p>
         {pickerAssets.length === 0 ? (
-          <p className="ep-storyboard-picker-empty">暂无可选资产，请先到资产画布生成</p>
+          <p className="ep-storyboard-picker-empty">暂无可选แอสเซท，请先到แอสเซท画布生成</p>
         ) : (
           <div className="ep-storyboard-picker-grid">
             {pickerAssets.map((asset) => {
@@ -409,8 +409,8 @@ function EpisodeStoryboardInner() {
                   <div className="ep-storyboard-picker-thumb">
                     {cover ? <img src={cover} alt="" /> : <span>{(asset.name || '?')[0]}</span>}
                   </div>
-                  <strong>{asset.name || `资产 ${asset.id}`}</strong>
-                  <em>{normalizeAssetTab(asset.type || '') || asset.type || '资产'}</em>
+                  <strong>{asset.name || `แอสเซท ${asset.id}`}</strong>
+                  <em>{normalizeAssetTab(asset.type || '') || asset.type || 'แอสเซท'}</em>
                 </button>
               )
             })}

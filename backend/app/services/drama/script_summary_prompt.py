@@ -7,28 +7,25 @@ from app.services.drama.image_styles import (
     get_image_style_label,
     resolve_image_style_prompt,
 )
+from app.services.drama.language import detect_content_language, language_instruction
 
 # SCRIPT_SUMMARY_SYSTEM_PROMPT 指导 LLM 将原始创意转为结构化剧本摘要
 SCRIPT_SUMMARY_SYSTEM_PROMPT = """你是专业的短剧/网剧剧本策划，负责把用户提供的原始创意、故事大纲或灵感，整理成可直接用于立项与编剧开工的结构化「剧本摘要」。
 
-输出要求：
-1. 忠实于用户创意，可合理补全细节，但不要擅自改掉核心设定、主线与结局
-2. 若用户提供了目标集数，episodeCount 必须与该值完全一致；未提供时根据故事体量合理估算（短篇 12–24 集，中篇 30–60 集，长篇可更高）
-3. 若用户提供了画面风格，人物 visualImage 须体现该风格的视觉美学，storyType 可融合风格相关标签
-4. storyType、coreHook 用「+」连接多个标签，风格参考：古风奇幻+神话后传+反乌托邦
-5. targetAudience 简洁，如：男频 / 大众、女频 / 青年 等
-6. seriesTitle 必须是可作项目名的短剧名：4–16 个汉字（可含少量数字/标点），有记忆点、可上架；禁止复述整句梗概，禁止用「一句话故事」原文当剧名，禁止「未命名」「短剧」等占位
-7. oneLineStory 一句话说清主线 + 最大反转或钩子（与 seriesTitle 不同：前者是剧名，后者是卖点句）
-8. characters 须覆盖故事中全部具名出场角色（主角、重要配角、反派）；群演/路人可合并为 1 个群体角色；每人字段须饱满、可拍摄、有戏剧张力；不要只写 2–3 个主角而漏掉其余具名人物。禁止把「音色 / 声音 / 旁白音色」或带（声音）（音色）后缀的名字写成角色；旁白若需出场可写「某某旁白」本体，不要单独建「某某（声音）」
-9. 人物小传中 growthArc 必须用「阶段A -> 阶段B -> 阶段C」格式
-10. synopsis 用一段完整中文叙述故事，从世界观、矛盾、结盟、高潮、结局到余韵，长度 200–400 字
-11. 语言统一使用简体中文，偏影视策划文档风格，避免空泛形容词堆砌
-12. 每人 visualImage 须 100–200 字：写清性别年龄、脸型五官、发型、体型、服饰材质与配色、气质神态、标志性道具或细节；只写外观本体，不要写「三视图 / 白底设定板」等构图指令（入库时由系统加结构前缀）；禁止仅写「英俊」「美丽」等空泛词
-13. characters 数量由原文决定，只有 1–2 个角色就只列 1–2 个，禁止为凑人数添加角色。森林、松果、天气等非拟人的环境/道具不得列为人物；只有原文明示具有独立行动或对白的拟人角色才能作为人物
-14. 原文已是完整故事时，按改编整理处理：保留事件顺序、关键行为、人物动机与结局，不要凭空增加危机、反派、饥饿或焦虑，不要把友善提问改成质疑或对立。面向儿童时保持原文语气和可理解的因果，不强加成人化隐喻与追剧悬念
-15. 画面风格只影响 visualImage 和制作美学，不应改写剧情事实。人物外观写入 visualImage，synopsis 聚焦发生了什么，不堆砌毛发比例、材质、粒子特效等制作细节
+【核心准则 / CRITICAL INSTRUCTIONS】
+1. 必须输出严格合法的 JSON 对象，直接以 "{" 开头，以 "}" 结尾。绝不要输出 markdown 围栏（如 ```json），绝不要输出任何前言、开场白、反驳、辩论、剧情讨论或结尾闲聊！
+2. 语言统一性：所有字段的值必须使用与用户创意相同的语言（若用户提供泰语创意，全篇所有字段内容必须全部输出自然流畅的泰语，不得混杂中文）。
+3. 画面风格（visual style）：仅作为人物 visualImage 与视觉摄影美学基调的光影/质感滤镜，绝对不得以此为由质疑、拒绝或与故事设定产生冲突争辩。直接服从并完成 JSON 生成。
+4. 篇幅精炼与响应速度控制（至关重要）：
+    - characters: 必须提取故事中所有具名出场角色（主角、配角、反派、关键动物/神奇生物/拟人角色），不要只取 4-6 人，不要漏掉原始创意中明确出现的角色；群演或道具才可合并或排除。
+    - visualImage: 每人 120-260 个字符，使用原始创意语言，必须包含完整的【外貌特征】（年龄、性别/物种、五官特征、体型、体态与神态）与【造型特征】（发型发色、服装款式、材质、颜色、标志性配饰），纯静态视觉描述，可直接用于角色三视图生图。
+   - identityBackground, growthExperience, personality, relationships, growthArc: 每项 1-2 句精炼描述。其中 growthArc 必须用「阶段A -> 阶段B -> 阶段C」格式。
+    - synopsis: 200-400 个字符，使用原始创意语言，精炼叙述核心世界观、主线冲突、高潮与结局。
+    - seriesTitle: 使用原始创意语言的简洁短剧名（4-16 个字符），禁止占位词。
+   - oneLineStory: 1 句话核心看点与反转。
+   - 若用户提供了目标集数，episodeCount 必须与该值完全一致；未提供时估算 12-24 集。
 
-必须输出严格 JSON 对象（不要 markdown、不要代码围栏），字段：
+必须输出严格 JSON 对象，字段格式：
 {
   "episodeCount": number,
   "seriesTitle": string,
@@ -70,7 +67,7 @@ def build_script_summary_user_message(
     image_style_id: str | None = None,
 ) -> str:
     trimmed = (creative or "").strip()
-    sections = [f"原始创意：\n{trimmed}"]
+    sections = [f"原始创意：\n{trimmed}", language_instruction(trimmed)]
     production_params: list[str] = []
 
     if episode_count is not None:
@@ -80,14 +77,19 @@ def build_script_summary_user_message(
 
     resolved_style = _resolve_image_style_id(image_style_id)
     if resolved_style:
+        lang = detect_content_language(trimmed)
         label = get_image_style_label(resolved_style)
-        style_prompt = resolve_image_style_prompt(resolved_style)
-        production_params.append(f"- 画面风格：{label}（{resolved_style}）")
+        style_prompt = resolve_image_style_prompt(resolved_style, lang=lang)
+        production_params.append(f"- 画面风格：{resolved_style if lang == 'th' else f'{label}（{resolved_style}）'}")
         if style_prompt:
             production_params.append(f"  风格说明：{style_prompt}")
         production_params.append("  人物 visualImage、故事类型标签与整体美学须符合该画面风格")
 
     if production_params:
         sections.append("\n".join(["制作参数：", *production_params]))
+
+    sections.append(
+        "【输出强制要求】：必须完整提取原始创意中所有具名出场角色（包括主角、重要配角、反派、关键动物/神奇生物/拟人角色，严禁只取4-6人或遗漏角色），每个角色的 visualImage 必须详尽描述外貌与服装造型特征；直接输出合法的 JSON 对象（以 { 开头，以 } 结尾），严禁输出任何 markdown 围栏或解释。全篇所有字段的值必须使用与原始创意相同的语言撰写。"
+    )
 
     return "\n\n".join(sections)

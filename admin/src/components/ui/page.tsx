@@ -10,7 +10,7 @@ type PageHeaderProps = {
   className?: string;
 };
 
-// 页面标题、说明与主要操作的统一层级。
+// 页面标题、说明与主要การดำเนินการ的统一层级。
 export function PageHeader({ title, description, actions, className }: PageHeaderProps) {
   if (!title && !description && !actions) return null;
   return (
@@ -32,8 +32,8 @@ type EmptyStateProps = {
 
 // 空列表占位
 export function EmptyState({
-  title = "暂无数据",
-  description = "换个筛选条件再试试",
+  title = "ไม่มีข้อมูล",
+  description = "换个ตัวกรอง条件再试试",
   className,
 }: EmptyStateProps) {
   return (
@@ -50,7 +50,7 @@ type ToolbarProps = {
   className?: string;
 };
 
-// 筛选 / 搜索工具条（与 AdminFilterBar 一致）
+// ตัวกรอง / ค้นหา工具条（与 AdminFilterBar 一致）
 export function Toolbar({ children, className }: ToolbarProps) {
   return (
     <div className={cn("admin-filter-bar", className)}>

@@ -17,7 +17,7 @@ export type EpisodeComposeProgress = {
   total: number
 }
 
-/** 按分镜顺序收集可拼接的视频地址 */
+/** 按分镜顺序收集可拼接的วิดีโอ地址 */
 export function listEpisodeComposeClips(fragments: DramaFragment[]): EpisodeComposeClip[] {
   const clips: EpisodeComposeClip[] = []
   fragments.forEach((fragment, index) => {
@@ -32,7 +32,7 @@ export function listEpisodeComposeClips(fragments: DramaFragment[]): EpisodeComp
   return clips
 }
 
-/** 全片下载文件名 */
+/** 全片ดาวน์โหลด文件名 */
 export function episodeComposeFilename(episodeName: string) {
   return `${sanitizeMediaBasename(episodeName || '本集')}_全片.mp4`
 }
@@ -49,20 +49,20 @@ async function composeEpisodeVideoServer(
     clips.map((c) => c.id),
   )
   const url = resolveDramaMediaUrl(result.video_url)
-  if (!url) throw new Error('服务端合成未返回可下载地址')
+  if (!url) throw new Error('服务端合成未กลับ可ดาวน์โหลด地址')
   const blob = await fetchMediaBlob(url)
   onProgress?.({ phase: 'server', done: clips.length, total: clips.length })
   return blob
 }
 
-/** 拉取各镜并在本地拼成一条 MP4；无损失败则自动走服务端 */
+/** 拉取各镜并在本地拼成一条 MP4；无损ล้มเหลว则自动走服务端 */
 export async function composeEpisodeVideoClient(
   clips: EpisodeComposeClip[],
   onProgress?: (progress: EpisodeComposeProgress) => void,
   options?: { episodeId?: number },
 ): Promise<Blob> {
   if (clips.length === 0) {
-    throw new Error('本集还没有可拼接的分镜视频')
+    throw new Error('本集还没有可拼接的分镜วิดีโอ')
   }
 
   const buffers: Uint8Array[] = new Array(clips.length)
@@ -97,7 +97,7 @@ export async function composeEpisodeVideoClient(
       return composeEpisodeVideoServer(episodeId, clips, onProgress)
     }
     throw new Error(
-      `各镜编码不一致，无法在浏览器里无损拼接。请用同一模型、比例和清晰度生成后再试。${
+      `各镜编码不一致，无法在浏览器里无损拼接。请用同一模型、比例和ความคมชัด生成后再试。${
         compat.reason ? `（${compat.reason}）` : ''
       }`,
     )

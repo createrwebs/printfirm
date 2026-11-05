@@ -1,4 +1,4 @@
-/** 漫剧视频输出规格（画幅 / 清晰度）：分集 params 优先，可回退 project.params */
+/** ละครซีรีส์วิดีโอ输出规格（画幅 / ความคมชัด）：分集 params 优先，可回退 project.params */
 export const DRAMA_RATIO_OPTIONS = ['9:16', '16:9', '1:1'] as const
 export const DRAMA_RES_OPTIONS = ['480p', '720p', '768p', '1080p'] as const
 
@@ -16,7 +16,7 @@ export function readProjectAspectRatio(
   return '9:16'
 }
 
-// 从 project.params 读取清晰度，非法值回退 480p
+// 从 project.params 读取ความคมชัด，非法值回退 480p
 export function readProjectResolution(
   params: Record<string, unknown> | null | undefined,
 ): DramaResolution {
@@ -40,7 +40,7 @@ export function pickDramaAspectRatio(
   return '9:16'
 }
 
-// 从多层 params 中取第一个合法清晰度
+// 从多层 params 中取第一个合法ความคมชัด
 export function pickDramaResolution(
   ...sources: Array<Record<string, unknown> | null | undefined>
 ): DramaResolution {
@@ -53,7 +53,7 @@ export function pickDramaResolution(
   return '480p'
 }
 
-// 分集画幅：episode.params → project.params → 默认
+// 分集画幅：episode.params → project.params → ค่าเริ่มต้น
 export function readEpisodeAspectRatio(
   episodeParams: Record<string, unknown> | null | undefined,
   projectParams?: Record<string, unknown> | null | undefined,
@@ -61,7 +61,7 @@ export function readEpisodeAspectRatio(
   return pickDramaAspectRatio(episodeParams, projectParams)
 }
 
-// 分集清晰度：episode.params → project.params → 默认
+// 分集ความคมชัด：episode.params → project.params → ค่าเริ่มต้น
 export function readEpisodeResolution(
   episodeParams: Record<string, unknown> | null | undefined,
   projectParams?: Record<string, unknown> | null | undefined,
@@ -69,7 +69,7 @@ export function readEpisodeResolution(
   return pickDramaResolution(episodeParams, projectParams)
 }
 
-// 分镜规格：本镜生成时写入的 params → 分集 → 项目
+// 分镜规格：本镜生成时写入的 params → 分集 → โปรเจกต์
 export function readFragmentVideoDimensions(
   fragmentParams: Record<string, unknown> | null | undefined,
 ): { w: number; h: number } | null {
@@ -86,7 +86,7 @@ export function readFragmentVideoDimensions(
   return null
 }
 
-// 根据像素推断标准画幅；非标准时返回「宽×高」
+// 根据像素推断标准画幅；非标准时กลับ「宽×高」
 export function inferAspectRatioFromPixels(width: number, height: number): string {
   if (width <= 0 || height <= 0) return '9:16'
   const ratio = width / height

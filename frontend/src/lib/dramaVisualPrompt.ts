@@ -1,4 +1,4 @@
-/** 从资产 params 读取/拼装视觉生图提示词（对齐 manju buildCharacterParams + 弱提示检测） */
+/** 从แอสเซท params 读取/拼装视觉生图คำแนะนำ词（对齐 manju buildCharacterParams + 弱คำแนะนำ检测） */
 import type { DramaAsset } from '../api/drama'
 
 const WEAK_PROMPT = /^(character|scene|prop|material|none|image|audio|video)\s+\S+$/i
@@ -6,8 +6,8 @@ const WEAK_PROMPT = /^(character|scene|prop|material|none|image|audio|video)\s+\
 const GENERIC_MARKERS = [
   '影视级写实环境空间',
   '构图层次分明、光影有戏剧张力',
-  '适合短剧横屏拍摄',
-  '影视级写实场景，构图清晰，适合短剧拍摄',
+  '适合ละครสั้น横屏拍摄',
+  '影视级写实ฉาก，构图清晰，适合ละครสั้น拍摄',
   '影视级写实人物',
   '白底全身定妆照',
 ]
@@ -26,7 +26,7 @@ function isGenericTemplate(text: string): boolean {
   return GENERIC_MARKERS.some((m) => text.includes(m))
 }
 
-// 判断提示词是否过短、占位或模板化
+// 判断คำแนะนำ词是否过短、占位或模板化
 function isWeakVisualPrompt(prompt: string, assetName: string, kind: string): boolean {
   const text = prompt.trim()
   /* 含 @asset: 引用的是用户正文，不要当弱占位清掉 */
@@ -61,7 +61,7 @@ function manjuJoinCharacterPrompt(params: Record<string, unknown>): string {
 }
 
 /**
- * 读取资产视觉提示词：完整描述优先，过短/模板化时从角色字段拼装。
+ * 读取แอสเซท视觉คำแนะนำ词：完整描述优先，过短/模板化时从ตัวละคร字段拼装。
  */
 export function readVisualPrompt(asset: DramaAsset): string {
   const params = (asset.params || {}) as Record<string, unknown>
@@ -76,7 +76,7 @@ export function readVisualPrompt(asset: DramaAsset): string {
       : null
   const canvasPrompt =
     canvasGen ? String(canvasGen.prompt || '').trim() : ''
-  /* save_canvas 会把整颗 xyflow 节点写入 params.canvas，提示词在 data.promptHint */
+  /* save_canvas 会把整颗 xyflow 节点写入 params.canvas，คำแนะนำ词在 data.promptHint */
   const canvasNodeData =
     canvasObj && canvasObj.data && typeof canvasObj.data === 'object'
       ? (canvasObj.data as Record<string, unknown>)
@@ -99,7 +99,7 @@ export function readVisualPrompt(asset: DramaAsset): string {
   }
 
   if (kind === 'scene' && name) {
-    return `场景：${name}，影视级写实场景，构图清晰，适合短剧拍摄`
+    return `ฉาก：${name}，影视级写实ฉาก，构图清晰，适合ละครสั้น拍摄`
   }
 
   if (stored) return stored
@@ -107,7 +107,7 @@ export function readVisualPrompt(asset: DramaAsset): string {
 }
 
 /**
- * 画布/编辑用提示词：过滤「character 新角色」等弱占位，避免误填。
+ * 画布/แก้ไข用คำแนะนำ词：过滤「character 新ตัวละคร」等弱占位，避免误填。
  */
 export function readEditableVisualPrompt(asset: DramaAsset): string {
   const kind = (asset.type || '').toLowerCase()
@@ -117,7 +117,7 @@ export function readEditableVisualPrompt(asset: DramaAsset): string {
   return prompt
 }
 
-/** 文本是否为弱视觉提示词（占位/过短/模板） */
+/** 文本是否为弱视觉คำแนะนำ词（占位/过短/模板） */
 export function isWeakEditablePrompt(prompt: string, name = '', kind = ''): boolean {
   return isWeakVisualPrompt(prompt, name, kind)
 }

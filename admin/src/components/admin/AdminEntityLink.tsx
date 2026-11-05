@@ -37,9 +37,9 @@ function defaultLabel(kind: EntityKind, id: number): string {
     case "project":
       return `科普#${id}`;
     case "drama":
-      return `漫剧#${id}`;
+      return `ละครซีรีส์#${id}`;
     case "drama_asset":
-      return `资产#${id}`;
+      return `แอสเซท#${id}`;
     case "task":
       return `任务#${id}`;
     case "order":

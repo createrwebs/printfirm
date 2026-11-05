@@ -1,4 +1,4 @@
-/** 浏览器端探测视频真实宽高（legacy 分镜无 params 时使用） */
+/** 浏览器端探测วิดีโอ真实宽高（legacy 分镜无 params 时使用） */
 export function probeVideoDimensionsFromUrl(
   url: string,
 ): Promise<{ w: number; h: number } | null> {

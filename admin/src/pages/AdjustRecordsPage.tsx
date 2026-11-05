@@ -24,7 +24,7 @@ function directionLabel(deltaFen: number): string {
   return deltaFen >= 0 ? "调增" : "调减";
 }
 
-/** 管理端手动调账记录：仅展示 ref_type=admin 的钱包流水 */
+/** 管理端ด้วยตนเอง调账记录：仅展示 ref_type=admin 的钱包流水 */
 export function AdjustRecordsPage() {
   const [userId, setUserId] = useState<number | null>(null);
   const [direction, setDirection] = useState<DirectionFilter>("");
@@ -48,7 +48,7 @@ export function AdjustRecordsPage() {
         }));
       } catch (err) {
         setData(null);
-        toast.error(err instanceof Error ? err.message : "加载调账记录失败");
+        toast.error(err instanceof Error ? err.message : "加载调账记录ล้มเหลว");
       } finally {
         setLoading(false);
       }
@@ -64,7 +64,7 @@ export function AdjustRecordsPage() {
 
   return (
     <div className="admin-page">
-      <PageHeader title="手动调账" description="用户管理里手动改余额产生的调账流水，含操作人与备注" />
+      <PageHeader title="ปรับยอดเงินด้วยตนเอง" description="จัดการผู้ใช้里ด้วยตนเอง改余额产生的调账流水，含การดำเนินการ人与备注" />
 
       <AdminFilterBar>
         <AdminUserSearchSelect value={userId} onChange={setUserId} />
@@ -93,12 +93,12 @@ export function AdjustRecordsPage() {
             void load(1);
           }}
         >
-          筛选
+          ตัวกรอง
         </Button>
       </AdminFilterBar>
 
       <PageSection
-        title="手动调账记录"
+        title="ด้วยตนเอง调账记录"
         description={data ? `共 ${data.meta.total} 条` : undefined}
         bodyClassName="!pt-0"
       >
@@ -107,12 +107,12 @@ export function AdjustRecordsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>ID</TableHead>
-                <TableHead>时间</TableHead>
-                <TableHead>用户</TableHead>
+                <TableHead>เวลา</TableHead>
+                <TableHead>ผู้ใช้</TableHead>
                 <TableHead>方向</TableHead>
                 <TableHead>变动</TableHead>
                 <TableHead>余额后</TableHead>
-                <TableHead>操作人</TableHead>
+                <TableHead>ผู้ดำเนินการ</TableHead>
                 <TableHead>备注</TableHead>
               </TableRow>
             </TableHeader>
@@ -120,13 +120,13 @@ export function AdjustRecordsPage() {
               {loading ? (
                 <TableRow>
                   <TableCell colSpan={8} className="!text-center text-[var(--admin-muted)]">
-                    加载中…
+                    กำลังโหลด…
                   </TableCell>
                 </TableRow>
               ) : rows.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} className="!text-center text-[var(--admin-muted)]">
-                    暂无手动调账记录
+                    暂无ด้วยตนเอง调账记录
                   </TableCell>
                 </TableRow>
               ) : (

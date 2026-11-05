@@ -2,7 +2,7 @@ import { getImageStyleLabel } from './dramaImageStyles.ts'
 import { normalizeAssetDetailReferences, splitAssetDetailPrompt, type AssetDetailReference } from './assetDetailReferences.ts'
 export { normalizeAssetDetailReferences, splitAssetDetailPrompt, type AssetDetailReference, type AssetDetailPromptPart } from './assetDetailReferences.ts'
 
-/** 统一资产详情数据：成功媒体快照优先，上传素材不混入旧生成参数。 */
+/** 统一รายละเอียดแอสเซท数据：สำเร็จ媒体快照优先，อัปโหลด素材不混入旧生成参数。 */
 export type AssetDetailRecord = {
   id?: number
   name?: string | null
@@ -27,10 +27,10 @@ function display(value: unknown): string {
   return typeof value === 'string' || typeof value === 'number' ? String(value) : ''
 }
 
-/** 成片时长最多保留两位小数，未知或无效值不伪造为零。 */
+/** 成片ความยาว最多保留两位小数，未知或无效值不伪造为零。 */
 export function formatMediaDuration(value: unknown): string {
   const duration = typeof value === 'number' ? value : Number.NaN
-  return Number.isFinite(duration) && duration > 0 ? `${Number(duration.toFixed(2))} 秒` : ''
+  return Number.isFinite(duration) && duration > 0 ? `${Number(duration.toFixed(2))} วินาที` : ''
 }
 
 /** 从当前媒体读取生成参数；新快照存在时绝不回退到旧模型。 */
@@ -42,7 +42,7 @@ export function assetDetailInfo(asset: AssetDetailRecord) {
   const uploaded = (hasSnapshot ? snapshot.source : gen.source) === 'upload'
   const options = hasSnapshot ? object(snapshot.parameters) : { ...params, ...object(params.videoOptions), ...gen }
   const model = uploaded ? '' : display(hasSnapshot ? snapshot.model_id : options.model_id)
-  const source = uploaded ? '上传' : (hasSnapshot ? snapshot.source === 'generated' : Boolean(model)) ? 'AI 生成' : '未记录'
+  const source = uploaded ? 'อัปโหลด' : (hasSnapshot ? snapshot.source === 'generated' : Boolean(model)) ? 'AI 生成' : '未记录'
   const prompt = display(hasSnapshot ? snapshot.prompt : params.visualPrompt || params.visualImage || params.voicePrompt || params.prompt || params.description)
   // An explicit empty frozen list is authoritative; never borrow a later form's references.
   const references = uploaded ? [] : normalizeAssetDetailReferences(
@@ -50,15 +50,15 @@ export function assetDetailInfo(asset: AssetDetailRecord) {
   )
   const labels: Record<string, string> = {
     aspect_ratio: snapshot.parameter_source === 'request' ? '设定画幅' : '比例',
-    resolution: snapshot.parameter_source === 'request' ? '设定分辨率' : '分辨率',
-    size: snapshot.parameter_source === 'request' ? '设定尺寸' : '尺寸', duration_sec: '时长', duration: '时长',
-    requested_duration_sec: '设定时长', video_mode: '生成方式', count: '生成数量', negative: '负向提示词',
+    resolution: snapshot.parameter_source === 'request' ? '设定ความละเอียด' : 'ความละเอียด',
+    size: snapshot.parameter_source === 'request' ? '设定尺寸' : '尺寸', duration_sec: 'ความยาว', duration: 'ความยาว',
+    requested_duration_sec: '设定ความยาว', video_mode: '生成方式', count: '生成数量', negative: '负向คำแนะนำ词',
     strength: '参考强度', motion: '运动幅度',
-    image_style_id: '画面风格', generate_audio: '生成声音', watermark: '水印', camera_fixed: '固定镜头',
-    seed: '随机种子', speaker: '音色', sample_text: '试听文本', sampleText: '试听文本',
+    image_style_id: 'สไตล์ภาพ', generate_audio: '生成声音', watermark: '水印', camera_fixed: 'กล้องนิ่ง (Static)',
+    seed: '随机种子', speaker: 'น้ำเสียง', sample_text: '试听文本', sampleText: '试听文本',
   }
   const parameters = uploaded ? [] : Object.entries(labels).flatMap(([key, label]) => {
-    const modes: Record<string, string> = { text_to_video: '文生视频', first_last_frame: '首尾帧', omni_reference: '全能参考' }
+    const modes: Record<string, string> = { text_to_video: '文生วิดีโอ', first_last_frame: '首尾帧', omni_reference: '全能参考' }
     const raw = options[key]
     const value = key === 'video_mode' ? modes[display(raw)] || ''
       : key === 'image_style_id' ? getImageStyleLabel(display(raw)) || display(raw)

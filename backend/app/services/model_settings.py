@@ -410,7 +410,8 @@ async def _ensure_tokenfree_channel(db: AsyncSession, existing: list[SystemModel
         db.add(token_row)
     current_key = _decrypt_secret(token_row.api_key_ciphertext or "")
     token_row.name = TOKENFREE_CHANNEL_NAME
-    token_row.base_url = TOKENFREE_BASE_URL
+    from app.services.tokenfree_gateway import get_configured_gateway_url
+    token_row.base_url = get_configured_gateway_url()
     token_row.api_format = "openai"
     token_row.protocol = "auto"
     token_row.enabled = True

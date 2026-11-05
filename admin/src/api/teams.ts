@@ -3,16 +3,16 @@ import { api } from "./client";
 /** 团队查询共用的服务端分页参数。 */
 type ListFilters = { page: number; pageSize: number; q: string };
 
-/** 构造分页参数，避免将未填写的筛选传给接口。 */
+/** 构造分页参数，避免将未填写的ตัวกรอง传给接口。 */
 function listParams(filters: ListFilters): URLSearchParams {
   const params = new URLSearchParams({ page: String(filters.page), page_size: String(filters.pageSize) });
   if (filters.q.trim()) params.set("q", filters.q.trim());
   return params;
 }
 
-/** 集中管理团队只读 API 路径，页面只传业务筛选值。 */
+/** 集中管理团队只读 API 路径，页面只传业务ตัวกรอง值。 */
 export const teamPaths = {
-  /** 团队列表搜索与分页。 */
+  /** 团队列表ค้นหา与分页。 */
   list(filters: ListFilters): string {
     return `/api/admin/teams?${listParams(filters)}`;
   },
@@ -20,7 +20,7 @@ export const teamPaths = {
   detail(teamId: number): string {
     return `/api/admin/teams/${teamId}`;
   },
-  /** 成员身份、状态与消费月份筛选。 */
+  /** สมาชิก身份、สถานะ与消费月份ตัวกรอง。 */
   members(teamId: number, filters: ListFilters & { role: string; state: string; period: string }): string {
     const params = listParams(filters);
     params.set("state", filters.state);
@@ -28,7 +28,7 @@ export const teamPaths = {
     if (filters.period) params.set("period", filters.period);
     return `/api/admin/teams/${teamId}/members?${params}`;
   },
-  /** 团队消费记录与筛选合计。 */
+  /** 团队消费记录与ตัวกรอง合计。 */
   usage(teamId: number, filters: ListFilters & { memberId: string; settled: string; dateFrom: string; dateTo: string }): string {
     const params = listParams(filters);
     if (filters.memberId) params.set("user_id", filters.memberId);
@@ -37,7 +37,7 @@ export const teamPaths = {
     if (filters.dateTo) params.set("date_to", filters.dateTo);
     return `/api/admin/teams/${teamId}/usage-events?${params}`;
   },
-  /** 团队钱包流水及后台调账搜索。 */
+  /** 团队钱包流水及后台调账ค้นหา。 */
   walletLedger(teamId: number, filters: ListFilters & { adjustmentsOnly: boolean }): string {
     const params = listParams(filters);
     params.set("adjustments_only", String(filters.adjustmentsOnly));
@@ -45,7 +45,7 @@ export const teamPaths = {
   },
 };
 
-/** 设置团队或有效成员月额度，不更改所有者余额。 */
+/** ตั้งค่า团队或有效สมาชิก月额度，不更改เจ้าของ (Owner)余额。 */
 export function setAdminTeamBudget(teamId: number, monthlyLimitFen: number | null, memberId?: number): Promise<{ monthly_limit_fen: number | null }> {
   const scope = memberId === undefined ? "" : "/members/" + memberId;
   return api("/api/admin/teams/" + teamId + scope + "/budget", { method: "PATCH", body: JSON.stringify({ monthly_limit_fen: monthlyLimitFen }) });

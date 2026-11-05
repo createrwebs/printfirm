@@ -1,4 +1,4 @@
-/** 画布提示词：contentEditable，@asset 显示为带小图的标签 */
+/** 画布คำแนะนำ词：contentEditable，@asset 显示为带小图的แท็ก */
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { resolveDramaMediaUrl } from '../../../../api/drama'
 import {
@@ -32,7 +32,7 @@ type MentionUi = {
 
 const EMPTY_MENTION: MentionUi = { open: false, query: '', activeIndex: 0 }
 
-/** 把选中资产写入正文并渲染小图标签 */
+/** 把选中แอสเซท写入เนื้อหาหลัก并เรนเดอร์小图แท็ก */
 function applyMentionToken(content: string, token: string) {
   const trimmed = content.replace(/\s+$/u, '')
   if (/@(?!(?:asset|duration):\d+)[^\s@]*$/.test(trimmed)) {
@@ -41,7 +41,7 @@ function applyMentionToken(content: string, token: string) {
   return trimmed ? `${trimmed} ${token} ` : `${token} `
 }
 
-/** 可编辑提示词：插入 @ 后渲染资产小图标签 */
+/** 可แก้ไขคำแนะนำ词：插入 @ 后เรนเดอร์แอสเซท小图แท็ก */
 export function CanvasPromptEditor({
   value,
   placeholder,
@@ -74,7 +74,7 @@ export function CanvasPromptEditor({
     [byAssetId],
   )
 
-  /** 把 value 刷到编辑器 DOM */
+  /** 把 value 刷到แก้ไข器 DOM */
   const paint = useCallback(
     (next: string) => {
       const editor = editorRef.current
@@ -92,12 +92,12 @@ export function CanvasPromptEditor({
     paintedRef.current = true
   }, [paint, value])
 
-  /** 关闭 @ 弹层 */
+  /** ปิด @ 弹层 */
   const closeMention = useCallback(() => {
     setMention(EMPTY_MENTION)
   }, [])
 
-  /** 序列化编辑器并回写 */
+  /** 序列化แก้ไข器并回写 */
   const emitContent = useCallback(() => {
     const editor = editorRef.current
     if (!editor) return ''
@@ -107,7 +107,7 @@ export function CanvasPromptEditor({
     return next
   }, [onChange])
 
-  /** 根据光标前正文刷新 @ 弹层 */
+  /** 根据光标前เนื้อหาหลักรีเฟรช @ 弹层 */
   const syncMention = useCallback(() => {
     const editor = editorRef.current
     if (!editor || disabled || !allowMention) {
@@ -126,7 +126,7 @@ export function CanvasPromptEditor({
     })
   }, [allowMention, closeMention, disabled])
 
-  /** 插入资产小图标签（优先替换光标处的 @，避免整段重绘后无法再触发） */
+  /** 插入แอสเซท小图แท็ก（优先替换光标处的 @，避免整段重绘后无法再触发） */
   const insertMention = useCallback(
     (item: CanvasMentionItem) => {
       const editor = editorRef.current
@@ -230,7 +230,7 @@ export function CanvasPromptEditor({
         className={`fc-generate-input fc-generate-editor nodrag nopan nowheel${empty ? ' is-empty' : ''}`}
         role="textbox"
         aria-multiline="true"
-        aria-label="生成提示词"
+        aria-label="生成คำแนะนำ词"
         aria-disabled={disabled}
         contentEditable={!disabled}
         suppressContentEditableWarning

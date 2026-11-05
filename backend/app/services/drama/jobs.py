@@ -243,6 +243,8 @@ async def run_script_summary_job(project_id: int) -> dict[str, Any]:
                 creative,
                 episode_count=int(episode_count) if episode_count else None,
                 image_style_id=str(image_style_id) if image_style_id else None,
+                db=db,
+                user_id=project.user_id,
             )
         except Exception as exc:  # noqa: BLE001
             params = dict(script.params or {})
@@ -510,7 +512,14 @@ async def run_episode_scripts_job(
                         total,
                     )
 
-            existing, outline_used_llm = await ensure_episode_outline(creative, summary, existing, total)
+            existing, outline_used_llm = await ensure_episode_outline(
+                creative,
+                summary,
+                existing,
+                total,
+                db=db,
+                user_id=project.user_id,
+            )
             script.episode_content = {"episodes": existing}
             if project.team_id is not None:
                 bump_episode_versions(script, [int(row.get("episodeNumber") or 0) for row in existing])
@@ -554,6 +563,8 @@ async def run_episode_scripts_job(
                     batch_size=1,
                     total=total,
                     creative=creative,
+                    db=db,
+                    user_id=project.user_id,
                 )
                 existing = merge_episode_bodies(existing, batch)
                 script.episode_content = {"episodes": existing}
@@ -611,7 +622,7 @@ async def run_episode_scripts_job(
                         await kickoff_fragment_plans(
                             project_id,
                             episode_numbers=[ep_no],
-                            reseed_assets=True,
+                            reseed_assets=False,
                         )
                     except Exception:  # noqa: BLE001
                         logger.exception(
@@ -748,6 +759,8 @@ async def _run_single_episode_script_job(
                     project_source=project_source,
                     title=ep_title,
                     character_asset_names=character_asset_names,
+                    db=db,
+                    user_id=project.user_id,
                 )
             elif mode == "body":
                 batch = await run_episode_body_from_brief(
@@ -759,6 +772,8 @@ async def _run_single_episode_script_job(
                     project_source=project_source,
                     title=ep_title,
                     character_asset_names=character_asset_names,
+                    db=db,
+                    user_id=project.user_id,
                 )
             elif mode == "full":
                 if len(ep_summary) < 40 and len(ep_creative) < 20:
@@ -772,6 +787,8 @@ async def _run_single_episode_script_job(
                     title=ep_title,
                     character_asset_names=character_asset_names,
                     summary=ep_summary,
+                    db=db,
+                    user_id=project.user_id,
                 )
             elif mode == "brief":
                 ep_body = str((current or {}).get("body") or (current or {}).get("content") or "").strip()
@@ -785,6 +802,8 @@ async def _run_single_episode_script_job(
                     project_source=project_source,
                     title=ep_title,
                     character_asset_names=character_asset_names,
+                    db=db,
+                    user_id=project.user_id,
                 )
             else:
                 if not draft or len(draft) < 20:
@@ -796,6 +815,8 @@ async def _run_single_episode_script_job(
                     draft,
                     creative=project_source,
                     character_asset_names=character_asset_names,
+                    db=db,
+                    user_id=project.user_id,
                 )
             if origin == "manual":
                 for item in batch:

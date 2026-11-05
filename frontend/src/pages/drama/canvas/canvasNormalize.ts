@@ -15,7 +15,7 @@ const KIND_SET = new Set<CanvasNodeKind>([
   'audio',
 ])
 
-/** 判断是否为合法节点类型 */
+/** 判断是否为合法节点ประเภท */
 function isCanvasNodeKind(value: unknown): value is CanvasNodeKind {
   return typeof value === 'string' && KIND_SET.has(value as CanvasNodeKind)
 }
@@ -61,7 +61,7 @@ export function normalizeCanvasNode(raw: unknown, index: number): Node<CanvasAss
               ? dataRaw.url
               : null,
         textContent: typeof dataRaw.textContent === 'string' ? dataRaw.textContent : undefined,
-        /* 提示词与生成参数必须保留，否则保存后重开会丢 */
+        /* คำแนะนำ词与生成参数必须保留，否则บันทึก后重开会丢 */
         promptHint: typeof dataRaw.promptHint === 'string' ? dataRaw.promptHint : undefined,
         videoOptions:
           dataRaw.videoOptions && typeof dataRaw.videoOptions === 'object'

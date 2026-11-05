@@ -393,6 +393,7 @@ async def refresh_asset_prompts_from_script(
                     None,
                     force_refresh=True,
                     strict_llm=True,
+                    db=db,
                 )
             except Exception as exc:  # noqa: BLE001
                 cause = exc.__cause__ or exc.__context__
@@ -493,16 +494,7 @@ async def seed_assets_from_script(
         if seed_name and seed_name not in excluded_seed_names and seed_name not in character_names:
             character_names.append(seed_name)
 
-    scene_names: list[str] = []
-    for body in bodies:
-        for m in re.finditer(
-            r"^(?:日|夜|晨|黄昏|傍晚|凌晨|清晨|午|晚)?[ \t]*(?:内|外|内外)[ \t]+(.+)$",
-            body,
-            re.M,
-        ):
-            scene = m.group(1).strip().split("／")[0].split("/")[0].strip()
-            if scene and scene not in scene_names:
-                scene_names.append(scene)
+    scene_names = _extract_scene_names_from_bodies(bodies)
 
     if refresh_prompts:
         for scene in scene_names:
@@ -558,7 +550,13 @@ async def seed_assets_from_script(
     if should_extract_props:
         llm_calls_props = 1
         try:
-            extracted = await extract_props_materials(summary=summary, episode_bodies=bodies)
+            extracted = await extract_props_materials(
+                summary=summary,
+                episode_bodies=bodies,
+                source=str(script.source or "") if script else "",
+                db=db,
+                user_id=project.user_id,
+            )
         except Exception:
             if reextract_props:
                 raise
@@ -627,16 +625,54 @@ async def seed_assets_from_script(
     )
 
 
+def _clean_extracted_scene_location(raw: str) -> str:
+    cleaned = (raw or "").strip()
+    if not cleaned:
+        return ""
+    cleaned = re.sub(
+        r"^(?:日|夜|晨|黄昏|傍晚|凌晨|清晨|午|晚|เช้า|สาย|กลางวัน|บ่าย|เย็น|ค่ำ|กลางคืน|Day|Night|Morning|Evening)?[ \t·•/\-]*?(?:ภายในและภายนอก|ภายใน|ภายนอก|ในและนอก|内外|内|外|ใน|นอก|Int\.?|Ext\.?)[ \t·•/\-]+",
+        "",
+        cleaned,
+        flags=re.IGNORECASE,
+    ).strip()
+    scene = re.split(r"[／/｜|]", cleaned)[0].strip()
+    scene = re.sub(
+        r"[ \t]*[\(（](?:日|夜|晨|晚|内|外|เช้า|สาย|กลางวัน|บ่าย|เย็น|ค่ำ|กลางคืน|ภายใน|ภายนอก|ใน|นอก|Day|Night|Int|Ext)[^\)）]*[\)）]\s*$",
+        "",
+        scene,
+        flags=re.IGNORECASE,
+    ).strip()
+    if scene in {"内", "外", "内外", "ใน", "นอก", "ภายใน", "ภายนอก", "กลางวัน", "กลางคืน", "เช้า", "เย็น", "ค่ำ"}:
+        return ""
+    return scene
+
+
 def _extract_scene_names_from_bodies(bodies: list[str]) -> list[str]:
-    """从场头时间内外景行抽取场景名（去重保序）。"""
+    """从场头时间内外景行及内联场头（如 ### ฉาก1-1 สถานที่/เวลา/ใน）抽取场景名（去重保序）。"""
     scene_names: list[str] = []
     for body in bodies:
         for m in re.finditer(
-            r"^(?:日|夜|晨|黄昏|傍晚|凌晨|清晨|午|晚)?[ \t]*(?:内|外|内外)[ \t]+(.+)$",
+            r"^(?:日|夜|晨|黄昏|傍晚|凌晨|清晨|午|晚|เช้า|สาย|กลางวัน|บ่าย|เย็น|ค่ำ|กลางคืน|Day|Night|Morning|Evening)?[ \t]*(?:ภายในและภายนอก|ภายใน|ภายนอก|ในและนอก|内外|内|外|ใน|นอก|Int\.?|Ext\.?)[ \t]+(.+)$",
             body,
-            re.M,
+            re.M | re.IGNORECASE,
         ):
-            scene = m.group(1).strip().split("／")[0].split("/")[0].strip()
+            scene = _clean_extracted_scene_location(m.group(1))
+            if scene and scene not in scene_names:
+                scene_names.append(scene)
+        for m in re.finditer(
+            r"^[ \t]*###[ \t]*(?:场(?:景)?|ฉาก(?:ที่)?|Scene)[ \t]*\d+[ \t]*[-－—][ \t]*\d+[ \t:：｜|\-]+(.+)$",
+            body,
+            re.M | re.IGNORECASE,
+        ):
+            scene = _clean_extracted_scene_location(m.group(1))
+            if scene and scene not in scene_names:
+                scene_names.append(scene)
+        for m in re.finditer(
+            r"^[ \t]*##[ \t]*S\d+[ \t]*\|[ \t]*(?:ภายใน|ภายนอก|ใน|นอก|内|外|INT\.?|EXT\.?)[ \t]*[·•\-][ \t]*([^|\n]+)",
+            body,
+            re.M | re.IGNORECASE,
+        ):
+            scene = _clean_extracted_scene_location(m.group(1))
             if scene and scene not in scene_names:
                 scene_names.append(scene)
     return scene_names
@@ -1439,23 +1475,44 @@ def _character_stub_from_cast(
 ) -> dict[str, Any]:
     """分集出场但摘要未写小传时的角色 stub（供建资产 + 后续 AI 补提示词）。"""
     from app.services.drama.build_fragments import infer_character_intro_text
+    from app.services.drama.language import detect_content_language
 
-    genre = (story_type or "").strip() or "短剧"
-    stub_params = {
-        "name": name,
-        "title": "出场人物",
-        "roleType": "配角",
-        "visualImage": (
-            f"{name}，{genre}人物定妆，可辨识面容与服饰，体态与气质贴合身份，"
-            "影视级写实，白底全身可拍摄"
-        ),
-        "coreTags": "出场人物",
-        "personality": "",
-        "identityBackground": f"剧本分集出场人物「{name}」",
-        "growthExperience": "",
-        "relationships": "",
-        "growthArc": "出场 -> 卷入冲突 -> 结局余韵",
-    }
+    probe = " ".join([name, story_type or "", *(bodies or [])[:1]])
+    is_thai = detect_content_language(probe) == "th"
+    if is_thai:
+        genre = (story_type or "").strip() or "ดราม่า"
+        stub_params = {
+            "name": name,
+            "title": "ตัวละครในฉาก",
+            "roleType": "ตัวละครสมทบ",
+            "visualImage": (
+                f"{name} ตัวละครแนว{genre} ใบหน้าและเครื่องแต่งกายมีเอกลักษณ์ชัดเจน "
+                "บุคลิกและท่าทางสอดคล้องกับบทบาท ภาพตั้งตัวละครสมจริงพื้นหลังสีขาว"
+            ),
+            "coreTags": "ตัวละครในฉาก",
+            "personality": "",
+            "identityBackground": f"ตัวละครที่ปรากฏในบทละคร 「{name}」",
+            "growthExperience": "",
+            "relationships": "",
+            "growthArc": "เปิดตัว -> เข้าสู่ปมความขัดแย้ง -> บทสรุป",
+        }
+    else:
+        genre = (story_type or "").strip() or "短剧"
+        stub_params = {
+            "name": name,
+            "title": "出场人物",
+            "roleType": "配角",
+            "visualImage": (
+                f"{name}，{genre}人物定妆，可辨识面容与服饰，体态与气质贴合身份，"
+                "影视级写实，白底全身可拍摄"
+            ),
+            "coreTags": "出场人物",
+            "personality": "",
+            "identityBackground": f"剧本分集出场人物「{name}」",
+            "growthExperience": "",
+            "relationships": "",
+            "growthArc": "出场 -> 卷入冲突 -> 结局余韵",
+        }
     intro = infer_character_intro_text(name, stub_params, summary, bodies)
     if intro:
         stub_params["title"] = intro

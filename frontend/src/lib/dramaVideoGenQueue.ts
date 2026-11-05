@@ -1,4 +1,4 @@
-/** 漫剧画布资产生视频队列：入队即提交 Seedance Worker，刷新后可从资产状态恢复 */
+/** ละครซีรีส์画布แอสเซท生วิดีโอ队列：入队即ส่ง Seedance Worker，รีเฟรช后可从แอสเซทสถานะ恢复 */
 import { dramaApi, type DramaAsset } from '../api/drama'
 import type { VideoGenerationOptions } from './dramaVideoGenerationOptions'
 import { syncAssetVideoJobToUnified } from './dramaGenQueue'
@@ -90,7 +90,7 @@ function snapshotsEqual(a: DramaVideoGenJob[], b: DramaVideoGenJob[]): boolean {
   return true
 }
 
-// 清理过期完成项
+// 清理过期เสร็จสิ้น项
 function pruneFinished() {
   const now = Date.now()
   jobs = jobs.filter((job) => {
@@ -126,7 +126,7 @@ function emit() {
   }
 }
 
-// 某资产是否正在生视频
+// 某แอสเซท是否正在生วิดีโอ
 export function isDramaAssetVideoBusy(assetId: number): boolean {
   return jobs.some(
     (job) =>
@@ -134,24 +134,24 @@ export function isDramaAssetVideoBusy(assetId: number): boolean {
   )
 }
 
-// 读取资产 generation 状态
+// 读取แอสเซท generation สถานะ
 function readGenerationStatus(asset: DramaAsset): string {
   const gen = (asset.params || {}).generation as { status?: string } | undefined
   return String(gen?.status || '')
 }
 
-// 成片 URL 是否已是视频文件
+// 成片 URL 是否已是วิดีโอ文件
 function isVideoMediaUrl(url: string | null | undefined): boolean {
   return Boolean(url && VIDEO_URL_RE.test(url))
 }
 
-/** 瞬时断连 / 后端热重载导致的 Failed to fetch，轮询时应重试而非判失败 */
+/** 瞬时断连 / 后端热重载导致的 Failed to fetch，轮询时应ลองใหม่而非判ล้มเหลว */
 function isTransientFetchError(err: unknown): boolean {
   const msg = err instanceof Error ? err.message : String(err || '')
-  return /failed to fetch|networkerror|load failed|connection reset|连接被重置|网络/i.test(msg)
+  return /failed to fetch|networkerror|load failed|connection reset|连接被รีเซ็ต|网络/i.test(msg)
 }
 
-// 轮询直到资产生视频结束（必须等到 mp4，不能把旧封面图当完成）
+// 轮询直到แอสเซท生วิดีโอ结束（必须等到 mp4，不能把旧封面图当เสร็จสิ้น）
 async function waitForAssetVideo(projectId: number, assetId: number): Promise<DramaAsset> {
   const started = Date.now()
   let transientStreak = 0
@@ -160,11 +160,11 @@ async function waitForAssetVideo(projectId: number, assetId: number): Promise<Dr
       const list = await dramaApi.listAssets(projectId)
       transientStreak = 0
       const latest = list.find((a) => a.id === assetId)
-      if (!latest) throw new Error('资产不存在')
+      if (!latest) throw new Error('ไม่พบแอสเซท')
       const status = readGenerationStatus(latest)
       if (status === 'failed') {
         const gen = (latest.params || {}).generation as { error?: string } | undefined
-        throw new Error(String(gen?.error || '生视频失败'))
+        throw new Error(String(gen?.error || 'สร้างวิดีโอไม่สำเร็จ'))
       }
       if (status === 'done' && latest.url) {
         return latest
@@ -182,7 +182,7 @@ async function waitForAssetVideo(projectId: number, assetId: number): Promise<Dr
     }
     await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS))
   }
-  throw new Error('生视频超时，请刷新后重试')
+  throw new Error('สร้างวิดีโอเกินเวลาที่กำหนด กรุณารีเฟรชแล้วลองใหม่อีกครั้ง')
 }
 
 // 有限并发轮询后端结果
@@ -195,7 +195,7 @@ async function pollJob(job: InternalJob) {
     emit()
     job.resolve(asset)
   } catch (err) {
-    const message = err instanceof Error ? err.message : '生视频失败'
+    const message = err instanceof Error ? err.message : 'สร้างวิดีโอไม่สำเร็จ'
     job.status = 'failed'
     job.error = message
     job.finishedAt = Date.now()
@@ -224,7 +224,7 @@ function pump() {
   })
 }
 
-// 提交后端后进入轮询
+// ส่ง后端后进入轮询
 function startJob(job: InternalJob) {
   void (async () => {
     try {
@@ -246,7 +246,7 @@ function startJob(job: InternalJob) {
       waitingPoll.push(job)
       pump()
     } catch (err) {
-      const message = err instanceof Error ? err.message : '生视频失败'
+      const message = err instanceof Error ? err.message : 'สร้างวิดีโอไม่สำเร็จ'
       job.status = 'failed'
       job.error = message
       job.finishedAt = Date.now()
@@ -262,8 +262,8 @@ function makeJobId() {
 }
 
 /**
- * 将画布资产生视频加入队列：立刻 POST 到后端 Worker，再本地轮询结果。
- * 同资产已在排队/生成中时复用同一 Promise。
+ * 将画布แอสเซท生วิดีโอ加入队列：立刻 POST 到后端 Worker，再本地轮询结果。
+ * 同แอสเซท已在排队/กำลังสร้าง时复用同一 Promise。
  */
 export function enqueueDramaVideoGen(input: EnqueueInput): Promise<DramaAsset> {
   const existing = jobs.find(
@@ -291,7 +291,7 @@ export function enqueueDramaVideoGen(input: EnqueueInput): Promise<DramaAsset> {
       id: makeJobId(),
       projectId: input.projectId,
       assetId: input.assetId,
-      assetName: (input.assetName || '').trim() || `视频 ${input.assetId}`,
+      assetName: (input.assetName || '').trim() || `วิดีโอ ${input.assetId}`,
       prompt: input.prompt,
       options: input.options || {},
       referenceAssetIds: input.referenceAssetIds || [],
@@ -308,7 +308,7 @@ export function enqueueDramaVideoGen(input: EnqueueInput): Promise<DramaAsset> {
 }
 
 /**
- * 从资产列表恢复「后端仍在 generating」的视频任务。
+ * 从แอสเซท列表恢复「后端仍在 generating」的วิดีโอ任务。
  */
 export function resumeDramaVideoGensFromAssets(
   projectId: number,
@@ -320,7 +320,7 @@ export function resumeDramaVideoGensFromAssets(
     if ((asset.type || '').toLowerCase() !== 'video') continue
     const status = readGenerationStatus(asset)
     if (status !== 'generating' && status !== 'queued') continue
-    // enqueue 会复用在途轮询；重新进入画布也需要接上完成结果。
+    // enqueue 会复用在途轮询；重新进入画布也需要接上เสร็จสิ้น结果。
     void enqueueDramaVideoGen({
       projectId,
       assetId: asset.id,
@@ -328,10 +328,10 @@ export function resumeDramaVideoGensFromAssets(
       prompt: '',
       resumeOnly: true,
     }).then((latest) => {
-      // 旧任务完成后的微任务不能覆盖刚开始的下一次生成。
+      // 旧任务เสร็จสิ้น后的微任务不能覆盖刚开始的下一次生成。
       if (!isDramaAssetVideoBusy(asset.id)) onAssetUpdate?.(latest)
     }).catch(() => {
-      /* 面板会显示失败 */
+      /* 面板会显示ล้มเหลว */
     })
   }
 }

@@ -1,4 +1,4 @@
-/** 漫剧分集左侧目录（大纲 / 分集页 / 分镜页共用） */
+/** ละครซีรีส์分 ตอน左侧目录（โครงร่าง / 分 ตอน页 / 分镜页共用） */
 import type { ReactNode } from 'react'
 import type { DramaEpisode } from '../../api/drama'
 
@@ -18,7 +18,7 @@ type DramaEpisodeDirProps = {
   emptyText?: string
 }
 
-// 从分集列表生成目录项（按集号排序；缺集号不伪装成第 1 集）
+// 从分 ตอน列表生成目录项（按 ตอน号排序；缺 ตอน号不伪装成ตอนที่ 1）
 export function buildEpisodeDirItems(episodes: DramaEpisode[]): DramaEpisodeDirItem[] {
   const sorted = [...episodes].sort((a, b) => {
     const an = Number(a.params?.episodeNumber) || 0
@@ -31,21 +31,21 @@ export function buildEpisodeDirItems(episodes: DramaEpisode[]): DramaEpisodeDirI
     const fragCount = (ep.fragments || []).length
     return {
       id: ep.id,
-      label: epNo >= 1 ? `第 ${epNo} 集` : `未编号 · ${ep.id}`,
-      title: ep.name || `分集 ${ep.id}`,
+      label: epNo >= 1 ? `ตอนที่  ${epNo}  ตอน` : `未编号 · ${ep.id}`,
+      title: ep.name || `分 ตอน ${ep.id}`,
       meta: fragCount > 0 ? `${fragCount} 镜` : undefined,
     }
   })
 }
 
-// 左侧分集目录
+// 左侧分 ตอน目录
 export function DramaEpisodeDir({
-  title = '分集目录',
+  title = '分 ตอน目录',
   items,
   activeId,
   onSelect,
   footer,
-  emptyText = '暂无分集',
+  emptyText = 'ยังไม่มีตอน',
 }: DramaEpisodeDirProps) {
   return (
     <aside className="drama-episode-dir">

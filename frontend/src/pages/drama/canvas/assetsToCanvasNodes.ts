@@ -1,4 +1,4 @@
-/** 将项目资产与已保存画布布局合并为 React Flow 节点/边 */
+/** 将โปรเจกต์แอสเซท与已บันทึก画布布局合并为 React Flow 节点/边 */
 import type { Edge, Node } from '@xyflow/react'
 import { resolveDramaMediaUrl, type DramaAsset } from '../../../api/drama'
 import { readEditableVisualPrompt } from '../../../lib/dramaVisualPrompt'
@@ -12,7 +12,7 @@ import {
 } from './canvasTypes'
 import { normalizeCanvasEdges, normalizeCanvasNodes } from './canvasNormalize'
 
-/** Drama 资产 type → 画布节点 kind */
+/** Drama แอสเซท type → 画布节点 kind */
 export function dramaAssetTypeToKind(type: string | null | undefined): CanvasNodeKind {
   const t = String(type || '').toLowerCase()
   if (t === 'character') return 'character'
@@ -20,16 +20,16 @@ export function dramaAssetTypeToKind(type: string | null | undefined): CanvasNod
   if (t === 'video') return 'video'
   if (t === 'audio') return 'audio'
   if (t === 'text') return 'text'
-  /* prop / material / none / 其他 → 图片卡片 */
+  /* prop / material / none / 其他 → รูปภาพ卡片 */
   return 'image'
 }
 
-/** 根据资产 ID 生成稳定节点 ID */
+/** 根据แอสเซท ID 生成稳定节点 ID */
 export function getCanvasNodeId(assetId: number) {
   return `asset-${assetId}`
 }
 
-/** 从 save_canvas 写入的 params.canvas.data.promptHint 读取（不过滤短提示词） */
+/** 从 save_canvas 写入的 params.canvas.data.promptHint 读取（不过滤短คำแนะนำ词） */
 function readSavedCanvasPromptHint(asset: DramaAsset): string {
   const params = (asset.params || {}) as Record<string, unknown>
   const canvas = params.canvas
@@ -39,7 +39,7 @@ function readSavedCanvasPromptHint(asset: DramaAsset): string {
   return String((data as Record<string, unknown>).promptHint || '').trim()
 }
 
-/** 从资产构建节点 data */
+/** 从แอสเซท构建节点 data */
 export function buildNodeDataFromAsset(asset: DramaAsset): CanvasAssetNodeData {
   const kind = dramaAssetTypeToKind(asset.type)
   const params = (asset.params || {}) as Record<string, unknown>
@@ -86,7 +86,7 @@ type SavedLayoutIndex = {
   edges: Edge[]
 }
 
-/** 索引已保存画布节点（按 assetId） */
+/** 索引已บันทึก画布节点（按 assetId） */
 function indexSavedLayout(rawNodes: unknown, rawEdges: unknown): SavedLayoutIndex {
   const nodes = normalizeCanvasNodes(rawNodes)
   const edges = normalizeCanvasEdges(rawEdges)
@@ -106,9 +106,9 @@ function indexSavedLayout(rawNodes: unknown, rawEdges: unknown): SavedLayoutInde
 }
 
 /**
- * 合并项目资产与已保存布局：
- * - 普通项目：资产列表决定节点；已保存布局提供位置与连线
- * - 自由画布：仅恢复「已保存在画布上」的资产节点，避免删除后刷新又冒出来
+ * 合并โปรเจกต์แอสเซท与已บันทึก布局：
+ * - 普通โปรเจกต์：แอสเซท列表决定节点；已บันทึก布局提供位置与连线
+ * - 自由画布：仅恢复「已บันทึก在画布上」的แอสเซท节点，避免ลบ后รีเฟรช又冒出来
  */
 export function mergeAssetsWithCanvasLayout(
   assets: DramaAsset[],
@@ -123,7 +123,7 @@ export function mergeAssetsWithCanvasLayout(
   const assetById = new Map(assets.map((a) => [a.id, a]))
 
   if (freeCanvas) {
-    /* 自由画布：只渲染布局里仍存在、且资产未删的节点（不按资产列表回补） */
+    /* 自由画布：只เรนเดอร์布局里仍存在、且แอสเซท未删的节点（不按แอสเซท列表回补） */
     for (const [assetId, savedNode] of saved.byAssetId) {
       const asset = assetById.get(assetId)
       if (!asset) continue
@@ -137,7 +137,7 @@ export function mergeAssetsWithCanvasLayout(
           ...savedNode.data,
           ...data,
           label: (savedNode.data.label as string) || data.label,
-          /* 资产弱提示词可能为空，优先保留布局里用户写过的 promptHint */
+          /* แอสเซท弱คำแนะนำ词可能为空，优先保留布局里用户写过的 promptHint */
           promptHint: data.promptHint || savedNode.data.promptHint || '',
           videoOptions: data.videoOptions || savedNode.data.videoOptions,
           imageOptions: data.imageOptions || savedNode.data.imageOptions,
@@ -192,7 +192,7 @@ export function mergeAssetsWithCanvasLayout(
       }
     }
 
-    /* 无 assetId 的旧自由节点仍保留，排在资产行下方 */
+    /* 无 assetId 的旧自由节点仍保留，排在แอสเซท行下方 */
     for (const orphan of saved.orphanNodes) {
       nodes.push({
         ...orphan,
@@ -203,7 +203,7 @@ export function mergeAssetsWithCanvasLayout(
       })
     }
 
-    /* 首次进入（无任何已保存位置）时整行横向排布 */
+    /* 首次เข้าสู่（无任何已บันทึก位置）时整行横向排布 */
     if (saved.byAssetId.size === 0 && assets.length > 0) {
       let i = 0
       for (const node of nodes) {
@@ -215,7 +215,7 @@ export function mergeAssetsWithCanvasLayout(
     }
   }
 
-  /* 过滤掉指向已删除资产的边 */
+  /* 过滤掉指向已ลบแอสเซท的边 */
   const nodeIds = new Set(nodes.map((n) => n.id))
   const edges = saved.edges.filter((e) => nodeIds.has(e.source) && nodeIds.has(e.target))
 

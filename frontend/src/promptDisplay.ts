@@ -1,7 +1,7 @@
 /** Strip internal Seedream lock wrappers from prompts shown in UI. */
 export function scenePromptForDisplay(raw: string | null | undefined): string {
   if (!raw) return ''
-  const scene = raw.match(/【场景】\s*([\s\S]+?)(?=\n【|$)/)
+  const scene = raw.match(/【ฉาก】\s*([\s\S]+?)(?=\n【|$)/)
   if (scene?.[1]) {
     return scene[1].replace(/^[，,。\s]+|[，,。\s]+$/g, '').trim()
   }
@@ -21,12 +21,12 @@ export function scenePromptForDisplay(raw: string | null | undefined): string {
     .filter((p) => {
       if (!p) return false
       if (/^【(?:风格锁定|人物锁定|约束)】/.test(p)) return false
-      if (p.startsWith('人物设定') || p.startsWith('角色设定')) return false
+      if (p.startsWith('การตั้งค่าตัวละคร') || p.startsWith('การตั้งค่าบทบาทตัวละคร')) return false
       if (boilerplate.some((b) => p.includes(b) || p.startsWith(b))) return false
       return true
     })
     .join('，')
-    .replace(/【(?:风格锁定|人物锁定|约束|场景)】/g, '')
+    .replace(/【(?:风格锁定|人物锁定|约束|ฉาก)】/g, '')
     .replace(/[，,]{2,}/g, '，')
     .replace(/^[，,。；;\s]+|[，,。；;\s]+$/g, '')
     .trim()

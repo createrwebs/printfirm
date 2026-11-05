@@ -19,6 +19,7 @@ import { api, type AdminOrder, type AdminStats, type PageMeta } from "@/api/clie
 import { AdminEntityLink } from "@/components/admin/AdminEntityLink";
 import { fenToYuan } from "@/lib/utils";
 import { projectStatusLabel, taskDomainLabel } from "@/lib/statusLabels";
+import { useI18n } from "@/i18n";
 import {
   buildStatsQuery,
   dashboardRangeLabel,
@@ -40,15 +41,6 @@ import { UsageTrendChart } from "@/pages/dashboard/UsageTrendChart";
 
 type OrderRes = { items: AdminOrder[]; meta: PageMeta };
 
-const CAPABILITY_LABELS: Record<string, string> = {
-  llm: "LLM 文本",
-  image: "生图",
-  video: "视频",
-  tts: "配音",
-  unknown: "其他",
-  other: "其他",
-};
-
 function statusClass(status: string): string {
   if (status === "DONE") return "is-done";
   if (status === "FAILED" || status === "REJECTED" || status === "CANCELLED") return "is-fail";
@@ -58,22 +50,28 @@ function statusClass(status: string): string {
   return "is-warn";
 }
 
-function capabilityLabel(key: string): string {
-  return CAPABILITY_LABELS[key] ?? key;
-}
-
-function domainChartLabel(key: string): string {
-  if (key === "kepu") return "AI短视频";
-  return taskDomainLabel(key);
-}
-
-/** 管理端仪表盘：板块切换 + 渐变 KPI + 可筛选用量图表 */
+/** 管理端แดชบอร์ด：板块切换 + 渐变 KPI + 可ตัวกรอง用量图表 */
 export function DashboardPage() {
+  const { t, locale } = useI18n();
   const [section, setSection] = useState<DashboardSection>("overview");
   const [filters, setFilters] = useState<DashboardFilterState>(DEFAULT_DASHBOARD_FILTERS);
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const capabilityLabel = useCallback((key: string): string => {
+    const labels: Record<string, Record<string, string>> = {
+      th: { llm: "LLM ข้อความ", image: "สร้างภาพ", video: "สร้างวิดีโอ", tts: "เสียงพากย์", unknown: "อื่นๆ", other: "อื่นๆ" },
+      en: { llm: "LLM Text", image: "Image Gen", video: "Video Gen", tts: "Voice/TTS", unknown: "Other", other: "Other" },
+      zh: { llm: "LLM 文本", image: "生图", video: "วิดีโอ", tts: "เสียงพากย์", unknown: "其他", other: "其他" },
+    };
+    return labels[locale]?.[key] ?? labels.th[key] ?? key;
+  }, [locale]);
+
+  const domainChartLabel = useCallback((key: string): string => {
+    if (key === "kepu") return locale === "th" ? "วิดีโอสั้น AI" : locale === "en" ? "AI Short Video" : "AIวิดีโอสั้น";
+    return taskDomainLabel(key);
+  }, [locale]);
 
   const loadData = useCallback(async (nextFilters: DashboardFilterState) => {
     setLoading(true);
@@ -85,11 +83,11 @@ export function DashboardPage() {
       setStats(s);
       setOrders(o.items);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "加载失败");
+      toast.error(err instanceof Error ? err.message : t("dashboard.loadFail"));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   const kpiReady = Boolean(stats);
   const kpiPlaceholder = loading ? "…" : "—";
@@ -110,38 +108,48 @@ export function DashboardPage() {
   const domainInsights = buildDomainInsights(byDomain, filters.metric, domainChartLabel);
   const financeInsights = buildFinanceInsights(stats);
   const projectInsights = buildProjectInsights(stats, sumDailyUsage(daily));
-  const metricHint = filters.metric === "calls" ? "调用次数" : "扣费金额";
+  const metricHint = filters.metric === "calls"
+    ? (locale === "th" ? "จำนวนครั้งที่เรียก" : locale === "en" ? "Call Count" : "调用次数")
+    : (locale === "th" ? "ยอดเงินที่หัก" : locale === "en" ? "Charged Amount" : "扣费金额");
 
   return (
     <div className="admin-page admin-dashboard-page">
-      <PageHeader title="运营概览" description="用户、充值、AI 调用与费用概览" />
+      <PageHeader title={t("dashboard.headerTitle")} description={t("dashboard.headerDesc")} />
 
       <div className="admin-dashboard-kpi-grid">
         <DashboardKpiCard
-          label="用户总数"
+          label={t("dashboard.totalUsers")}
           value={kpiReady ? stats!.user_count : kpiPlaceholder}
-          hint="总注册用户"
+          hint={t("dashboard.registeredUsers")}
           icon={Users}
           tone="teal"
         />
         <DashboardKpiCard
-          label="累计已付"
+          label={t("dashboard.totalPaid")}
           value={kpiReady ? `¥${fenToYuan(stats!.order_paid_total_fen)}` : kpiPlaceholder}
-          hint="历史充值"
+          hint={t("dashboard.historicalTopups")}
           icon={Banknote}
           tone="blue"
         />
         <DashboardKpiCard
-          label="本月 AI 扣费"
+          label={t("dashboard.monthlyAiCharge")}
           value={kpiReady ? `¥${fenToYuan(stats!.usage_charge_month_fen ?? 0)}` : kpiPlaceholder}
-          hint={kpiReady ? `今日 ¥${fenToYuan(stats!.usage_charge_today_fen ?? 0)}` : "今日扣费"}
+          hint={
+            kpiReady
+              ? t("dashboard.todayCharge", { amount: `¥${fenToYuan(stats!.usage_charge_today_fen ?? 0)}` })
+              : locale === "th" ? "ยอดหักวันนี้" : locale === "en" ? "Today's charge" : "今日扣费"
+          }
           icon={Zap}
           tone="purple"
         />
         <DashboardKpiCard
-          label="本月调用"
+          label={t("dashboard.monthlyCalls")}
           value={kpiReady ? (stats!.usage_calls_month ?? 0).toLocaleString() : kpiPlaceholder}
-          hint={kpiReady ? `今日 ${(stats!.usage_calls_today ?? 0).toLocaleString()} 次` : "调用次数"}
+          hint={
+            kpiReady
+              ? t("dashboard.todayCalls", { count: (stats!.usage_calls_today ?? 0).toLocaleString() })
+              : locale === "th" ? "จำนวนเรียกวันนี้" : locale === "en" ? "Today's calls" : "调用次数"
+          }
           icon={Activity}
           tone="sand"
         />
@@ -156,8 +164,8 @@ export function DashboardPage() {
         <>
           <div className="admin-dashboard-charts">
             <PageSection
-              title={`${rangeLabel}用量趋势`}
-              description={loading ? "加载中…" : "按筛选条件聚合的日趋势"}
+              title={t("dashboard.trend.title", { range: rangeLabel })}
+              description={loading ? t("common.loading") : t("dashboard.trend.desc")}
               bodyClassName="!pt-2"
               className="admin-dashboard-chart-main admin-dashboard-glass min-h-0"
             >
@@ -165,7 +173,7 @@ export function DashboardPage() {
             </PageSection>
 
             <PageSection
-              title="能力分布"
+              title={t("dashboard.distribution.capabilityTitle")}
               description={`${rangeLabel} · ${metricHint}`}
               bodyClassName="!pt-2"
               className="admin-dashboard-chart-side admin-dashboard-glass min-h-0"
@@ -180,10 +188,10 @@ export function DashboardPage() {
           </div>
 
           <PageSection
-            title={`用户消费 TOP3（${rangeLabel}）`}
+            title={t("dashboard.topUsers.title", { range: rangeLabel })}
             actions={
               <Link to="/orders?tab=usage" className="admin-link">
-                更多 →
+                {t("dashboard.topUsers.more")}
               </Link>
             }
             bodyClassName="!pt-2"
@@ -194,7 +202,7 @@ export function DashboardPage() {
 
           <div className="admin-dashboard-charts">
             <PageSection
-              title="领域分布"
+              title={t("dashboard.distribution.domainTitle")}
               description={`${rangeLabel} · ${metricHint}`}
               bodyClassName="!pt-2"
               className="admin-dashboard-chart-main admin-dashboard-glass min-h-0"
@@ -207,7 +215,7 @@ export function DashboardPage() {
               />
             </PageSection>
             <PageSection
-              title="领域洞察"
+              title={t("dashboard.domainInsights.title")}
               description={`${rangeLabel} · ${metricHint}`}
               bodyClassName="!pt-2"
               className="admin-dashboard-chart-side admin-dashboard-glass min-h-0"
@@ -222,8 +230,8 @@ export function DashboardPage() {
         <>
           <div className="admin-dashboard-charts">
             <PageSection
-              title={`${rangeLabel}用量趋势`}
-              description={loading ? "加载中…" : "扣费 / 调用按日聚合"}
+              title={t("dashboard.trend.title", { range: rangeLabel })}
+              description={loading ? t("common.loading") : locale === "th" ? "ยอดหัก / จำนวนเรียกรายวัน" : "Charges / calls aggregated daily"}
               bodyClassName="!pt-2"
               className="admin-dashboard-chart-main admin-dashboard-glass min-h-0"
             >
@@ -231,7 +239,7 @@ export function DashboardPage() {
             </PageSection>
 
             <PageSection
-              title="能力分布"
+              title={t("dashboard.distribution.capabilityTitle")}
               description={`${rangeLabel} · ${metricHint}`}
               bodyClassName="!pt-2"
               className="admin-dashboard-chart-side admin-dashboard-glass min-h-0"
@@ -247,7 +255,7 @@ export function DashboardPage() {
 
           <div className="admin-dashboard-charts">
             <PageSection
-              title="领域分布"
+              title={t("dashboard.distribution.domainTitle")}
               description={`${rangeLabel} · ${metricHint}`}
               bodyClassName="!pt-2"
               className="admin-dashboard-chart-main admin-dashboard-glass min-h-0"
@@ -260,10 +268,10 @@ export function DashboardPage() {
               />
             </PageSection>
             <PageSection
-              title={`用户消费排行（${rangeLabel}）`}
+              title={t("dashboard.topUsers.title", { range: rangeLabel })}
               actions={
                 <Link to="/orders?tab=usage" className="admin-link">
-                  用量明细 →
+                  {locale === "th" ? "รายละเอียดการใช้งาน →" : "Usage details →"}
                 </Link>
               }
               description={metricHint}
@@ -279,11 +287,11 @@ export function DashboardPage() {
       {section === "finance" ? (
         <div className="admin-dashboard-body admin-dashboard-body--finance">
           <PageSection
-            title="财务概览"
-            description="充值与用户扣费"
+            title={locale === "th" ? "ภาพรวมการเงิน" : "Finance Overview"}
+            description={locale === "th" ? "การเติมเงินและยอดหักของผู้ใช้" : "Top-up & User Deductions"}
             actions={
               <Link to="/finance" className="admin-link">
-                财务列表 →
+                {locale === "th" ? "บัญชีการเงิน →" : "Finance List →"}
               </Link>
             }
             bodyClassName="!pt-2"
@@ -293,11 +301,11 @@ export function DashboardPage() {
           </PageSection>
 
           <PageSection
-            title="最近订单"
-            description="仅展示支付成功"
+            title={locale === "th" ? "คำสั่งซื้อล่าสุด" : "Recent Orders"}
+            description={locale === "th" ? "เฉพาะรายการที่ชำระเงินสำเร็จ" : "Paid orders only"}
             actions={
               <Link to="/orders" className="admin-link">
-                全部 →
+                {locale === "th" ? "ดูทั้งหมด →" : "All →"}
               </Link>
             }
             bodyClassName="!pt-0"
@@ -307,16 +315,16 @@ export function DashboardPage() {
               <table>
                 <thead>
                   <tr>
-                    <th>用户名</th>
-                    <th>金额</th>
-                    <th>支付时间</th>
+                    <th>{locale === "th" ? "ผู้ใช้" : "User"}</th>
+                    <th>{locale === "th" ? "ยอดเงิน" : "Amount"}</th>
+                    <th>{locale === "th" ? "เวลาชำระ" : "Paid At"}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {orders.length === 0 ? (
                     <tr>
                       <td colSpan={3} className="!text-center text-[var(--admin-muted)]">
-                        暂无已支付订单
+                        {locale === "th" ? "ยังไม่มีคำสั่งซื้อที่ชำระแล้ว" : "No paid orders yet"}
                       </td>
                     </tr>
                   ) : (
@@ -342,8 +350,8 @@ export function DashboardPage() {
       {section === "projects" ? (
         <>
           <PageSection
-            title="运维概览"
-            description="项目规模、调用与状态分布"
+            title={locale === "th" ? "ภาพรวมการดำเนินงาน" : "Operations Overview"}
+            description={locale === "th" ? "ขนาดโปรเจกต์ การเรียกใช้ และการกระจายสถานะ" : "Scale, calls & status"}
             bodyClassName="!pt-2"
             className="admin-dashboard-glass min-h-0"
           >
@@ -352,14 +360,14 @@ export function DashboardPage() {
 
           <div className="admin-dashboard-project-row">
             <PageSection
-              title="AI短视频项目状态"
-              description={`漫剧项目 ${stats?.drama_project_count ?? 0} 部`}
+              title={locale === "th" ? "สถานะโปรเจกต์วิดีโอ AI" : "AI Video Project Status"}
+              description={locale === "th" ? `โปรเจกต์ละครสั้น ${stats?.drama_project_count ?? 0} เรื่อง` : `Drama projects: ${stats?.drama_project_count ?? 0}`}
               bodyClassName="!pt-2"
               className="admin-dashboard-glass min-h-0"
             >
               <div className="flex flex-wrap gap-1.5">
                 {statusEntries.length === 0 ? (
-                  <span className="text-xs text-[var(--admin-muted)]">暂无数据</span>
+                  <span className="text-xs text-[var(--admin-muted)]">{t("common.error")}</span>
                 ) : (
                   statusEntries.map(([status, count]) => (
                     <span key={status} className={`admin-status-pill !px-2.5 !py-1 !text-[11px] ${statusClass(status)}`}>
@@ -370,22 +378,22 @@ export function DashboardPage() {
               </div>
             </PageSection>
 
-            <PageSection title="调用统计" bodyClassName="!pt-2" className="admin-dashboard-glass min-h-0">
+            <PageSection title={locale === "th" ? "สถิติการเรียกใช้" : "Call Statistics"} bodyClassName="!pt-2" className="admin-dashboard-glass min-h-0">
               <div className="admin-dashboard-stat-grid">
                 <div>
-                  <div className="admin-dashboard-stat-grid-label">今日调用</div>
+                  <div className="admin-dashboard-stat-grid-label">{locale === "th" ? "เรียกใช้วันนี้" : "Today"}</div>
                   <div className="admin-dashboard-stat-grid-value">
                     {kpiReady ? stats!.usage_calls_today ?? 0 : kpiPlaceholder}
                   </div>
                 </div>
                 <div>
-                  <div className="admin-dashboard-stat-grid-label">本月调用</div>
+                  <div className="admin-dashboard-stat-grid-label">{locale === "th" ? "เรียกใช้เดือนนี้" : "This Month"}</div>
                   <div className="admin-dashboard-stat-grid-value">
                     {kpiReady ? stats!.usage_calls_month ?? 0 : kpiPlaceholder}
                   </div>
                 </div>
                 <div>
-                  <div className="admin-dashboard-stat-grid-label">累计调用</div>
+                  <div className="admin-dashboard-stat-grid-label">{locale === "th" ? "เรียกใช้สะสม" : "All Time"}</div>
                   <div className="admin-dashboard-stat-grid-value">
                     {kpiReady ? stats!.usage_calls_total ?? 0 : kpiPlaceholder}
                   </div>
@@ -394,7 +402,7 @@ export function DashboardPage() {
             </PageSection>
           </div>
 
-          <PageSection title={`领域分布（${projectsRangeLabel}）`} bodyClassName="!pt-2" className="admin-dashboard-glass min-h-0">
+          <PageSection title={`${t("dashboard.distribution.domainTitle")} (${projectsRangeLabel})`} bodyClassName="!pt-2" className="admin-dashboard-glass min-h-0">
             <UsageDistributionChart
               data={byDomain}
               metric="charge"
@@ -403,39 +411,39 @@ export function DashboardPage() {
             />
           </PageSection>
 
-          <PageSection title="快捷入口" bodyClassName="!pt-2" className="admin-dashboard-glass">
+          <PageSection title={locale === "th" ? "ทางลัดด่วน" : "Quick Access"} bodyClassName="!pt-2" className="admin-dashboard-glass">
             <div className="admin-dashboard-tools">
               <Link to="/templates" className="admin-dashboard-tool-btn">
                 <Shapes className="h-5 w-5" />
-                <span>模板管理</span>
+                <span>{t("nav.templates")}</span>
               </Link>
               <Link to="/orders?tab=usage" className="admin-dashboard-tool-btn">
                 <Receipt className="h-5 w-5" />
-                <span>订单用量</span>
+                <span>{locale === "th" ? "ประวัติการใช้" : "Usage"}</span>
               </Link>
               <Link to="/users" className="admin-dashboard-tool-btn">
                 <Users className="h-5 w-5" />
-                <span>用户管理</span>
+                <span>{t("nav.users")}</span>
               </Link>
               <Link to="/projects" className="admin-dashboard-tool-btn">
                 <Clapperboard className="h-5 w-5" />
-                <span>AI短视频</span>
+                <span>{locale === "th" ? "วิดีโอสั้น AI" : "AI Video"}</span>
               </Link>
               <Link to="/drama-projects" className="admin-dashboard-tool-btn">
                 <Film className="h-5 w-5" />
-                <span>漫剧项目</span>
+                <span>{t("nav.dramaProjects")}</span>
               </Link>
               <Link to="/queues" className="admin-dashboard-tool-btn">
                 <Layers className="h-5 w-5" />
-                <span>任务队列</span>
+                <span>{t("nav.queues")}</span>
               </Link>
               <Link to="/settings" className="admin-dashboard-tool-btn">
                 <Settings className="h-5 w-5" />
-                <span>系统配置</span>
+                <span>{t("nav.settings")}</span>
               </Link>
               <Link to="/orders" className="admin-dashboard-tool-btn">
                 <Activity className="h-5 w-5" />
-                <span>财务流水</span>
+                <span>{t("nav.orders")}</span>
               </Link>
             </div>
           </PageSection>

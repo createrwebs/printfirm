@@ -1,4 +1,4 @@
-/** Drama project workflow steps: 剧情大纲 → 分镜 → 生成视频 */
+/** Drama project workflow steps: โครงเรื่องหลัก → 分镜 → สร้างวิดีโอ */
 
 export type ProjectStepKey = 'outline' | 'storyboard' | 'video'
 export type WorkspaceViewKey = ProjectStepKey | 'assets' | 'episodes'
@@ -18,13 +18,13 @@ export type WorkspaceLocationState = {
 export function buildProjectSteps(hasScript: boolean): ProjectStepItem[] {
   const steps: Array<{ key: ProjectStepKey; label: string }> = hasScript
     ? [
-        { key: 'outline', label: '剧情大纲' },
+        { key: 'outline', label: 'โครงเรื่องหลัก' },
         { key: 'storyboard', label: '分镜' },
-        { key: 'video', label: '生成视频' },
+        { key: 'video', label: 'สร้างวิดีโอ' },
       ]
     : [
         { key: 'storyboard', label: '分镜' },
-        { key: 'video', label: '生成视频' },
+        { key: 'video', label: 'สร้างวิดีโอ' },
       ]
   return steps.map((step, index) => ({ ...step, order: index + 1 }))
 }
@@ -56,7 +56,7 @@ export function getNextProjectStep(
   return steps[currentIndex + 1].key
 }
 
-/** 分镜 / 生成视频都进分集路由 */
+/** 分镜 / สร้างวิดีโอ都进分集路由 */
 export function isEpisodesRouteStep(step: ProjectStepKey | string | undefined): boolean {
   return step === 'storyboard' || step === 'video' || step === 'episodes'
 }

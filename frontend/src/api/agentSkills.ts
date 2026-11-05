@@ -1,10 +1,10 @@
-/** Agent Skill API：列表 / 上传 / 启用 / 删除 */
+/** Agent Skill API：列表 / อัปโหลด / 启用 / ลบ */
 
 import { createJsonRequester, uploadFile } from './client'
 
-/** Skill API 保留本模块的错误文案，避免依赖漫剧客户端。 */
+/** Skill API 保留本模块的错误文案，避免依赖ละครซีรีส์客户端。 */
 const request = createJsonRequester((_response, detail) => {
-  throw new Error(typeof detail === 'string' ? detail : '请求失败')
+  throw new Error(typeof detail === 'string' ? detail : '请求ล้มเหลว')
 })
 
 export type AgentSkill = {
@@ -26,7 +26,7 @@ export function listAgentSkills() {
   return request<{ items: AgentSkill[] }>('/api/drama/skills')
 }
 
-/** 上传 markdown 文本 */
+/** อัปโหลด markdown 文本 */
 export function uploadAgentSkillMarkdown(markdown: string) {
   return request<AgentSkill>('/api/drama/skills', {
     method: 'POST',
@@ -34,10 +34,10 @@ export function uploadAgentSkillMarkdown(markdown: string) {
   })
 }
 
-/** 上传 .md 文件 */
+/** อัปโหลด .md 文件 */
 export function uploadAgentSkillFile(file: File) {
   return uploadFile<AgentSkill>('/api/drama/skills/upload', file, (_response, detail) => {
-    throw new Error(typeof detail === 'string' ? detail : '上传失败')
+    throw new Error(typeof detail === 'string' ? detail : 'อัปโหลดไม่สำเร็จ')
   })
 }
 
@@ -49,12 +49,12 @@ export function patchAgentSkill(skillId: number, body: { markdown?: string; is_a
   })
 }
 
-/** 删除用户 Skill（内置不可删） */
+/** ลบ用户 Skill（内置不可删） */
 export function deleteAgentSkill(skillId: number) {
   return request<{ ok: boolean }>(`/api/drama/skills/${skillId}`, { method: 'DELETE' })
 }
 
-/** 描述优化：按勾选 Skill 改写提示词（保留 @asset 与台词） */
+/** 描述优化：按勾选 Skill 改写คำแนะนำ词（保留 @asset 与台词） */
 export function optimizePromptWithSkills(body: {
   project_id?: number
   prompt: string

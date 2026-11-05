@@ -7,6 +7,12 @@ import type { PaymentCurrency, StripePaymentQuote } from './lib/billingPayments'
 /** 科普、账号和计费 API 共用 JSON 传输层。 */
 const request = createJsonRequester()
 
+export type AuthProviders = {
+  google: { enabled: boolean; label: string }
+  chatgpt: { enabled: boolean; label: string; reason?: string }
+  local_token_debug: boolean
+}
+
 export type PipelineMode = 'full' | 'image_text'
 
 export type Template = {
@@ -36,7 +42,7 @@ export type Template = {
   }
 }
 
-/** 模板音色别名 → 预设 speaker id */
+/** 模板น้ำเสียง别名 → 预设 speaker id */
 export const VOICE_PRESET_ALIASES: Record<string, string> = {
   narrator_calm: 'zh_female_cancan_uranus_bigtts',
   warm_storyteller: 'zh_female_tianmeixiaoyuan_uranus_bigtts',
@@ -94,7 +100,7 @@ export type VoicePreset = {
   speaker: string
 }
 
-/** 项目 voice_id / 模板别名 → 与音色列表一致的 speaker id */
+/** โปรเจกต์ voice_id / 模板别名 → 与น้ำเสียง列表一致的 speaker id */
 export function resolveVoiceId(raw: string, voices: VoicePreset[]): string {
   const id = (raw || '').trim()
   if (!id) {
@@ -171,17 +177,17 @@ export type MediaModelOption = {
   available_resolutions?: string[]
   reference_limits?: { images: number; audios: number; videos: number }
   defaults?: { resolution: string; aspect_ratio: string; duration?: number; count: number }
-  /** 该模型允许的清晰度 */
+  /** 该模型允许的ความคมชัด */
   allowed_resolutions?: string[]
   /** 该模型允许的画幅比例 */
   allowed_aspect_ratios?: string[]
-  /** 视频时长下限（秒） */
+  /** วิดีโอความยาว下限（วินาที） */
   duration_min?: number
-  /** 视频时长上限（秒） */
+  /** วิดีโอความยาว上限（วินาที） */
   duration_max?: number
-  /** 选用提示（贵慢/清晰度等，不展示具体价） */
+  /** 选用คำแนะนำ（贵慢/ความคมชัด等，不展示具体价） */
   pricing_hint?: string
-  /** 大致出片 / 生成耗时提示 */
+  /** 大致出片 / 生成เวลาที่ใช้คำแนะนำ */
   eta_hint?: string
 }
 
@@ -304,6 +310,20 @@ export type Work = {
 }
 
 export const api = {
+  authProviders() {
+    return request<AuthProviders>('/api/auth/providers')
+  },
+  googleLoginUrl(next = '/') {
+    return `${API_BASE}/api/auth/google/start?next=${encodeURIComponent(next)}`
+  },
+  devToken() {
+    return request<{
+      access_token: string
+      token_type: string
+      expires_in: number
+      local_only: boolean
+    }>('/api/auth/dev-token')
+  },
   assetUrl(path: string | null | undefined, cacheBust?: string | number) {
     if (!path) return ''
     if (path.startsWith('http')) return path
@@ -350,10 +370,10 @@ export const api = {
       body: JSON.stringify(body),
     })
   },
-  /** 上传用户头像并返回更新后的用户资料。 */
+  /** อัปโหลด用户头像并กลับ更新后的用户资料。 */
   uploadAvatar(file: File) {
     return uploadFile<User>('/api/auth/avatar', file, (response, detail) => {
-      throw new Error(apiErrorMessage(detail, response.statusText) || '头像上传失败')
+      throw new Error(apiErrorMessage(detail, response.statusText) || '头像อัปโหลดไม่สำเร็จ')
     })
   },
   templates() {
@@ -414,10 +434,10 @@ export const api = {
   mediaModels() {
     return request<MediaModelsCatalog>('/api/media-models')
   },
-  /** 上传科普项目封面并返回项目。 */
+  /** อัปโหลด科普โปรเจกต์封面并กลับโปรเจกต์。 */
   uploadCover(id: number, file: File) {
     return uploadFile<Project>(`/api/projects/${id}/cover`, file, (response, detail) => {
-      throw new Error(apiErrorMessage(detail, response.statusText) || '封面上传失败')
+      throw new Error(apiErrorMessage(detail, response.statusText) || '封面อัปโหลดไม่สำเร็จ')
     })
   },
   voices() {
@@ -464,13 +484,13 @@ export const api = {
       stats: { total: number; generating: number; done: number; published: number }
     }>(`/api/projects${qs ? `?${qs}` : ''}`)
   },
-  /** 打包下载选中项目的视频，保留服务端文件名。 */
+  /** 打包ดาวน์โหลด选中โปรเจกต์的วิดีโอ，保留服务端文件名。 */
   async downloadZip(ids: number[]) {
     const res = await requestResponse('/api/projects/download-zip', {
       method: 'POST',
       body: JSON.stringify({ ids }),
     }, (response, detail) => {
-      throw new Error(apiErrorMessage(detail, response.statusText) || '打包下载失败')
+      throw new Error(apiErrorMessage(detail, response.statusText) || '打包ดาวน์โหลดล้มเหลว')
     })
     const blob = await res.blob()
     const cd = res.headers.get('Content-Disposition') || ''
@@ -506,10 +526,10 @@ export const api = {
       body: JSON.stringify({ shot_ids: shotIds }),
     })
   },
-  /** 上传分镜图片，保留当前项目响应结构。 */
+  /** อัปโหลด分镜รูปภาพ，保留当前โปรเจกต์响应结构。 */
   uploadShotImage(projectId: number, shotId: number, file: File) {
     return uploadFile<Project>(`/api/projects/${projectId}/shots/${shotId}/image`, file, (_response, detail) => {
-      throw new Error(typeof detail === 'string' ? detail : '画面上传失败')
+      throw new Error(typeof detail === 'string' ? detail : '画面อัปโหลดไม่สำเร็จ')
     })
   },
   regenImage(projectId: number, shotId: number) {
@@ -548,10 +568,11 @@ export const api = {
   wallet() {
     return request<Wallet>('/api/billing/wallet')
   },
-  billingSkus(language: 'zh' | 'en' = 'zh') {
-    return request<{ skus: BillingSku[]; pay_types: string[]; markup: number; stripe_unavailable_reason?: string | null }>(`/api/billing/skus?language=${language}`)
+  billingSkus(language?: string) {
+    const lang = language === 'zh' ? 'zh' : 'en'
+    return request<{ skus: BillingSku[]; pay_types: string[]; markup: number; stripe_unavailable_reason?: string | null }>(`/api/billing/skus?language=${lang}`)
   },
-  createBillingOrder(sku_id: string, pay_type: 'alipay' | 'wxpay' | 'stripe', language: 'zh' | 'en' = 'zh') {
+  createBillingOrder(sku_id: string, pay_type: 'alipay' | 'wxpay' | 'stripe', language?: string) {
     return request<{
       out_trade_no: string
       sku_id: string
@@ -573,7 +594,7 @@ export const api = {
       expire_seconds?: number
     }>('/api/billing/orders', {
       method: 'POST',
-      body: JSON.stringify({ sku_id, pay_type, language }),
+      body: JSON.stringify({ sku_id, pay_type, language: language === 'zh' ? 'zh' : 'en' }),
     })
   },
   getBillingOrder(outTradeNo: string) {
@@ -587,7 +608,7 @@ export const api = {
       payment_exchange_rate?: string
     }>(`/api/billing/orders/${encodeURIComponent(outTradeNo)}`)
   },
-  /** 关闭待支付订单 */
+  /** ปิด待支付订单 */
   closeBillingOrder(outTradeNo: string) {
     return request<{ out_trade_no: string; status: string }>(
       `/api/billing/orders/${encodeURIComponent(outTradeNo)}/close`,

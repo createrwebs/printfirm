@@ -16,7 +16,7 @@ export function generationTaskListPath(page: number, pageSize: number, filters: 
   return `/api/tasks/generations?${query}`
 }
 
-/** TaskRun 与旧工具记录的数字 ID 独立，列表、下载和轮询必须带来源。 */
+/** TaskRun 与旧工具记录的数字 ID 独立，列表、ดาวน์โหลด和轮询必须带来源。 */
 export function generationRecordKey(record: ToolRunRecord): string {
   return record.record_key || `${record.source || 'tool'}:${record.id}`
 }
@@ -25,7 +25,7 @@ export function generationDetailPath(record: Pick<ToolRunRecord, 'id' | 'source'
   return record.source === 'task' ? `/api/tasks/generations/${record.id}` : `/api/tools/runs/${record.id}`
 }
 
-/** 完成时间不是结算凭据；费用被隐藏时不能将 null 当成零元。 */
+/** เวลาที่เสร็จสมบูรณ์不是结算凭据；费用被隐藏时不能将 null 当成零元。 */
 export function generationBillingState(record: ToolRunRecord): 'hidden' | 'pending' | 'settled' | 'refunded' | 'free' | 'not_charged' {
   if (record.billing_charged_fen === null) return 'hidden'
   if (record.billing_status === 'refunded') return 'refunded'

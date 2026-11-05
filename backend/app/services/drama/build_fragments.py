@@ -5,9 +5,19 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from app.services.drama.language import detect_content_language
 from app.services.seedance_segments import (
     DRAMA_SUBTITLE_CUE,
     DIALOGUE_PREFIX,
+    THAI_DIALOGUE_NO_SUB_PREFIX,
+    THAI_DIALOGUE_PREFIX,
+    THAI_DRAMA_SUBTITLE_CUE,
+    THAI_EMPTY_SHOT_PREFIX,
+    THAI_INNER_NO_SUB_PREFIX,
+    THAI_INNER_PREFIX,
+    THAI_NARRATION_NO_SUB_PREFIX,
+    THAI_NARRATION_PREFIX,
+    THAI_VISUAL_PREFIX,
     VISUAL_PREFIX,
     classify_voice_body,
     is_production_meta_line,
@@ -20,16 +30,25 @@ from app.services.drama.fragment_asset_limit import (
 )
 
 # 场次标题：### 场1-2 / ### 场景1-2
-SCENE_HEADER_RE = re.compile(r"^###\s*场(?:景)?\s*\d+\s*[-－—]\s*\d+\s*$")
+SCENE_HEADER_RE = re.compile(r"^###\s*(?:场(?:景)?|ฉาก(?:ที่)?|Scene)\s*\d+\s*[-－—]\s*\d+\s*$", re.I)
 # 兼容无空格、或标题后带说明
-SCENE_HEADER_LOOSE_RE = re.compile(r"^###\s*场(?:景)?\s*\d+\s*[-－—]\s*\d+")
+SCENE_HEADER_LOOSE_RE = re.compile(r"^###\s*(?:场(?:景)?|ฉาก(?:ที่)?|Scene)\s*\d+\s*[-－—]\s*\d+", re.I)
+SCENE_HEADER_INLINE_LOC_RE = re.compile(
+    r"^###\s*(?:场(?:景)?|ฉาก(?:ที่)?|Scene)\s*\d+\s*[-－—]\s*\d+[ \t:：｜|\-]+(.+)$",
+    re.I,
+)
+HUOBAO_SCENE_HEADER_RE = re.compile(
+    r"^##\s*S\d+\s*\|\s*(?:ภายใน|ภายนอก|ใน|นอก|内|外|INT\.?|EXT\.?)\s*[·•\-]\s*([^|\n]+)",
+    re.I,
+)
 # 时间内外景行
 SCENE_LOCATION_RE = re.compile(
-    r"^(?:日|夜|晨|黄昏|傍晚|凌晨|清晨|午|晚)?\s*(?:内|外|内外)\s+(.+)$"
+    r"^(?:日|夜|晨|黄昏|傍晚|凌晨|清晨|午|晚|เช้า|สาย|กลางวัน|บ่าย|เย็น|ค่ำ|กลางคืน|รุ่งอรุณ|Day|Night|Morning|Evening|Dusk|Dawn|Afternoon)?[ \t]*(?:ภายในและภายนอก|ภายใน|ภายนอก|ในและนอก|内外|内|外|ใน|นอก|Int|Ext|Int/Ext)[ \t]+(.+)$",
+    re.I,
 )
 # 出场人物行
-CAST_LINE_RE = re.compile(r"^出场人物[：:]\s*(.+)$")
-EMPTY_CAST = {"无", "无出场", "无人物", "-", "—", "无。"}
+CAST_LINE_RE = re.compile(r"^(?:出场人物|ตัวละครที่ออกฉาก|ตัวละคร(?:ในฉาก)?|รายชื่อตัวละคร|Characters|Cast)[：:][ \t]*(.+)$", re.I)
+EMPTY_CAST = {"无", "无出场", "无人物", "-", "—", "无。", "ไม่มี", "ไม่มีตัวละคร"}
 
 FRAGMENT_DURATION_MIN = 3
 # 单行/单块 @duration 上限（对白、空镜等；整镜硬上限见 FRAGMENT_TOTAL_MAX）
@@ -43,19 +62,26 @@ FRAGMENT_TOTAL_MAX = 15
 EPISODE_FRAGMENT_MAX = 0
 EPISODE_DURATION_BUDGET_SEC = 0
 # 重要角色：roleType / title / tags 命中则需要人物介绍叠字
-IMPORTANT_ROLE_RE = re.compile(r"主角|男主|女主|重要|反派|BOSS|核心|主人公")
+IMPORTANT_ROLE_RE = re.compile(
+    r"主角|男主|女主|重要|反派|BOSS|核心|主人公|ตัวเอก|พระเอก|นางเอก|ตัวละครหลัก|ตัวร้าย|คู่ปรับ|ตัวละครสำคัญ|เสาหลัก|สัตว์ประจำเคส"
+)
 # 次要定位：默认不介绍
-MINOR_ROLE_RE = re.compile(r"群演|路人|群众|龙套|配角|出场人物|兵丁|侍卫|士兵")
+MINOR_ROLE_RE = re.compile(
+    r"群演|路人|群众|龙套|配角|出场人物|兵丁|侍卫|士兵|ตัวประกอบ|ชาวบ้าน|คนเดินผ่าน|ตัวละครสมทบ|ตัวละครในฉาก|ตัวละครที่ออกฉาก"
+)
 # 群体/无名角色名：不介绍
-MINOR_NAME_RE = re.compile(r"(兵|百姓|群众|路人|侍从|侍卫|士兵|甲|乙|众人|百姓们)$")
+MINOR_NAME_RE = re.compile(r"(兵|百姓|群众|路人|侍从|侍卫|士兵|甲|乙|众人|百姓们|ชาวบ้าน|ฝูงชน|คนผ่านทาง)$")
 # 无意义 intro 占位文案
-GENERIC_INTRO_TEXTS = frozenset({"出场人物", "配角", "角色", "群演", "路人", "-"})
+GENERIC_INTRO_TEXTS = frozenset(
+    {"出场人物", "配角", "角色", "群演", "路人", "-", "ตัวละครในฉาก", "ตัวละครที่ออกฉาก", "ตัวละครสมทบ", "ตัวละคร", "ตัวประกอบ"}
+)
 # stub 资产默认身份背景等占位句式
-STUB_CAST_INTRO_RE = re.compile(r"剧本分集出场人物|出场\s*->\s*卷入")
+STUB_CAST_INTRO_RE = re.compile(r"剧本分集出场人物|出场\s*->\s*卷入|ตัวละครที่ปรากฏในบทละคร|เปิดตัว\s*->\s*เข้าสู่ปม")
 # 已写入分镜的人物介绍叠字行（兼容旧「·画面叠字」与现行「·角色身旁」）
 CHARACTER_INTRO_CUE = "【人物介绍·画面叠字·角色身旁】"
+THAI_CHARACTER_INTRO_CUE = "【แนะนำตัวละคร·ข้อความข้างตัวละคร】"
 CHARACTER_INTRO_LINE_RE = re.compile(
-    r"^【人物介绍·画面叠字(?:·角色身旁)?】\s*([^｜\|\n]+?)(?:\s*[｜|].*)?$"
+    r"^【(?:人物介绍·画面叠字(?:·角色身旁)?|แนะนำตัวละคร·ข้อความข้างตัวละคร)】\s*([^｜\|\n]+?)(?:\s*[｜|].*)?$"
 )
 LEGACY_CHARACTER_INTRO_CUE = "【人物介绍·画面叠字】"
 # 纯画面/空镜标签（冒号前）：禁止当成「角色名：对白」
@@ -63,18 +89,20 @@ VISUAL_SHOT_LABEL_RE = re.compile(
     r"^(?:"
     r"空镜|画面|远景|近景|中景|全景|特写|大特写|"
     r"跟拍|俯拍|仰拍|航拍|推镜|拉镜|摇镜|环境|镜头|动作|转场|闪回|"
-    r"建立镜头|气氛镜头"
+    r"建立镜头|气氛镜头|"
+    r"ช็อตว่าง|ภาพ|ภาพมุมกว้าง|มุมกว้าง|ระยะไกล|ระยะกลาง|ระยะใกล้|โคลสอัป|"
+    r"ซูมอิน|ซูมเอาต์|แพนกล้อง|กล้องติดตาม|มุมสูง|มุมต่ำ|บรรยากาศ|ฉาก|การกระทำ|แฟลชแบ็ก"
     r")\s*[：:]"
 )
 # 「角色名（动作）：台词」——动作应走画面行，冒号后才是口播
 DIALOGUE_WITH_ACTION_BODY_RE = re.compile(
-    r"^(?P<speaker>[^（(:：\n]{1,16})"
+    r"^(?P<speaker>[^（(:：\n]{1,28}?)\s*"
     r"[（(](?P<action>[^）)]+)[）)]"
     r"\s*[：:]\s*"
     r"(?P<text>.+)$"
 )
 # 括号内为口播类型标记（非舞台动作），禁止拆成画面行
-VOICE_TYPE_ACTION_RE = re.compile(r"^(?:vo|os|旁白|VO|OS)$", re.I)
+VOICE_TYPE_ACTION_RE = re.compile(r"^(?:vo|os|旁白|VO|OS|เสียงบรรยาย|เสียงในหัว|เสียงในใจ)$", re.I)
 # 画布 @asset:123 含冒号，禁止被当成「角色名：台词」
 _ASSET_MENTION_MASK_RE = re.compile(r"@asset:\d+")
 _ASSET_MENTION_MASK = "@asset_"
@@ -94,10 +122,24 @@ def _unmask_asset_mentions(text: str) -> str:
 
 
 def normalize_scene_location_name(raw: str) -> str:
-    # 去掉斜杠说明、压缩空白
-    primary = re.split(r"[／/]", raw)[0].strip()
+    # 去掉斜杠说明、时间内外景前缀、压缩空白
+    cleaned_raw = re.sub(
+        r"^(?:日|夜|晨|黄昏|傍晚|凌晨|清晨|午|晚|เช้า|สาย|กลางวัน|บ่าย|เย็น|ค่ำ|กลางคืน|Day|Night|Morning|Evening)?[ \t·•/\-]*?(?:ภายในและภายนอก|ภายใน|ภายนอก|ในและนอก|内外|内|外|ใน|นอก|Int\.?|Ext\.?)[ \t·•/\-]+",
+        "",
+        (raw or "").strip(),
+        flags=re.I,
+    )
+    primary = re.split(r"[／/｜|]", cleaned_raw)[0].strip()
+    primary = re.sub(
+        r"[ \t]*[\(（](?:日|夜|晨|晚|内|外|เช้า|สาย|กลางวัน|บ่าย|เย็น|ค่ำ|กลางคืน|ภายใน|ภายนอก|ใน|นอก|Day|Night|Int|Ext)[^\)）]*[\)）]\s*$",
+        "",
+        primary,
+        flags=re.I,
+    ).strip()
     cleaned = re.sub(r"\s+", " ", primary).strip()
     if len(cleaned) < 2 or len(cleaned) > 40:
+        return ""
+    if cleaned in {"内", "外", "内外", "ใน", "นอก", "ภายใน", "ภายนอก", "กลางวัน", "กลางคืน", "เช้า", "เย็น", "ค่ำ"}:
         return ""
     return cleaned
 
@@ -179,6 +221,10 @@ def split_episode_content_into_scenes(content: str) -> list[dict[str, str]]:
 
     for line in lines:
         trimmed = line.strip()
+        if re.match(r"^#+\s*(?:Summary|สรุป|หมายเหตุ)", trimmed, re.IGNORECASE):
+            break
+        if re.match(r"^-{3,}\s*$", trimmed):
+            continue
         if SCENE_HEADER_RE.match(trimmed) or SCENE_HEADER_LOOSE_RE.match(trimmed):
             if current is not None:
                 scenes.append(
@@ -209,11 +255,12 @@ def split_episode_content_into_scenes(content: str) -> list[dict[str, str]]:
     return [{"heading": "", "body": trimmed_all}]
 
 
-def extract_scene_meta(body: str) -> dict[str, Any]:
-    # 抽取地点与出场人物
+def extract_scene_meta(body: str, *, heading: str = "") -> dict[str, Any]:
+    # 抽取地点与出场人物（兼容独立内外景行及内联场头如 ### ฉาก1-1 สถานที่/เวลา/ใน）
     scene_name: str | None = None
     character_names: list[str] = []
-    for line in (body or "").replace("\r\n", "\n").split("\n"):
+    source_text = f"{heading}\n{body}" if heading else (body or "")
+    for line in source_text.replace("\r\n", "\n").split("\n"):
         trimmed = line.strip()
         if not trimmed:
             continue
@@ -222,6 +269,11 @@ def extract_scene_meta(body: str) -> dict[str, Any]:
             if loc:
                 normalized = normalize_scene_location_name(loc.group(1))
                 scene_name = normalized or None
+            else:
+                inline_loc = SCENE_HEADER_INLINE_LOC_RE.match(trimmed) or HUOBAO_SCENE_HEADER_RE.match(trimmed)
+                if inline_loc:
+                    normalized = normalize_scene_location_name(inline_loc.group(1))
+                    scene_name = normalized or None
         cast = CAST_LINE_RE.match(trimmed)
         if cast:
             character_names = parse_cast_names(cast.group(1))
@@ -250,6 +302,10 @@ def _strip_screenplay_meta(body: str) -> tuple[str | None, list[str]]:
         trimmed = line.strip()
         if not trimmed:
             continue
+        if re.match(r"^#+\s*(?:Summary|สรุป|หมายเหตุ)", trimmed, re.IGNORECASE):
+            break
+        if re.match(r"^-{3,}\s*$", trimmed):
+            continue
         if SCENE_HEADER_RE.match(trimmed) or SCENE_HEADER_LOOSE_RE.match(trimmed):
             continue
         if CAST_LINE_RE.match(trimmed):
@@ -268,7 +324,7 @@ def _strip_production_prefix(line: str) -> str:
     return re.sub(r"^【[^】]*】\s*", "", (line or "").strip()).strip()
 
 
-_OPENING_CUE_PREFIXES = ("【片头", "【背景介绍")
+_OPENING_CUE_PREFIXES = ("【片头", "【背景介绍", "【ไตเติล", "【แนะนำภูมิหลัง")
 _CONTINUATION_START = tuple("（(，,、；;…—-")
 
 
@@ -395,9 +451,9 @@ def _is_visual_description_line(line: str) -> bool:
     trimmed = (line or "").strip()
     if not trimmed:
         return False
-    if trimmed.startswith("【画面") or trimmed.startswith(VISUAL_PREFIX):
+    if trimmed.startswith(("【画面", "【ภาพ", VISUAL_PREFIX, THAI_VISUAL_PREFIX)):
         return True
-    if trimmed.startswith("【空镜"):
+    if trimmed.startswith(("【空镜", "【ช็อตบรรยากาศ")):
         return True
     if trimmed.startswith("△") or trimmed.startswith("Δ"):
         return True
@@ -406,36 +462,54 @@ def _is_visual_description_line(line: str) -> bool:
         return False
     if VISUAL_SHOT_LABEL_RE.match(body):
         return True
-    if body.startswith("空镜") or body.startswith("△"):
+    if body.startswith(("空镜", "ช็อตว่าง", "△")):
         return True
     return False
 
 
 def _split_dialogue_action_line(line: str) -> list[str]:
-    """将「角色（动作）：台词」拆成画面动作行 + 纯口播对白行；无法识别则原样返回。"""
+    """将「角色（动作）：台词」及台词末尾长动作括号拆成画面动作行 + 纯口播对白行。"""
     trimmed = (line or "").strip()
     if not trimmed:
         return []
     dialogue_prefix = ""
     body = trimmed
-    if trimmed.startswith("【对白"):
-        match = re.match(r"^(【对白[^】]*】)\s*(.*)$", trimmed)
+    if trimmed.startswith(("【对白", "【บทพูด")):
+        match = re.match(r"^(【(?:对白|บทพูด)[^】]*】)\s*(.*)$", trimmed)
         if match:
             dialogue_prefix = match.group(1)
             body = match.group(2).strip()
+    is_thai = detect_content_language(body) == "th"
+    sep = ": " if is_thai else "："
+    dot = "" if is_thai else "。"
+
+    # Check if there is a trailing stage direction inside parentheses at the end of the line (common in Thai scripts)
+    trailing_stage = ""
+    trailing_match = re.match(r"^(?P<head>.+?)\s*[（(](?P<stage>[^）)]{14,})[）)]\s*[。．.]?\s*$", body)
+    if trailing_match and re.search(r"[：:]", trailing_match.group("head")):
+        body = trailing_match.group("head").strip()
+        trailing_stage = trailing_match.group("stage").strip()
+
     action_match = DIALOGUE_WITH_ACTION_BODY_RE.match(body)
     if not action_match:
+        if trailing_stage:
+            head_line = f"{dialogue_prefix}{body}" if dialogue_prefix else body
+            return [head_line, f"△ {trailing_stage}"]
         return [trimmed]
     speaker = action_match.group("speaker").strip()
     action = action_match.group("action").strip()
     text = action_match.group("text").strip()
-    if speaker == "旁白" or VOICE_TYPE_ACTION_RE.match(action):
+    if speaker in {"旁白", "เสียงบรรยาย", "ผู้บรรยาย"} or VOICE_TYPE_ACTION_RE.match(action):
+        if trailing_stage:
+            head_line = f"{dialogue_prefix}{body}" if dialogue_prefix else body
+            return [head_line, f"△ {trailing_stage}"]
         return [trimmed]
-    visual = f"{speaker}（{action}）。"
-    dialogue = f"{speaker}：{text}"
-    if dialogue_prefix:
-        return [visual, f"{dialogue_prefix}{dialogue}"]
-    return [visual, dialogue]
+    visual = f"△ {speaker} ({action})" if is_thai else f"{speaker}（{action}）{dot}"
+    dialogue = f"{speaker}{sep}{text}"
+    out = [visual, f"{dialogue_prefix}{dialogue}" if dialogue_prefix else dialogue]
+    if trailing_stage:
+        out.append(f"△ {trailing_stage}")
+    return out
 
 
 def _expand_narrative_lines(line: str) -> list[str]:
@@ -478,54 +552,60 @@ def _format_narrative_line(line: str) -> str:
         return trimmed
     # 分类时屏蔽 @asset:id，避免把资产占位冒号当成「说话人：台词」
     masked = _mask_asset_mentions(trimmed)
+    is_thai = detect_content_language(masked) == "th"
+    vis_pref = THAI_VISUAL_PREFIX if is_thai else VISUAL_PREFIX
+    dlg_pref = THAI_DIALOGUE_PREFIX if is_thai else DIALOGUE_PREFIX
+    narr_pref = THAI_NARRATION_PREFIX if is_thai else "【旁白·慢速清晰·同步字幕】"
+    inner_pref = THAI_INNER_PREFIX if is_thai else "【内心独白·同步字幕】"
+    empty_pref = THAI_EMPTY_SHOT_PREFIX if is_thai else "【空镜·可仅环境音与 BGM】"
 
     def _out(prefixed: str) -> str:
         return _unmask_asset_mentions(prefixed)
 
-    if masked.startswith("【画面") or masked.startswith("【旁白") or masked.startswith("【对白"):
+    if masked.startswith(("【画面", "【旁白", "【对白", "【ภาพ", "【เสียงบรรยาย", "【บทพูด")):
         # 已打标但仍可能是误判的「对白·空镜：…」→ 纠正为画面
         body = _strip_production_prefix(masked)
         kind = classify_voice_body(body)
         if kind == "visual" or (
-            (masked.startswith("【对白") or masked.startswith("【旁白"))
+            masked.startswith(("【对白", "【旁白", "【บทพูด", "【เสียงบรรยาย"))
             and _is_visual_description_line(masked)
         ):
-            return _out(f"{VISUAL_PREFIX}{body}")
-        if kind == "dialogue" and masked.startswith("【旁白"):
-            return _out(f"{DIALOGUE_PREFIX}{body}")
-        if kind == "inner" and not masked.startswith("【内心独白"):
-            return _out(f"【内心独白·同步字幕】{body}")
+            return _out(f"{vis_pref}{body}")
+        if kind == "dialogue" and masked.startswith(("【旁白", "【เสียงบรรยาย")):
+            return _out(f"{dlg_pref}{body}")
+        if kind == "inner" and not masked.startswith(("【内心独白", "【เสียงในใจ")):
+            return _out(f"{inner_pref}{body}")
         return trimmed
-    if masked.startswith("【空镜"):
-        return _out(f"【空镜·可仅环境音与 BGM】{masked}")
+    if masked.startswith(("【空镜", "【ช็อตบรรยากาศ")):
+        return _out(f"{empty_pref}{masked}")
     if _is_visual_description_line(masked):
         if masked.startswith("△") or masked.startswith("Δ"):
             body = masked.replace("Δ", "△", 1) if masked.startswith("Δ") else masked
-            return _out(f"{VISUAL_PREFIX}{body}")
-        return _out(f"{VISUAL_PREFIX}{masked}")
+            return _out(f"{vis_pref}{body}")
+        return _out(f"{vis_pref}{masked}")
     kind = classify_voice_body(masked)
     if kind == "visual":
-        return _out(f"{VISUAL_PREFIX}{masked}")
+        return _out(f"{vis_pref}{masked}")
     if kind == "dialogue":
-        return _out(f"{DIALOGUE_PREFIX}{masked}")
+        return _out(f"{dlg_pref}{masked}")
     if kind == "inner":
-        return _out(f"【内心独白·同步字幕】{masked}")
+        return _out(f"{inner_pref}{masked}")
     if kind == "narration":
-        return _out(f"【旁白·慢速清晰·同步字幕】{masked}")
+        return _out(f"{narr_pref}{masked}")
     # 角色对白：排除空镜/景别等冒号标签，避免「空镜：…」被当成「角色名：台词」
-    if re.match(r"^[^（(:：\n]{1,16}[（(][^）)]*[）)]\s*[：:].+", masked):
-        return _out(f"{DIALOGUE_PREFIX}{masked}")
-    colon_speaker = re.match(r"^([^：:\n]{1,16})[：:](.+)$", masked)
+    if re.match(r"^[^（(:：\n]{1,28}?[（(][^）)]*[）)]\s*[：:].+", masked):
+        return _out(f"{dlg_pref}{masked}")
+    colon_speaker = re.match(r"^([^：:\n]{1,28}?)[：:](.+)$", masked)
     if colon_speaker and not VISUAL_SHOT_LABEL_RE.match(masked):
-        return _out(f"{DIALOGUE_PREFIX}{masked}")
+        return _out(f"{dlg_pref}{masked}")
     # 纯画面/动作描述：明确禁止配音，避免被全局字幕 cue 误读为旁白
-    return _out(f"{VISUAL_PREFIX}{masked}")
+    return _out(f"{vis_pref}{masked}")
 
 
 def _speakable_body(line: str) -> str:
     """估算口播时长用：去掉生产前缀与「角色名：」标签，只计真正念出的字。"""
     body = re.sub(r"^【[^】]*】\s*", "", (line or "").strip()).strip()
-    speaker = re.match(r"^([^：:\n]{1,16})[：:](.+)$", body)
+    speaker = re.match(r"^([^：:\n]{1,28}?)[：:](.+)$", body)
     if speaker:
         return speaker.group(2).strip()
     return body
@@ -535,21 +615,25 @@ def _estimate_line_duration(line: str) -> int:
     trimmed = line.strip()
     if not trimmed:
         return 0
-    if trimmed.startswith("【画面") or trimmed.startswith(VISUAL_PREFIX):
+    is_thai = detect_content_language(trimmed) == "th"
+    speech_div = 11 if is_thai else 4
+    vis_div = 28 if is_thai else 14
+    if trimmed.startswith(("【画面", "【ภาพ", VISUAL_PREFIX, THAI_VISUAL_PREFIX)):
         body = re.sub(r"^【[^】]*】", "", trimmed).strip()
-        return min(8, max(2, len(re.sub(r"\s+", "", body)) // 14))
+        return min(8, max(2, len(re.sub(r"\s+", "", body)) // vis_div))
     if trimmed.startswith("△"):
-        return 2
-    if trimmed.startswith("【空镜"):
-        return min(6, max(3, len(re.sub(r"\s+", "", _speakable_body(trimmed))) // 16))
-    if "旁白" in trimmed and trimmed.startswith("【旁白"):
+        body = trimmed.lstrip("△Δ ").strip()
+        return min(6, max(2, len(re.sub(r"\s+", "", body)) // vis_div))
+    if trimmed.startswith(("【空镜", "【ช็อตบรรยากาศ")):
+        return min(6, max(3, len(re.sub(r"\s+", "", _speakable_body(trimmed))) // (vis_div + 2)))
+    if trimmed.startswith(("【旁白", "【เสียงบรรยาย")):
         chars = len(re.sub(r"\s+", "", _speakable_body(trimmed)))
-        return min(12, max(3, (chars + 3) // 4))
-    if trimmed.startswith("【对白") or "内心独白" in trimmed:
+        return min(12, max(3, (chars + speech_div - 1) // speech_div))
+    if trimmed.startswith(("【对白", "【บทพูด")) or "内心独白" in trimmed or "เสียงในใจ" in trimmed:
         chars = len(re.sub(r"\s+", "", _speakable_body(trimmed)))
-        return min(12, max(3, (chars + 3) // 4))
+        return min(12, max(3, (chars + speech_div - 1) // speech_div))
     chars = len(re.sub(r"\s+", "", _speakable_body(trimmed)))
-    return min(8, max(2, (chars + 3) // 5))
+    return min(8, max(2, (chars + speech_div) // (speech_div + 1)))
 
 
 def _clamp_duration(seconds: int) -> int:
@@ -580,21 +664,37 @@ def _format_location_opener(
     scene_asset_id: int | None,
     scene_name: str | None,
 ) -> str:
+    is_thai = detect_content_language(f"{location_line or ''} {scene_name or ''}") == "th"
+    dot = "" if is_thai else "。"
     if not location_line:
         if scene_asset_id and scene_name:
-            return f"@asset:{scene_asset_id} {scene_name}。"
+            return f"@asset:{scene_asset_id} {scene_name}{dot}"
         return ""
     match = SCENE_LOCATION_RE.match(location_line)
     if match and match.group(1) and scene_asset_id:
         prefix = location_line[: len(location_line) - len(match.group(1))].strip()
         location_part = match.group(1).strip()
         compressed = re.sub(r"\s+", "", prefix)
-        return f"{compressed} @asset:{scene_asset_id} {location_part}。"
+        return f"{compressed} @asset:{scene_asset_id} {location_part}{dot}"
+    if is_thai:
+        return location_line.rstrip("。")
     return location_line if location_line.endswith("。") else f"{location_line}。"
 
 
 def _infer_bgm_mood(hints: str) -> str:
     text = hints or ""
+    if detect_content_language(text) == "th":
+        th_rules = [
+            (r"ฆ่า|สู้|ศึก|โกรธ|พัง|อันตราย|ไล่ล่า|ตึงเครียด", "ดนตรีตึงเครียดเร้าอารมณ์ จังหวะกลองค่อยๆ เร่งเร้า"),
+            (r"วัง|ราชสำนัก|เทพ|พิธี|ศักดิ์สิทธิ์|ตำนาน", "ดนตรีออร์เคสตราขรึมขลังและสง่างาม"),
+            (r"กลางคืน|มืด|ลึกลับ|สืบสวน|ความลับ|เงา", "ดนตรีลึกลับระทึกขวัญ โทนเสียงต่ำชวนติดตาม"),
+            (r"น้ำ|แม่น้ำ|ทะเล|ฝน|พายุ", "ดนตรีบรรยากาศพลิ้วไหวผสานเสียงสายน้ำและเครื่องสาย"),
+            (r"เช้า|อบอุ่น|แสงแดด|ความหวัง|เยียวยา", "ดนตรีเปียโนและเครื่องสายละมุนอบอุ่นเปี่ยมความหวัง"),
+        ]
+        for pattern, mood in th_rules:
+            if re.search(pattern, text):
+                return mood
+        return "ดนตรีประกอบเบาๆ เข้ากับบรรยากาศอารมณ์ของฉาก"
     rules = [
         (r"刑|斩|战|杀|怒|崩|劫|乱", "低沉紧张、鼓点渐强，烘托压迫与危机感"),
         (r"殿|宫|朝|帝|神|礼", "庄重史诗、弦乐铺底，气势恢宏但不抢戏"),
@@ -614,7 +714,7 @@ def _is_generic_intro_text(text: str) -> bool:
         return True
     if cleaned in GENERIC_INTRO_TEXTS:
         return True
-    if cleaned.startswith("出场人物"):
+    if cleaned.startswith(("出场人物", "ตัวละครที่ออกฉาก")):
         return True
     if STUB_CAST_INTRO_RE.search(cleaned):
         return True
@@ -676,7 +776,7 @@ def _extract_intro_sentence_for_name(name: str, text: str) -> str | None:
         cleaned = re.sub(r"\s+", "", sent.strip())
         if len(cleaned) < 6:
             continue
-        if CAST_LINE_RE.match(cleaned) or cleaned.startswith("出场人物"):
+        if CAST_LINE_RE.match(cleaned) or cleaned.startswith(("出场人物", "ตัวละครที่ออกฉาก")):
             continue
         if cleaned.startswith("###"):
             continue
@@ -872,6 +972,9 @@ def _strip_subtitle_instruction(line: str) -> str:
         DIALOGUE_PREFIX: "【对白·慢速清晰】",
         "【旁白·慢速清晰·同步字幕】": "【旁白·慢速清晰】",
         "【内心独白·同步字幕】": "【内心独白】",
+        THAI_DIALOGUE_PREFIX: THAI_DIALOGUE_NO_SUB_PREFIX,
+        THAI_NARRATION_PREFIX: THAI_NARRATION_NO_SUB_PREFIX,
+        THAI_INNER_PREFIX: THAI_INNER_NO_SUB_PREFIX,
     }
     for src, dest in replacements.items():
         if trimmed.startswith(src):
@@ -887,10 +990,17 @@ def _build_production_cues(
     include_subtitles: bool = True,
 ) -> list[str]:
     # 字幕 / BGM / 人物介绍前置提示（字幕 cue 不含「旁白」字样，避免 Seedance 整镜念白）
-    hint = " ".join(filter(None, [location_line or "", *narrative_lines[:3]]))
-    lines = [f"【BGM：{_infer_bgm_mood(hint)}；音量低于人声】"]
-    if include_subtitles:
-        lines.insert(0, DRAMA_SUBTITLE_CUE)
+    hint = " ".join(filter(None, [location_line or "", *narrative_lines[:3], *character_intro_lines[:2]]))
+    is_thai = detect_content_language(hint) == "th"
+    mood = _infer_bgm_mood(hint)
+    if is_thai:
+        lines = [f"【BGM：{mood} เสียงเบากว่าเสียงพูด】"]
+        if include_subtitles:
+            lines.insert(0, THAI_DRAMA_SUBTITLE_CUE)
+    else:
+        lines = [f"【BGM：{mood}；音量低于人声】"]
+        if include_subtitles:
+            lines.insert(0, DRAMA_SUBTITLE_CUE)
     lines.extend(character_intro_lines)
     return lines
 
@@ -903,7 +1013,8 @@ def _build_character_intro_lines(character_bindings: list[dict[str, Any]]) -> li
         intro = str(b.get("introText") or "").strip()
         if not name or not intro:
             continue
-        lines.append(f"{CHARACTER_INTRO_CUE}{name}｜{intro}")
+        cue = THAI_CHARACTER_INTRO_CUE if detect_content_language(f"{name} {intro}") == "th" else CHARACTER_INTRO_CUE
+        lines.append(f"{cue}{name}｜{intro}")
     return lines
 
 
@@ -1012,7 +1123,7 @@ def plan_fragments_from_scene(
                 opener_dur,
                 [
                     f"@duration:{opener_dur}",
-                    _inject_character_mentions(opener, character_bindings),
+                    opener if scene_asset_id else _inject_character_mentions(opener, character_bindings),
                 ],
             )
         )
@@ -1134,7 +1245,11 @@ def _is_header_meta_line(line: str) -> bool:
         return True
     if is_production_meta_line(stripped):
         return True
-    if stripped.startswith("【BGM") or stripped.startswith("【字幕") or "人物介绍" in stripped:
+    if (
+        stripped.startswith(("【BGM", "【字幕", "【คำบรรยาย", "【ไตเติล", "【แนะนำ"))
+        or "人物介绍" in stripped
+        or "แนะนำตัวละคร" in stripped
+    ):
         return True
     return False
 
@@ -1349,7 +1464,7 @@ def is_raw_screenplay_fragment(content: str) -> bool:
             continue
         if SCENE_HEADER_RE.match(line) or SCENE_HEADER_LOOSE_RE.match(line):
             return True
-        if CAST_LINE_RE.match(line) or line.startswith("出场人物"):
+        if CAST_LINE_RE.match(line) or line.startswith(("出场人物", "ตัวละครที่ออกฉาก")):
             return True
     return False
 
@@ -1399,7 +1514,7 @@ def build_fragments_from_episode_body(
     introduced: set[str] = set(already_introduced or ())
     fragments: list[dict[str, Any]] = []
     for scene in scenes:
-        meta = extract_scene_meta(scene["body"])
+        meta = extract_scene_meta(scene["body"], heading=scene.get("heading", ""))
         scene_asset_id: int | None = None
         character_bindings: list[dict[str, Any]] = []
 

@@ -18,7 +18,7 @@ type AdminSelectProps = {
   onChange: (value: string) => void;
 };
 
-// 管理端下拉选择（统一样式）
+// 管理端下拉เลือก（统一样式）
 export function AdminSelect({
   label,
   hint,
@@ -33,7 +33,7 @@ export function AdminSelect({
     <div className={cn("admin-select-container", className)}>
       <Select
         id={id}
-        aria-label={label || placeholder || "筛选选项"}
+        aria-label={label || placeholder || "ตัวกรอง选项"}
         value={value}
         onChange={(e) => onChange(e.target.value)}
       >

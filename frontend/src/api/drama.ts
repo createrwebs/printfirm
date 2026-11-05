@@ -7,7 +7,7 @@ import { projectTeam } from '../features/teams/editLocks'
 import { workspaceScope } from '../features/teams/workspaceScope'
 import type { AssetDetailReference } from '../lib/assetDetailReferences'
 
-/** 只读资产目录：工具结果 ID 不可作为可编辑的 DramaAsset ID 使用。 */
+/** 只读แอสเซท目录：工具结果 ID 不可作为可แก้ไข的 DramaAsset ID 使用。 */
 export type MediaLibraryItem = {
   key: string
   id: number
@@ -34,21 +34,21 @@ export type MediaLibraryPage = {
   meta: { total: number; total_all: number; page: number; page_size: number }
 }
 
-/** 漫剧 API 沿用原有错误提示，并共用登录态与 JSON 解析。 */
+/** ละครซีรีส์ API 沿用原有错误คำแนะนำ，并共用登录态与 JSON 解析。 */
 const rawRequest = createJsonRequester((response, detail) =>
-  throwApiError(response.status, detail, '请求失败'),
+  throwApiError(response.status, detail, '请求ล้มเหลว'),
 )
-/** 所有漫剧写入口共用资源占用校验，读取只登记实际归属。 */
+/** 所有ละครซีรีส์写入口共用资源占用校验，读取只登记实际归属。 */
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const epoch = workspaceScope.epoch
   const routeProject = typeof window === 'undefined' ? 0 : Number(window.location.pathname.match(/^\/drama\/projects\/(\d+)/)?.[1] || 0)
   const url = new URL(path, 'http://local')
   const body = typeof init?.body === 'string' ? JSON.parse(init.body || '{}') as { project_id?: number } : {}
   const requestedProject = Number(path.match(/^\/api\/drama\/(?:projects|scripts|canvas)\/(\d+)/)?.[1] || url.searchParams.get('project_id') || body.project_id || 0)
-  if (routeProject && requestedProject && routeProject !== requestedProject) throw new DOMException('项目页面已切换', 'AbortError')
+  if (routeProject && requestedProject && routeProject !== requestedProject) throw new DOMException('โปรเจกต์页面已切换', 'AbortError')
   const result = await withDramaEditLock(path, init, (next) => rawRequest<T>(path, next))
   if (epoch !== workspaceScope.epoch) throw new DOMException('创作空间已切换', 'AbortError')
-  if (routeProject && typeof window !== 'undefined' && Number(window.location.pathname.match(/^\/drama\/projects\/(\d+)/)?.[1] || 0) !== routeProject) throw new DOMException('项目页面已切换', 'AbortError')
+  if (routeProject && typeof window !== 'undefined' && Number(window.location.pathname.match(/^\/drama\/projects\/(\d+)/)?.[1] || 0) !== routeProject) throw new DOMException('โปรเจกต์页面已切换', 'AbortError')
   recordDramaResponse(path, result, epoch)
   return result
 }
@@ -58,7 +58,7 @@ export function getDramaApiBase() {
   return API_BASE
 }
 
-/** 将 /static 相对路径补全为可访问的绝对 URL；可选 cacheBust 强制刷新缩略图 */
+/** 将 /static 相对路径补全为可访问的绝对 URL；可选 cacheBust 强制รีเฟรช缩略图 */
 export function resolveDramaMediaUrl(
   url?: string | null,
   cacheBust?: string | number | null,
@@ -73,7 +73,7 @@ export function resolveDramaMediaUrl(
   return `${resolved}${sep}v=${encodeURIComponent(String(cacheBust))}`
 }
 
-/** 资产生图/上传后的预览 URL（用 updated_at 或 generation 时间戳破缓存） */
+/** แอสเซท生图/อัปโหลด后的ดูตัวอย่าง URL（用 updated_at 或 generation เวลา戳破缓存） */
 export function resolveDramaAssetPreviewUrl(asset: {
   cover?: string | null
   url?: string | null
@@ -99,7 +99,7 @@ export type DramaScript = {
 export type DramaEpisodeBody = {
   episodeNumber?: number
   title?: string
-  /** 本集原始创意 */
+  /** 本集แนวคิดตั้งต้น */
   creative?: string
   /** 本集剧情摘要（集级，非全剧 summary） */
   summary?: string
@@ -171,13 +171,13 @@ export type DramaProjectListItem = {
   active_tasks?: DramaTaskBrief[]
 }
 
-/** 漫剧 / 自由画布项目分页列表：条目 + 分页元信息 */
+/** ละครซีรีส์ / 自由画布โปรเจกต์分页列表：条目 + 分页元信息 */
 export type DramaProjectListPage = {
   items: DramaProjectListItem[]
   meta: { page: number; page_size: number; total: number }
 }
 
-/** 项目列表筛选参数，均由服务端处理 */
+/** รายการโปรเจกต์ตัวกรอง参数，均由服务端处理 */
 export type DramaProjectListParams = {
   workflow?: 'script' | 'canvas'
   status?: 'all' | 'running' | 'done' | 'draft'
@@ -395,7 +395,7 @@ export const dramaApi = {
   },
   createAsset: (body: Partial<DramaAsset> & { project_id: number }) =>
     request<DramaAsset>('/api/drama/assets', { method: 'POST', body: JSON.stringify(body) }),
-  /** 由服务端校验来源和目标空间，复制后独立保存。 */
+  /** 由服务端校验来源和目标空间，คัดลอก后独立บันทึก。 */
   copyAsset: async (asset: DramaAsset, projectId: number) => {
     const teamId = await projectTeam(projectId)
     if (teamId !== null) {
@@ -407,7 +407,7 @@ export const dramaApi = {
   },
   updateAsset: (id: number, body: Partial<DramaAsset>) =>
     request<DramaAsset>(`/api/drama/assets/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
-  /** 上传资产媒体并返回更新后的资产。 */
+  /** อัปโหลดแอสเซท媒体并กลับ更新后的แอสเซท。 */
   uploadAssetMedia: (assetId: number, file: File) => {
     const body = new FormData(); body.append('file', file)
     return request<DramaAsset>(`/api/drama/assets/${assetId}/upload`, { method: 'POST', body })
@@ -454,7 +454,7 @@ export const dramaApi = {
       `/api/drama/episodes/seed_from_script?project_id=${projectId}${force ? '&force=true' : ''}`,
       { method: 'POST' },
     ),
-  /** 确认一集：增量抽取资产并只切该集分镜 */
+  /** 确认一集：增量抽取แอสเซท并只切该集分镜 */
   confirmEpisodeFromScript: (body: { project_id: number; episode_number: number }) =>
     request<DramaConfirmEpisodeResult>('/api/drama/episodes/confirm_from_script', {
       method: 'POST',
@@ -514,7 +514,7 @@ export const dramaApi = {
       fragments: Array<{ fragment_id: number; status: string; video?: string; cover?: string }>
     }>(`/api/drama/episodes/${episodeId}/generate_status`),
 
-  /** 服务端统一重编码拼接本集（浏览器无损失败时回退） */
+  /** 服务端统一重编码拼接本集（浏览器无损ล้มเหลว时回退） */
   composeEpisode: (episodeId: number, fragmentIds?: number[]) =>
     request<{ ok: boolean; video_url: string; episode_id: number }>(
       `/api/drama/episodes/${episodeId}/compose`,

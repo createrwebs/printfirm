@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 
 type Group = { label: string; items: { to: string; label: string; icon: LucideIcon }[] };
 
-/** 搜索管理功能；只导航，不读取或修改业务数据。 */
+/** ค้นหา管理功能；只导航，不读取或修改业务数据。 */
 export function AdminNavigationSearch({ open, onOpenChange, groups }: {
   open: boolean; onOpenChange: (value: boolean) => void; groups: Group[];
 }) {
@@ -20,11 +20,11 @@ export function AdminNavigationSearch({ open, onOpenChange, groups }: {
   useEffect(() => { document.getElementById(`${listId}-${active}`)?.scrollIntoView({ block: "nearest" }); }, [active, listId]);
   return <Dialog open={open} onOpenChange={onOpenChange}>
     <DialogContent className="admin-navigation-dialog">
-      <DialogTitle className="sr-only">搜索管理功能</DialogTitle>
-      <DialogDescription className="sr-only">输入功能名称，用上下方向键选择，回车进入。</DialogDescription>
+      <DialogTitle className="sr-only">ค้นหา管理功能</DialogTitle>
+      <DialogDescription className="sr-only">输入功能名称，用上下方向键เลือก，回车เข้าสู่。</DialogDescription>
       <div className="admin-navigation-search"><Search size={20} /><input
-        autoFocus placeholder="搜索用户、任务、财务等功能…" value={query}
-        role="combobox" aria-label="搜索管理功能" aria-expanded={open} aria-controls={listId}
+        autoFocus placeholder="ค้นหา用户、任务、财务等功能…" value={query}
+        role="combobox" aria-label="ค้นหา管理功能" aria-expanded={open} aria-controls={listId}
         aria-activedescendant={items.length ? `${listId}-${active}` : undefined} aria-autocomplete="list"
         onChange={(event) => { setQuery(event.target.value); setActive(0); }}
         onKeyDown={(event) => {
@@ -43,7 +43,7 @@ export function AdminNavigationSearch({ open, onOpenChange, groups }: {
         </button>)}
         {!items.length && <p className="admin-navigation-empty">没有找到相关功能，请尝试其他关键词。</p>}
       </div>
-      <div className="admin-navigation-footer"><span><kbd>↑</kbd><kbd>↓</kbd> 切换</span><span><kbd>Enter</kbd> 进入</span><span><kbd>Esc</kbd> 关闭</span></div>
+      <div className="admin-navigation-footer"><span><kbd>↑</kbd><kbd>↓</kbd> 切换</span><span><kbd>Enter</kbd> เข้าสู่</span><span><kbd>Esc</kbd> ปิด</span></div>
     </DialogContent>
   </Dialog>;
 }

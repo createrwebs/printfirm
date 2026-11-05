@@ -1,4 +1,4 @@
-/** 资产目录：项目素材、分镜与成片，以及无项目的独立生成结果。 */
+/** แอสเซท目录：โปรเจกต์素材、分镜与成片，以及无โปรเจกต์的独立生成结果。 */
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { Pause, Play, Image } from 'lucide-react'
 import { AssetBanner, AssetCard, AssetEmpty, AssetGrid, AssetSearch } from '../../components/assets/AssetLibrary'
@@ -22,7 +22,7 @@ import './drama.css'
 const PAGE_SIZE_OPTIONS = [12, 24, 36] as const
 type LibraryProject = { id: number; title: string; kind: 'drama' | 'short_video' }
 
-/** 漫剧与短视频使用独立项目编号空间，不能只传数字筛选。 */
+/** ละครซีรีส์与วิดีโอสั้น使用独立โปรเจกต์编号空间，不能只传数字ตัวกรอง。 */
 function projectSelection(value: string): { unassigned: boolean; projectId?: number; projectKind?: LibraryProject['kind'] } {
   const [kind, rawId] = value.split(':')
   const id = Number(rawId)
@@ -62,14 +62,14 @@ function AssetLibraryInner() {
 
   useEffect(() => {
     let active = true
-    /** 分别读取两类项目，团队范围不列出个人短视频项目。 */
+    /** 分别读取两类โปรเจกต์，团队范围不列出个人วิดีโอสั้นโปรเจกต์。 */
     async function loadProjects(kind: LibraryProject['kind']) {
       const rows: LibraryProject[] = []
       let page = 1
       while (active) {
         const result = kind === 'drama' ? await dramaApi.listProjects({ page, page_size: 50 }) : await api.listProjects({ page, page_size: 50 })
         if (!active) return []
-        rows.push(...result.items.map((project) => ({ id: project.id, title: project.title || '未命名项目', kind })))
+        rows.push(...result.items.map((project) => ({ id: project.id, title: project.title || 'โปรเจกต์ไม่มีชื่อ', kind })))
         if (rows.length >= result.meta.total || result.items.length === 0) break
         page += 1
       }
@@ -94,7 +94,7 @@ function AssetLibraryInner() {
     dramaApi.listLibraryAssets({ type: mediaFilter.kind === 'image' && mediaFilter.imageType !== 'all' ? mediaFilter.imageType : mediaFilter.kind,
       mediaKind: mediaFilter.kind, generationStatus: mediaFilter.generationStatus, ...projectSelection(projectId), q: search, page, pageSize }, controller.signal)
       .then((result) => { if (!controller.signal.aborted) setListing(result) })
-      .catch((cause) => { if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : '加载失败') })
+      .catch((cause) => { if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : 'โหลดไม่สำเร็จ') })
       .finally(() => { if (!controller.signal.aborted) setLoading(false) })
     return () => controller.abort()
   }, [mediaFilter, projectId, search, page, pageSize, revision])
@@ -108,8 +108,8 @@ function AssetLibraryInner() {
   }, [mediaFilter, projectId, search, page, pageSize])
 
   const projectOptions = useMemo(() => [
-    { value: '', label: '全部项目' }, { value: 'unassigned', label: '未关联项目' },
-    ...projects.map((project) => ({ value: `${project.kind}:${project.id}`, label: `${project.kind === 'drama' ? '漫剧项目' : 'AI短视频'} · ${project.title}` })),
+    { value: '', label: 'ทุกโปรเจกต์' }, { value: 'unassigned', label: 'โปรเจกต์ที่ยังไม่เชื่อมโยง' },
+    ...projects.map((project) => ({ value: `${project.kind}:${project.id}`, label: `${project.kind === 'drama' ? 'โปรเจกต์ละครซีรีส์' : 'AIวิดีโอสั้น'} · ${project.title}` })),
   ], [projects])
   const pageCount = pageCountOf(listing.meta.total, pageSize)
 
@@ -126,45 +126,45 @@ function AssetLibraryInner() {
     audio.onended = () => { if (epoch === playbackEpoch.current) setPlayingKey(null) }
     setPlayingKey(asset.key)
     try { await audio.play() }
-    catch { if (epoch === playbackEpoch.current) { setPlayingKey(null); setPlaybackError('播放失败，请重试') } }
+    catch { if (epoch === playbackEpoch.current) { setPlayingKey(null); setPlaybackError('เล่นเสียงไม่สำเร็จ กรุณาลองใหม่อีกครั้ง') } }
   }
 
   return <AppShell active="assets">
     <div className="drama-page pf-library-panel">
       <header className="pf-library-page-head">
-        <div className="pf-library-heading"><div><h1>数字资产库</h1><p className="pf-muted" style={{ margin: '0.35rem 0 0' }}>按图片、视频、音频浏览，可筛选已生成与未生成资产；图片可进一步筛选角色、场景与道具</p></div>
-          <span className="pf-library-count"><Image size={14} />{listing.meta.total} 项资产</span>
+        <div className="pf-library-heading"><div><h1>คลังดิจิทัลแอสเซท</h1><p className="pf-muted" style={{ margin: '0.35rem 0 0' }}>เรียกดูตามรูปภาพ วิดีโอ หรือเสียง สามารถกรองแอสเซทที่สร้างแล้วและยังไม่สร้างได้</p></div>
+          <span className="pf-library-count"><Image size={14} />{listing.meta.total} แอสเซท</span>
         </div>
-        <AssetBanner>项目素材、分镜视频与成片汇集在这里，按来源项目筛选；独立生成的素材也可直接预览与下载。</AssetBanner>
+        <AssetBanner>รวบรวมสื่อของโปรเจกต์ วิดีโอสตอรี่บอร์ด และวิดีโอที่ตัดต่อเสร็จแล้วไว้ที่นี่ สามารถดูตัวอย่างและดาวน์โหลดได้โดยตรง</AssetBanner>
         <div className="pf-library-toolbar pf-library-toolbar--hierarchical">
           <MediaLibraryFilters value={mediaFilter} onChange={value => { setMediaFilter(value); setPage(1) }} />
           <div className="pf-library-toolbar-end">
-            <FilterSelect label="按项目筛选" value={projectId} options={projectOptions} onChange={(value) => { setProjectId(value); setPage(1) }} />
-            <AssetSearch value={query} onChange={setQuery} placeholder="搜索资产名称或项目" />
+            <FilterSelect label="กรองตามโปรเจกต์" value={projectId} options={projectOptions} onChange={(value) => { setProjectId(value); setPage(1) }} />
+            <AssetSearch value={query} onChange={setQuery} placeholder="ค้นหาชื่อแอสเซทหรือโปรเจกต์" />
           </div>
         </div>
       </header>
-      {error && <div role="alert"><BillingErrorNotice message={error} className="drama-error" /><Button size="sm" onClick={() => setRevision((value) => value + 1)}>重新加载</Button></div>}
+      {error && <div role="alert"><BillingErrorNotice message={error} className="drama-error" /><Button size="sm" onClick={() => setRevision((value) => value + 1)}>โหลดใหม่</Button></div>}
       {playbackError && <p role="alert" className="drama-error">{playbackError}</p>}
-      <div className="pf-library-meta"><p className="pf-muted" style={{ margin: 0 }} role="status">{loading ? '加载中…' : `共 ${listing.meta.total_all} 项 · 筛选后 ${listing.meta.total} 项 · 第 ${listing.meta.page}/${pageCount} 页`}</p></div>
-      {loading ? <div className="pf-library-empty" aria-busy="true">正在加载资产…</div> : error ? null : listing.items.length === 0 ? <AssetEmpty /> : <>
+      <div className="pf-library-meta"><p className="pf-muted" style={{ margin: 0 }} role="status">{loading ? 'กำลังโหลด…' : `ทั้งหมด ${listing.meta.total_all} รายการ · กรองแล้วเหลือ ${listing.meta.total} รายการ · หน้า ${listing.meta.page}/${pageCount}`}</p></div>
+      {loading ? <div className="pf-library-empty" aria-busy="true">กำลังโหลดแอสเซท…</div> : error ? null : listing.items.length === 0 ? <AssetEmpty /> : <>
         <AssetGrid>{listing.items.map((asset) => {
           const audio = asset.media_kind === 'audio'
           const preview = previewAudio(asset)
           const playing = playingKey === asset.key
-          const sourceLabel = asset.source_kind === 'drama_fragment' ? '分镜视频' : asset.source_kind === 'short_video' ? 'AI短视频' : asset.source_kind === 'task' ? '生成结果' : asset.source_kind === 'tool' && !asset.project_id ? '独立生成' : '项目素材'
-          const workspaceLabel = workspaceScope.teamId === null ? '个人资产' : '团队资产'
-          return <AssetCard key={asset.key} asset={asset} subtitle={asset.project_title || (asset.project_id ? '项目素材' : '未关联项目')} footer={`${sourceLabel} · ${workspaceLabel}`} updatedAt={asset.updated_at} onOpen={() => setSelectedAsset(asset)}
-            status={audio ? playing ? '正在试听' : preview ? '可试听' : '待合成' : undefined}
+          const sourceLabel = asset.source_kind === 'drama_fragment' ? 'วิดีโอสตอรี่บอร์ด' : asset.source_kind === 'short_video' ? 'AI วิดีโอสั้น' : asset.source_kind === 'task' ? 'ผลลัพธ์การสร้าง' : asset.source_kind === 'tool' && !asset.project_id ? 'สร้างแยกอิสระ' : 'สื่อโปรเจกต์'
+          const workspaceLabel = workspaceScope.teamId === null ? 'แอสเซทส่วนตัว' : 'แอสเซททีม'
+          return <AssetCard key={asset.key} asset={asset} subtitle={asset.project_title || (asset.project_id ? 'สื่อโปรเจกต์' : 'ไม่เชื่อมโยงโปรเจกต์')} footer={`${sourceLabel} · ${workspaceLabel}`} updatedAt={asset.updated_at} onOpen={() => setSelectedAsset(asset)}
+            status={audio ? playing ? 'กำลังทดลองฟัง' : preview ? 'ทดลองฟังได้' : 'รอสังเคราะห์' : undefined}
             actions={<>
-              {audio && preview && <button type="button" className="pf-btn pf-btn-sm" onClick={() => void toggleAudio(asset)} aria-label={playing ? '停止试听' : '试听音频'}>{playing ? <Pause size={14} /> : <Play size={14} />}{playing ? '停止试听' : '试听'}</button>}
+              {audio && preview && <button type="button" className="pf-btn pf-btn-sm" onClick={() => void toggleAudio(asset)} aria-label={playing ? 'หยุดฟัง' : 'ทดลองฟังเสียง'}>{playing ? <Pause size={14} /> : <Play size={14} />}{playing ? 'หยุดฟัง' : 'ทดลองฟัง'}</button>}
               {!audio && DRAMA_VOICE_BINDING_ENABLED && preview && <CharacterVoicePreviewButton url={preview} label={asset.name || undefined} onError={setPlaybackError} />}
-              {asset.project_url ? <Button to={asset.project_url} variant="ghost" size="sm">打开项目</Button> : <Button size="sm" onClick={() => setSelectedAsset(asset)}>查看素材</Button>}
+              {asset.project_url ? <Button to={asset.project_url} variant="ghost" size="sm">เปิดโปรเจกต์</Button> : <Button size="sm" onClick={() => setSelectedAsset(asset)}>ดูสื่อ</Button>}
             </>} />
         })}</AssetGrid>
-        <Pagination page={listing.meta.page} pageCount={pageCount} total={listing.meta.total} pageSize={pageSize} pageSizeOptions={PAGE_SIZE_OPTIONS} onPageSizeChange={(size) => { setPageSize(size); setPage(1) }} onChange={setPage} ariaLabel="数字资产库分页" />
+        <Pagination page={listing.meta.page} pageCount={pageCount} total={listing.meta.total} pageSize={pageSize} pageSizeOptions={PAGE_SIZE_OPTIONS} onPageSizeChange={(size) => { setPageSize(size); setPage(1) }} onChange={setPage} ariaLabel="การแบ่งหน้าคลังดิจิทัลแอสเซท" />
       </>}
-      {selectedAsset && <AssetDetailDialog asset={selectedAsset} audioUrl={selectedAsset.media_kind !== 'audio' ? previewAudio(selectedAsset) : undefined} onClose={() => setSelectedAsset(null)} actions={selectedAsset.project_url ? <Button to={selectedAsset.project_url} variant="dark">打开来源项目</Button> : undefined} />}
+      {selectedAsset && <AssetDetailDialog asset={selectedAsset} audioUrl={selectedAsset.media_kind !== 'audio' ? previewAudio(selectedAsset) : undefined} onClose={() => setSelectedAsset(null)} actions={selectedAsset.project_url ? <Button to={selectedAsset.project_url} variant="dark">เปิดโปรเจกต์ที่มา</Button> : undefined} />}
     </div>
   </AppShell>
 }

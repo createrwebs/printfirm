@@ -1,6 +1,6 @@
 import type { Template } from '../api'
 
-/** 新建短片的公开精选名单；历史项目仍通过 getTemplate(id) 读取原模板。 */
+/** สร้างใหม่短片的公开精选名单；历史โปรเจกต์仍通过 getTemplate(id) 读取原模板。 */
 export const CREATION_TEMPLATE_IDS = [
   'anim_3d',
   'soft_anime',
@@ -13,7 +13,7 @@ export const DEFAULT_CREATION_TEMPLATE_ID = CREATION_TEMPLATE_IDS[0]
 const PRESENTATION = {
   anim_3d: {
     name: '3D 动画',
-    description: '圆润的三维角色与柔和光影，适合知识讲解和故事短片。',
+    description: '圆润的三维ตัวละคร与柔和光影，适合知识讲解和故事短片。',
     category: ['3D', '动画'],
   },
   soft_anime: {
@@ -23,7 +23,7 @@ const PRESENTATION = {
   },
   kids_flat: {
     name: '绘本插画',
-    description: '柔和粉彩与亲切的插画角色，适合儿童科普和温暖故事。',
+    description: '柔和粉彩与亲切的插画ตัวละคร，适合儿童科普和温暖故事。',
     category: ['绘本', '插画'],
   },
   ink_guofeng: {

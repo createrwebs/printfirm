@@ -1,6 +1,6 @@
 import { useTeamEditLock } from '../../features/teams/useTeamEditLock'
 import { isRequestAborted } from '../../api/http'
-/** 漫剧项目工作流：剧情大纲 → 分镜 → 生成视频；资产库为独立入口 */
+/** โปรเจกต์ละครซีรีส์工作流：โครงเรื่องหลัก → 分镜 → สร้างวิดีโอ；แอสเซท库为独立入口 */
 import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { Boxes, ChevronLeft } from 'lucide-react'
@@ -31,18 +31,18 @@ export default function ProjectWorkspacePage() {
   )
 }
 
-// 项目工作台主体
+// โปรเจกต์เวิร์กสเตชัน主体
 function WorkspaceInner() {
   const { projectId } = useParams()
   const id = Number(projectId)
   const navigate = useNavigate()
   const location = useLocation()
   /*
-   * project 项目详情
-   * activeStep 当前步骤（大纲 / 分集）
-   * assetsOpen 资产库独立视图
-   * titleDraft 可编辑标题
-   * editingTitle 是否在编辑标题
+   * project โปรเจกต์รายละเอียด
+   * activeStep 当前步骤（โครงร่าง / 分 ตอน）
+   * assetsOpen แอสเซท库独立视图
+   * titleDraft 可แก้ไข标题
+   * editingTitle 是否在แก้ไข标题
    * loading / error 加载态
    */
   const [project, setProject] = useState<DramaProject | null>(null)
@@ -65,7 +65,7 @@ function WorkspaceInner() {
     if (normalized && isEpisodesRouteStep(normalized)) {
       void resolveStoryboardPath(id)
         .then((path) => navigate(path, { replace: true }))
-        .catch((err) => { if (!isRequestAborted(err)) setError(err instanceof Error ? err.message : '无法进入分镜') })
+        .catch((err) => { if (!isRequestAborted(err)) setError(err instanceof Error ? err.message : 'ไม่สามารถเข้าสู่สตอรี่บอร์ดได้') })
       return
     }
     if (normalized && isProjectStepKey(normalized)) {
@@ -74,7 +74,7 @@ function WorkspaceInner() {
     }
   }
 
-  // 加载项目；自由画布项目强制进入画布页
+  // 加载โปรเจกต์；自由画布โปรเจกต์强制เข้าสู่画布页
   async function reload() {
     const p = await dramaApi.getProject(id)
     if (isCanvasWorkflow(p)) {
@@ -102,7 +102,7 @@ function WorkspaceInner() {
             if (isEpisodesRouteStep(initial)) {
               void resolveStoryboardPath(id)
                 .then((path) => navigate(path, { replace: true }))
-                .catch((err) => { if (!isRequestAborted(err)) setError(err instanceof Error ? err.message : '无法进入分镜') })
+                .catch((err) => { if (!isRequestAborted(err)) setError(err instanceof Error ? err.message : 'ไม่สามารถเข้าสู่สตอรี่บอร์ดได้') })
               return
             }
             setActiveStep(initial)
@@ -110,7 +110,7 @@ function WorkspaceInner() {
           locationApplied.current = true
         }
       })
-      .catch((err) => { if (!isRequestAborted(err)) setError(err instanceof Error ? err.message : '加载失败') })
+      .catch((err) => { if (!isRequestAborted(err)) setError(err instanceof Error ? err.message : 'โหลดไม่สำเร็จ') })
       .finally(() => setLoading(false))
   }, [id])
 
@@ -118,7 +118,7 @@ function WorkspaceInner() {
     applyLocationState(location.state as WorkspaceLocationState | null)
   }, [location.state])
 
-  // 切换步骤时刷新用量（生图/生视频后顶栏数字同步）
+  // 切换步骤时รีเฟรช用量（生图/生วิดีโอ后顶栏数字同步）
   useEffect(() => {
     if (!Number.isFinite(id) || id <= 0 || loading || !project) return
     void dramaApi
@@ -127,10 +127,10 @@ function WorkspaceInner() {
         setProject((prev) => (prev ? { ...prev, usage: p.usage } : p))
       })
       .catch(() => undefined)
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- 仅随视图变化刷新
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- 仅随视图变化รีเฟรช
   }, [activeStep, assetsOpen, id])
 
-  // 保存标题
+  // บันทึก标题
   async function saveTitle() {
     const next = titleDraft.trim()
     if (!next || !project) {
@@ -144,7 +144,7 @@ function WorkspaceInner() {
       setTitleDraft(updated.title)
     } catch (err) {
       if (isRequestAborted(err)) return
-      setError(err instanceof Error ? err.message : '标题保存失败')
+      setError(err instanceof Error ? err.message : 'บันทึกชื่อเรื่องไม่สำเร็จ')
     } finally {
       setEditingTitle(false)
     }
@@ -153,7 +153,7 @@ function WorkspaceInner() {
   if (!Number.isFinite(id) || id <= 0) {
     return (
       <AppShell active="drama" flush>
-        <div className="drama-workspace-status">项目 ID 无效</div>
+        <div className="drama-workspace-status">รหัสโปรเจกต์ไม่ถูกต้อง</div>
       </AppShell>
     )
   }
@@ -161,7 +161,7 @@ function WorkspaceInner() {
   if (loading) {
     return (
       <AppShell active="drama" flush>
-        <div className="drama-workspace-status">加载中…</div>
+        <div className="drama-workspace-status">กำลังโหลด…</div>
       </AppShell>
     )
   }
@@ -177,7 +177,7 @@ function WorkspaceInner() {
   if (!project) {
     return (
       <AppShell active="drama" flush>
-        <div className="drama-workspace-status">项目不存在</div>
+        <div className="drama-workspace-status">ไม่พบโปรเจกต์</div>
       </AppShell>
     )
   }
@@ -190,7 +190,7 @@ function WorkspaceInner() {
             <button
               type="button"
               className="drama-icon-btn"
-              aria-label="返回"
+              aria-label="กลับ"
               onClick={() => navigate(project.team_id ? `/teams/${project.team_id}?tab=projects` : '/drama/dramas')}
             >
               <ChevronLeft size={20} strokeWidth={1.75} />
@@ -220,7 +220,7 @@ function WorkspaceInner() {
 
           <div className="drama-workspace-top-right">
             {project.usage ? (
-              <span className="drama-usage-chip" title="本剧累计费用与生成次数">
+              <span className="drama-usage-chip" title="ค่าใช้จ่ายสะสมและจำนวนครั้งที่สร้างในเรื่องนี้">
                 {formatDramaUsageBrief(project.usage)}
               </span>
             ) : null}
@@ -230,12 +230,12 @@ function WorkspaceInner() {
               onClick={() => setAssetsOpen((open) => !open)}
             >
               <Boxes size={15} strokeWidth={2} aria-hidden />
-              资产库
+              คลังแอสเซท
             </button>
           </div>
         </header>
 
-        {titleLock.error && <p role="alert" className="pf-team-alert">{titleLock.error}<button type="button" onClick={titleLock.retry}>重新取得编辑权</button></p>}
+        {titleLock.error && <p role="alert" className="pf-team-alert">{titleLock.error}<button type="button" onClick={titleLock.retry}>ขอสิทธิ์แก้ไขใหม่อีกครั้ง</button></p>}
         {error ? <DramaErrorNotice message={error} className="drama-workspace-alert" onDismiss={() => setError('')} /> : null}
 
         <main className="drama-workspace-main">

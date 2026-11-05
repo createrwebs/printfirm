@@ -1,4 +1,4 @@
-/** 文本域 @ 引用：触发检测与光标坐标测量，供生成页绑定资产参考。 */
+/** 文本域 @ 引用：触发检测与光标坐标测量，供生成页绑定แอสเซท参考。 */
 
 export type PromptMentionTrigger = {
   /** @ 符号在文本中的下标 */
@@ -16,7 +16,7 @@ export function detectPromptMentionTrigger(text: string, caret: number): PromptM
   return { start: caret - match[1].length - 1, query: match[1] }
 }
 
-// 镜像节点需要复制的排版样式，保证测量位置与文本域一致
+// 镜像节点需要คัดลอก的排版样式，保证测量位置与文本域一致
 const MIRROR_STYLES = [
   'boxSizing', 'fontFamily', 'fontSize', 'fontStyle', 'fontWeight',
   'letterSpacing', 'lineHeight', 'padding', 'borderWidth', 'textTransform',

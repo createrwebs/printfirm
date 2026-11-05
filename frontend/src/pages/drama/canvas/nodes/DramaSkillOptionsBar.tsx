@@ -18,7 +18,7 @@ type DramaSkillOptionsBarProps = {
   disabled?: boolean
 }
 
-/** 渲染 Skill 下拉多选 */
+/** เรนเดอร์ Skill 下拉多选 */
 export function DramaSkillOptionsBar({
   skills,
   selectedIds,
@@ -67,7 +67,7 @@ export function DramaSkillOptionsBar({
         </button>
       </div>
       {open ? (
-        <div className="fc-gen-opt-panel" role="dialog" aria-label="选择 Skill">
+        <div className="fc-gen-opt-panel" role="dialog" aria-label="เลือก Skill">
           <div className="fc-gen-opt-panel-title">Skill</div>
           <AgentSkillPicker
             compact

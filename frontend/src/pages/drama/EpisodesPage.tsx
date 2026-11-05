@@ -1,4 +1,4 @@
-/** 旧分集中间页：自动跳到首集分镜编辑 */
+/** 旧分 ตอน中间页：自动跳到首 ตอน分镜แก้ไข */
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import AppShell from '../../components/layout/AppShell'
@@ -16,7 +16,7 @@ export default function EpisodesPage() {
   )
 }
 
-// 加载后跳转首集编辑，不再展示中间页
+// 加载后跳转首 ตอนแก้ไข，不再展示中间页
 function EpisodesRedirect() {
   const { projectId } = useParams()
   const pid = Number(projectId)
@@ -37,7 +37,7 @@ function EpisodesRedirect() {
         const path = await resolveStoryboardPath(pid)
         if (!cancelled) navigate(path, { replace: true })
       } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : '无法进入分镜')
+        if (!cancelled) setError(err instanceof Error ? err.message : '无法เข้าสู่分镜')
       }
     })()
     return () => {
@@ -48,7 +48,7 @@ function EpisodesRedirect() {
   return (
     <AppShell active="drama" flush>
       <div className="drama-workspace-status">
-        {error || '正在进入分镜…'}
+        {error || '正在เข้าสู่分镜…'}
       </div>
     </AppShell>
   )

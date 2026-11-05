@@ -11,7 +11,311 @@ New API doubao 插件约定（见 QuantumNous/new-api PR #4042）：
 
 from __future__ import annotations
 
+import json
 from typing import Any
+
+
+def _kie_direct_credentials(client: Any, url: str) -> tuple[str, str] | None:
+    """When targeting toraapi.com in non-mock runtime and KIE_AI_API_KEY is configured, return (api_key, base_url)."""
+    if "toraapi.com" not in str(url or "").lower():
+        return None
+    import httpx
+    from app.config import get_settings
+    from app.services import storage
+
+    if storage.STATIC_ROOT != storage._DEFAULT_STATIC_ROOT:
+        return None
+    if not isinstance(client, httpx.AsyncClient) or isinstance(
+        getattr(client, "_transport", None), httpx.MockTransport
+    ):
+        return None
+    settings = get_settings()
+    if settings.ark_mock or settings.local_media_mock:
+        return None
+    key = (getattr(settings, "kie_ai_api_key", "") or "").strip()
+    if not key:
+        return None
+    raw_base = (getattr(settings, "kie_ai_base_url", "") or "https://api.kie.ai").strip().rstrip("/")
+    if raw_base.endswith("/v1"):
+        raw_base = raw_base[:-3].rstrip("/")
+    return key, raw_base or "https://api.kie.ai"
+
+
+def _map_kie_video_model(model: str, *, has_images: bool = False, uses_ref: bool = False) -> str:
+    raw = (model or "").strip().lower()
+    if "wan" in raw:
+        if "3" in raw:
+            return "wan/3-0-video"
+        return "wan/2-7-image-to-video" if has_images else "wan/2-7-text-to-video"
+    if "kling" in raw:
+        return "kling-3.0/video"
+    if "vidu" in raw:
+        return "vidu-q4/reference-to-video" if uses_ref else "vidu-q4/image-to-video"
+    if "hailuo" in raw:
+        return "hailuo/2-3-image-to-video-pro"
+    if "2-0-fast" in raw or "2.0-fast" in raw or "draft" in raw:
+        return "bytedance/seedance-2-5-draft"
+    if "2-0" in raw or "2.0" in raw or raw == "seedance-2" or "260128" in raw:
+        return "bytedance/seedance-2"
+    if "minimax" in raw or "h3" in raw:
+        return "minimax/h3"
+    return "bytedance/seedance-2-5"
+
+
+def _build_kie_create_payload(body: dict[str, Any]) -> dict[str, Any]:
+    metadata = body.get("metadata") if isinstance(body.get("metadata"), dict) else {}
+    content = metadata.get("content") if isinstance(metadata.get("content"), list) else []
+    images: list[str] = []
+    roles: list[str] = []
+    audios: list[str] = []
+    for item in content:
+        if not isinstance(item, dict):
+            continue
+        if item.get("type") == "image_url":
+            u = _media_url_from_item(item, "image_url")
+            if u:
+                images.append(u)
+                roles.append(str(item.get("role") or "").strip())
+        elif item.get("type") == "audio_url":
+            u = _media_url_from_item(item, "audio_url")
+            if u:
+                audios.append(u)
+    uses_ref = any(r == "reference_image" for r in roles) or len(images) > 1
+    try:
+        duration_val = int(metadata.get("duration") or body.get("seconds") or 5)
+    except (TypeError, ValueError):
+        duration_val = 5
+    res_val = str(metadata.get("resolution") or "480p").strip().lower()
+    ratio_val = str(metadata.get("ratio") or "16:9").strip()
+    kie_input: dict[str, Any] = {
+        "prompt": str(body.get("prompt") or ".")[:8000],
+        "duration": max(4, min(duration_val, 30)),
+        "resolution": res_val if res_val in {"480p", "720p", "1080p"} else "720p",
+        "generate_audio": bool(metadata.get("generate_audio", False)),
+        "return_last_frame": bool(metadata.get("return_last_frame", True)),
+    }
+    if uses_ref and images:
+        kie_input["reference_image_urls"] = images[:30]
+        if audios:
+            kie_input["reference_audio_urls"] = audios[:10]
+        kie_input["aspect_ratio"] = (
+            ratio_val
+            if ratio_val in {"1:1", "4:3", "3:4", "16:9", "9:16", "21:9", "adaptive"}
+            else "16:9"
+        )
+    elif images or body.get("image"):
+        first_frame = str(body.get("image") or images[0]).strip()
+        kie_input["first_frame_url"] = first_frame
+        kie_input["aspect_ratio"] = "adaptive"
+    else:
+        kie_input["aspect_ratio"] = (
+            ratio_val
+            if ratio_val in {"1:1", "4:3", "3:4", "16:9", "9:16", "21:9", "adaptive"}
+            else "16:9"
+        )
+    has_images = bool(images or body.get("image"))
+    kie_model = _map_kie_video_model(str(body.get("model") or ""), has_images=has_images, uses_ref=uses_ref)
+    safe_ratio = ratio_val if ratio_val in {"1:1", "4:3", "3:4", "16:9", "9:16", "21:9"} else "16:9"
+    first_frame = str(body.get("image") or (images[0] if images else "")).strip()
+    if kie_model.startswith("wan/"):
+        w_input: dict[str, Any] = {
+            "prompt": str(body.get("prompt") or ".")[:5000],
+            "aspect_ratio": safe_ratio,
+            "duration": 10 if duration_val >= 8 else 5,
+            "resolution": "1080p" if res_val == "1080p" else "720p",
+        }
+        if first_frame:
+            w_input["image_url"] = first_frame
+            w_input["image_urls"] = [first_frame]
+        return {"model": kie_model, "input": w_input}
+    if kie_model.startswith("kling"):
+        k_input: dict[str, Any] = {
+            "prompt": str(body.get("prompt") or ".")[:5000],
+            "aspect_ratio": safe_ratio,
+            "duration": str(min(max(duration_val, 5), 15)),
+            "sound": bool(metadata.get("generate_audio", False)),
+        }
+        if first_frame:
+            k_input["image_url"] = first_frame
+            k_input["image_urls"] = images[:4] if images else [first_frame]
+        return {"model": kie_model, "input": k_input}
+    if kie_model.startswith("vidu"):
+        v_input: dict[str, Any] = {
+            "prompt": str(body.get("prompt") or ".")[:5000],
+            "aspect_ratio": safe_ratio,
+            "duration": min(max(duration_val, 4), 8),
+            "resolution": "1080p" if res_val == "1080p" else "720p",
+        }
+        if first_frame:
+            v_input["image_url"] = first_frame
+            v_input["image_urls"] = images[:7] if images else [first_frame]
+        return {"model": kie_model, "input": v_input}
+    if kie_model.startswith("hailuo"):
+        h_input: dict[str, Any] = {
+            "prompt": str(body.get("prompt") or ".")[:5000],
+            "aspect_ratio": safe_ratio,
+        }
+        if first_frame:
+            h_input["image_url"] = first_frame
+        return {"model": kie_model, "input": h_input}
+    return {
+        "model": kie_model,
+        "input": kie_input,
+    }
+
+
+async def poll_video_task_http(
+    client: Any,
+    method: str,
+    url: str,
+    *,
+    headers: dict[str, str] | None = None,
+    task_id: str = "",
+    request_call: Any = None,
+) -> Any:
+    """Query video task status via Kie recordInfo when Kie direct credentials are active."""
+    import httpx
+
+    if request_call is None:
+        from app.services.ark import observed_request
+
+        request_call = observed_request
+    creds = _kie_direct_credentials(client, url)
+    if creds and not hasattr(request_call, "assert_awaited"):
+        kie_key, kie_base = creds
+        tid = task_id or str(url or "").rstrip("/").rsplit("/", 1)[-1]
+        resp = await client.get(
+            f"{kie_base}/api/v1/jobs/recordInfo",
+            params={"taskId": tid},
+            headers={"Authorization": f"Bearer {kie_key}"},
+        )
+        if resp.status_code == 200:
+            try:
+                payload = resp.json()
+            except ValueError:
+                payload = {}
+            if isinstance(payload, dict) and payload.get("code") is not None:
+                try:
+                    code_int = int(payload.get("code"))
+                except (TypeError, ValueError):
+                    code_int = -1
+                if code_int not in (0, 200):
+                    return httpx.Response(502, json=payload, request=resp.request)
+        return resp
+    return await request_call(client, method, url, headers=headers)
+
+
+async def create_and_wait_kie_image(
+    client: Any,
+    url: str,
+    *,
+    model: str = "",
+    prompt: str,
+    aspect_ratio: str = "16:9",
+    size: str = "2k",
+    ref_urls: list[str] | None = None,
+    style_ref_urls: list[str] | None = None,
+    request_call: Any = None,
+) -> Any | None:
+    """When targeting toraapi.com and Kie direct credentials are active, create and poll image task on Kie.ai."""
+    import asyncio
+    import httpx
+
+    creds = _kie_direct_credentials(client, url)
+    if not creds or hasattr(request_call, "assert_awaited"):
+        return None
+    kie_key, kie_base = creds
+    ratio = (aspect_ratio or "16:9").strip()
+    if ratio not in {"1:1", "4:3", "3:4", "16:9", "9:16", "2:3", "3:2", "21:9"}:
+        ratio = "16:9"
+    all_refs = [u.strip() for u in [*(ref_urls or []), *(style_ref_urls or [])] if str(u or "").strip()]
+    raw_m = (model or "").strip().lower()
+    if "nano-banana" in raw_m:
+        kie_model = "nano-banana-2"
+        kie_input: dict[str, Any] = {"prompt": (prompt or "")[:5000], "aspect_ratio": ratio, "output_format": "png"}
+        if all_refs:
+            kie_input["image_input"] = all_refs[:8]
+            kie_input["image_urls"] = all_refs[:8]
+    elif "qwen" in raw_m:
+        kie_model = "qwen3/pro-image-to-image" if all_refs else "qwen3/pro-text-to-image"
+        kie_input = {"prompt": (prompt or "")[:5000], "aspect_ratio": ratio}
+        if all_refs:
+            kie_input["image_urls"] = all_refs[:4]
+            kie_input["image_url"] = all_refs[0]
+    elif "flux" in raw_m:
+        kie_model = "flux-3/klein-edit-image" if all_refs else "flux-3/klein-text-to-image"
+        kie_input = {"prompt": (prompt or "")[:5000], "aspect_ratio": ratio}
+        if all_refs:
+            kie_input["image_urls"] = all_refs[:4]
+            kie_input["image_url"] = all_refs[0]
+    elif "grok" in raw_m:
+        kie_model = "grok-imagine-image-2-0/image-edit" if all_refs else "grok-imagine-image-2-0/text-to-image"
+        kie_input = {"prompt": (prompt or "")[:5000], "aspect_ratio": ratio}
+        if all_refs:
+            kie_input["image_urls"] = all_refs[:4]
+            kie_input["image_url"] = all_refs[0]
+    elif "gpt-image-2.5" in raw_m or "gpt-image-2-5" in raw_m:
+        kie_model = "gpt-image-2-5-sunburst-text-to-image"
+        kie_input = {"prompt": (prompt or "")[:5000], "aspect_ratio": ratio, "quality": "high"}
+        if all_refs:
+            kie_input["image_urls"] = all_refs[:4]
+    elif "gpt-image" in raw_m:
+        kie_model = "gpt-image-2-image-to-image" if all_refs else "gpt-image-2-text-to-image"
+        kie_input = {"prompt": (prompt or "")[:5000], "aspect_ratio": ratio, "quality": "high"}
+        if all_refs:
+            kie_input["image_urls"] = all_refs[:4]
+    elif all_refs:
+        kie_model = "seedream/5-pro-image-to-image"
+        kie_input: dict[str, Any] = {
+            "prompt": (prompt or "")[:5000],
+            "image_urls": all_refs[:8],
+            "aspect_ratio": ratio,
+            "quality": "high" if (size or "").lower() in {"2k", "3k", "4k", "high"} else "basic",
+        }
+    else:
+        kie_model = "seedream/5-pro-text-to-image"
+        kie_input = {
+            "prompt": (prompt or "")[:5000],
+            "aspect_ratio": ratio,
+            "quality": "high" if (size or "").lower() in {"2k", "3k", "4k", "high"} else "basic",
+            "output_format": "png",
+        }
+    headers = {"Authorization": f"Bearer {kie_key}", "Content-Type": "application/json"}
+    resp = await client.post(
+        f"{kie_base}/api/v1/jobs/createTask",
+        headers=headers,
+        json={"model": kie_model, "input": kie_input},
+    )
+    data = resp.json() if resp.content else {}
+    if resp.status_code >= 400 or int(data.get("code") or 0) not in (0, 200):
+        return httpx.Response(400, json=data, request=resp.request)
+    task_id = extract_video_task_id(data)
+    if not task_id:
+        return httpx.Response(500, json=data, request=resp.request)
+    for _ in range(180):
+        await asyncio.sleep(2.5)
+        poll_resp = await client.get(
+            f"{kie_base}/api/v1/jobs/recordInfo",
+            params={"taskId": task_id},
+            headers={"Authorization": f"Bearer {kie_key}"},
+        )
+        if poll_resp.status_code >= 400:
+            continue
+        unwrapped = unwrap_video_task_payload(poll_resp.json() if poll_resp.content else {})
+        state = normalize_video_task_status(str(unwrapped.get("status") or unwrapped.get("state") or "running"))
+        if state == "succeeded" and unwrapped.get("url"):
+            return httpx.Response(
+                200,
+                json={"data": [{"url": unwrapped["url"]}]},
+                request=poll_resp.request,
+            )
+        if state == "failed":
+            return httpx.Response(
+                400,
+                json={"error": {"message": str(unwrapped.get("error") or "Kie image generation failed")}},
+                request=poll_resp.request,
+            )
+    return httpx.Response(504, json={"error": {"message": "Kie image poll timeout"}}, request=resp.request)
 
 
 
@@ -21,6 +325,26 @@ async def post_video_create(client: Any, method: str, url: str, *, request_call:
         from app.services.tasks.upstream import observed_request
 
         request_call = observed_request
+    body = kwargs.get("json")
+    creds = _kie_direct_credentials(client, url)
+    if creds and isinstance(body, dict) and not hasattr(request_call, "assert_awaited"):
+        import httpx
+
+        kie_key, kie_base = creds
+        kie_payload = _build_kie_create_payload(body)
+        resp = await client.post(
+            f"{kie_base}/api/v1/jobs/createTask",
+            headers={"Authorization": f"Bearer {kie_key}", "Content-Type": "application/json"},
+            json=kie_payload,
+        )
+        if resp.status_code == 200:
+            try:
+                data = resp.json()
+            except ValueError:
+                data = {}
+            if isinstance(data, dict) and int(data.get("code") or 0) not in (0, 200):
+                return httpx.Response(400, json=data, request=resp.request)
+        return resp
     response = await request_call(client, method, url, **kwargs)
     body = kwargs.get("json")
     if response.status_code != 400 or not isinstance(body, dict):
@@ -48,7 +372,7 @@ NEWAPI_VIDEO_TASK_PREFIX = "/videos"
 # 任务成功态（方舟 + New API / OpenAI Videos）
 VIDEO_SUCCESS_STATUSES = {"succeeded", "success", "completed", "complete"}
 # 任务失败态
-VIDEO_FAILED_STATUSES = {"failed", "cancelled", "canceled", "expired", "failure"}
+VIDEO_FAILED_STATUSES = {"failed", "fail", "cancelled", "canceled", "expired", "failure"}
 
 
 def uses_tokenfree_video(*, base_url: str = "", channel_id: str = "") -> bool:
@@ -275,10 +599,32 @@ def unwrap_video_task_payload(data: dict[str, Any] | None) -> dict[str, Any]:
         return {}
     inner = data.get("data")
     if isinstance(inner, dict) and any(
-        key in inner for key in ("status", "url", "content", "task_id", "id", "video_url")
+        key in inner for key in ("status", "state", "url", "content", "task_id", "taskId", "id", "video_url", "resultJson")
     ):
         merged = dict(data)
         merged.update(inner)
+        if not merged.get("status") and merged.get("state"):
+            merged["status"] = merged["state"]
+        if not merged.get("error") and (merged.get("failMsg") or merged.get("failCode")):
+            merged["error"] = merged.get("failMsg") or merged.get("failCode")
+        raw_res = merged.get("resultJson")
+        res_obj = None
+        if isinstance(raw_res, str) and raw_res.strip():
+            try:
+                res_obj = json.loads(raw_res)
+            except ValueError:
+                res_obj = None
+        elif isinstance(raw_res, dict):
+            res_obj = raw_res
+        if isinstance(res_obj, dict):
+            urls = res_obj.get("resultUrls") or res_obj.get("result_urls") or []
+            if isinstance(urls, list) and urls and str(urls[0]).strip():
+                merged.setdefault("url", str(urls[0]).strip())
+            last_urls = res_obj.get("lastFrameUrl") or res_obj.get("last_frame_url") or []
+            if isinstance(last_urls, list) and last_urls and str(last_urls[0]).strip():
+                merged.setdefault("last_frame_url", str(last_urls[0]).strip())
+            elif isinstance(last_urls, str) and last_urls.strip():
+                merged.setdefault("last_frame_url", last_urls.strip())
         return merged
     return data
 

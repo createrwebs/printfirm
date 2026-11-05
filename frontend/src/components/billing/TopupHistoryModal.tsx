@@ -18,7 +18,7 @@ const SKU_LABELS: Record<string, string> = {
 const STATUS_CN: Record<string, string> = {
   pending: '待支付',
   paid: '已到账',
-  closed: '已关闭',
+  closed: 'ปิดใช้งานแล้ว',
 }
 
 const PAY_LABELS: Record<string, string> = { alipay: '支付宝', wxpay: '微信支付', stripe: 'Stripe' }
@@ -31,11 +31,11 @@ function formatTime(iso?: string | null) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
-/** 充值记录弹窗：列出近期订单与到账状态（过期待支付由后台自动关闭） */
+/** ประวัติการเติมเงิน弹窗：列出近期订单与到账สถานะ（过期待支付由后台自动ปิด） */
 export default function TopupHistoryModal({ open, onClose }: Props) {
   /*
    * orders 订单列表
-   * loading 加载中
+   * loading กำลังโหลด
    * error 错误信息
    */
   const [orders, setOrders] = useState<BillingOrder[]>([])
@@ -53,7 +53,7 @@ export default function TopupHistoryModal({ open, onClose }: Props) {
         if (!cancelled) setOrders(r.orders || [])
       })
       .catch((e) => {
-        if (!cancelled) setError(e instanceof Error ? e.message : '加载失败')
+        if (!cancelled) setError(e instanceof Error ? e.message : 'โหลดไม่สำเร็จ')
       })
       .finally(() => {
         if (!cancelled) setLoading(false)
@@ -64,11 +64,11 @@ export default function TopupHistoryModal({ open, onClose }: Props) {
   }, [open])
 
   return (
-    <Modal open={open} onClose={onClose} title="充值记录" size="lg" className="pf-topup-history-modal">
-      {loading ? <p className="pf-muted">加载中…</p> : null}
+    <Modal open={open} onClose={onClose} title="ประวัติการเติมเงิน" size="lg" className="pf-topup-history-modal">
+      {loading ? <p className="pf-muted">กำลังโหลด…</p> : null}
       {error ? <p className="pf-error">{error}</p> : null}
       {!loading && !error && orders.length === 0 ? (
-        <p className="pf-muted">暂无充值记录</p>
+        <p className="pf-muted">暂无ประวัติการเติมเงิน</p>
       ) : null}
       {!loading && orders.length > 0 ? (
         <ul className="pf-topup-list">

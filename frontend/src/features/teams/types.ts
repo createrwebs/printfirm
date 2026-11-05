@@ -20,7 +20,7 @@ export type PreviewProject = TeamProject
 export type PreviewAsset = TeamAsset
 export type PreviewCharge = TeamCharge
 export type PreviewActivity = TeamActivity
-export const TEAM_ROLE_LABELS = { owner: '所有者', admin: '管理员', member: '成员' }
+export const TEAM_ROLE_LABELS = { owner: 'เจ้าของ (Owner)', admin: 'ผู้ดูแลระบบ (Admin)', member: 'สมาชิก' }
 export const TEAM_COLORS = ['#435c4b', '#766492', '#48687b', '#a06e51', '#45464c']
-/** 角色只取真实成员关系。 */
+/** ตัวละคร只取真实สมาชิก关系。 */
 export function viewerRole(team: Team): TeamRole { return team.myRole }

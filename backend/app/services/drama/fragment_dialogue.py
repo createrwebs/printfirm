@@ -7,6 +7,7 @@ import re
 from collections import defaultdict
 from typing import Any
 
+from app.services.drama.language import detect_content_language
 from app.services.seedance_segments import (
     SEGMENT_DURATION_MAX,
     SEGMENT_DURATION_MIN,
@@ -17,10 +18,16 @@ from app.services.seedance_segments import (
 )
 
 _ASSET_REF_RE = re.compile(r"@asset:(\d+)")
-_VOICE_CUE_RE = re.compile(r"^(【(?:对白|旁白|内心独白)[^】]*】)\s*")
+_VOICE_CUE_RE = re.compile(r"^(【(?:对白|旁白|内心独白|บทพูด|เสียงบรรยาย|เสียงในใจ)[^】]*】)\s*")
+_CAST_HEADER_RE = re.compile(
+    r"^(?:出场人物|ตัวละครที่ออกฉาก|ตัวละคร(?:ในฉาก)?|รายชื่อตัวละคร|Characters|Cast)\s*[：:]",
+    re.IGNORECASE,
+)
 _SPEECH_CHARS_PER_SECOND = 3
+_THAI_SPEECH_CHARS_PER_SECOND = 10
 _MIN_COVERAGE_LINE_CHARS = 6
-_SPEECH_BREAKS = frozenset("。！？!?；;，,、")
+_SPEECH_BREAKS = frozenset("。！？!?；;，,、 ")
+_THAI_CHAR_RE = re.compile(r"[\u0e00-\u0e7f]")
 
 
 def summarize_locked_fragment(content: str, assets: list[Any] | None = None) -> str:
@@ -31,7 +38,11 @@ def summarize_locked_fragment(content: str, assets: list[Any] | None = None) -> 
         line = raw.strip()
         if not line or line.startswith("@duration:") or is_production_meta_line(line):
             continue
-        line = re.sub(r"^【(?:画面|空镜|对白|旁白|内心独白)[^】]*】\s*", "", line)
+        line = re.sub(
+            r"^【(?:画面|空镜|对白|旁白|内心独白|ภาพ|ช็อตบรรยากาศ|บทพูด|เสียงบรรยาย|เสียงในใจ)[^】]*】\s*",
+            "",
+            line,
+        )
         lines.append(_restore_assets(line, names) if names else line)
         if len(lines) >= 3:
             break
@@ -55,7 +66,12 @@ def _restore_assets(text: str, asset_names: dict[int, str]) -> str:
 def _spoken_parts(line: str) -> tuple[str, str, str] | None:
     """提取生产前缀、说话人标注和台词，跳过画面、场头与舞台指示。"""
     raw = (line or "").strip()
-    if not raw or is_production_meta_line(raw) or raw.startswith(("出场人物", "@duration:", "###")):
+    if (
+        not raw
+        or is_production_meta_line(raw)
+        or raw.startswith(("出场人物", "@duration:", "###", "##"))
+        or _CAST_HEADER_RE.match(raw)
+    ):
         return None
     cue = _VOICE_CUE_RE.match(raw)
     if raw.startswith("【") and cue is None:
@@ -80,12 +96,18 @@ def _spoken_parts(line: str) -> tuple[str, str, str] | None:
 
 def _speech_char_count(text: str, asset_names: dict[int, str]) -> int:
     """只统计实际读出的文字和数字，不计算标点、空白与生产标记。"""
-    return sum(char.isalnum() for char in _restore_assets(text, asset_names))
+    restored = _restore_assets(text, asset_names)
+    return sum(1 for char in restored if char.isalnum() or bool(_THAI_CHAR_RE.match(char)))
+
+
+def _chars_per_sec_for_text(text: str) -> int:
+    return _THAI_SPEECH_CHARS_PER_SECOND if detect_content_language(text) == "th" else _SPEECH_CHARS_PER_SECOND
 
 
 def _split_spoken_text(text: str, asset_names: dict[int, str]) -> list[str]:
     """保留全部台词，优先按句读拆成单段时长可容纳的口播。"""
-    max_chars = _SPEECH_CHARS_PER_SECOND * SEGMENT_DURATION_MAX
+    cps = _chars_per_sec_for_text(text)
+    max_chars = cps * SEGMENT_DURATION_MAX
     tokens = re.findall(r"@asset:\d+|[\s\S]", text)
     chunks: list[str] = []
     start = 0
@@ -103,26 +125,30 @@ def _split_spoken_text(text: str, asset_names: dict[int, str]) -> list[str]:
                 last_break = end
         if end < len(tokens) and last_break is not None:
             end = last_break
-        chunks.append("".join(tokens[start:end]))
+        chunk_str = "".join(tokens[start:end]).strip()
+        if chunk_str:
+            chunks.append(chunk_str)
         start = end
-    return chunks
+    return chunks or [text]
 
 
 def timed_spoken_lines(
     line: str, asset_names: dict[int, str]
 ) -> list[tuple[int, str]] | None:
-    """按每秒约三字分配口播时长；过长台词拆段，画面行返回 None。"""
+    """按语种语速分配口播时长；过长台词拆段，画面行返回 None。"""
     parts = _spoken_parts(line)
     if parts is None:
         return None
     prefix, label, text = parts
+    cps = _chars_per_sec_for_text(text)
+    sep = ": " if detect_content_language(f"{label} {text}") == "th" else "："
     result: list[tuple[int, str]] = []
     for chunk in _split_spoken_text(text, asset_names):
         seconds = max(
             SEGMENT_DURATION_MIN,
-            math.ceil(_speech_char_count(chunk, asset_names) / _SPEECH_CHARS_PER_SECOND),
+            math.ceil(_speech_char_count(chunk, asset_names) / cps),
         )
-        result.append((seconds, f"{prefix}{label}：{chunk}"))
+        result.append((seconds, f"{prefix}{label}{sep}{chunk}"))
     return result
 
 
@@ -153,7 +179,9 @@ def dialogue_coverage_insufficient(
             speaker = re.split(r"[（(]", label, maxsplit=1)[0].strip().lower()
             if is_generic_narrator_name(speaker):
                 speaker = "旁白"
-            normalized = "".join(char.lower() for char in text if char.isalnum())
+            normalized = "".join(
+                char.lower() for char in text if char.isalnum() or bool(_THAI_CHAR_RE.match(char))
+            )
             if normalized:
                 rows.append((speaker, normalized))
         return rows

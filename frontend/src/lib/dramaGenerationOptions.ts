@@ -1,4 +1,4 @@
-/** 漫剧生图：模型 / 比例 / 清晰度选项（模型列表与参数来自后台 TokenFree 目录） */
+/** ละครซีรีส์生图：模型 / 比例 / ความคมชัด选项（模型列表与参数来自后台 TokenFree 目录） */
 
 import type { MediaModelOption, MediaModelsCatalog } from '../api'
 
@@ -24,7 +24,7 @@ export type ImageGenerationOptions = {
   resolution: GenerationResolution
 }
 
-/** 全量清晰度（实际展示按模型 allowed_resolutions 过滤） */
+/** 全量ความคมชัด（实际展示按模型 allowed_resolutions 过滤） */
 export const GENERATION_RESOLUTION_OPTIONS: GenerationResolution[] = ['1K', '2K', '3K', '4K']
 /** 目录未到时的保守档（与后端 Pro / gpt-image 一致） */
 export const SAFE_IMAGE_RESOLUTION_OPTIONS: GenerationResolution[] = ['1K', '2K']
@@ -45,21 +45,21 @@ export const GENERATION_ASPECT_RATIO_OPTIONS: Array<{
   { id: '1:1', label: '1:1' },
 ]
 
-/** 生图模型由 /api/media-models 提供；此处仅占位默认 id */
+/** 生图模型由 /api/media-models 提供；此处仅占位ค่าเริ่มต้น id */
 export const IMAGE_GENERATION_MODELS: Array<{
   id: ImageGenerationModelId
   label: string
   description: string
 }> = []
 
-/** 默认生图选项（角色偏竖构图；清晰度默认 2K，避免 Pro 静默降档） */
+/** ค่าเริ่มต้น生图选项（ตัวละคร偏竖构图；ความคมชัดค่าเริ่มต้น 2K，避免 Pro 静默降档） */
 export const DEFAULT_IMAGE_GENERATION_OPTIONS: ImageGenerationOptions = {
   model_id: '',
   aspect_ratio: '3:4',
   resolution: '2K',
 }
 
-/** 场景默认横构图 */
+/** ฉากค่าเริ่มต้น横构图 */
 export function defaultOptionsForAssetKind(kind: string | undefined | null): ImageGenerationOptions {
   const k = String(kind || '').toLowerCase()
   if (k === 'scene') {
@@ -70,7 +70,7 @@ export function defaultOptionsForAssetKind(kind: string | undefined | null): Ima
 
 const ASPECT_RATIO_IDS = new Set(GENERATION_ASPECT_RATIO_OPTIONS.map((o) => o.id))
 
-/** 从节点/资产 params 读取已保存的生图选项（非法字段回退默认） */
+/** 从节点/แอสเซท params 读取已บันทึก的生图选项（非法字段回退ค่าเริ่มต้น） */
 export function readImageGenerationOptions(
   raw: Record<string, unknown> | null | undefined,
   kind?: string | null,
@@ -89,7 +89,7 @@ export function readImageGenerationOptions(
   }
 }
 
-/** 格式化比例·清晰度触发文案 */
+/** 格式化比例·ความคมชัด触发文案 */
 export function formatOutputSettingsLabel(
   aspectRatio: GenerationAspectRatioId,
   resolution: GenerationResolution,
@@ -101,7 +101,7 @@ export function formatOutputSettingsLabel(
 /** 解析模型展示名（无目录时回退 id） */
 export function getImageModelLabel(modelId: string | undefined | null): string {
   const id = (modelId || '').trim()
-  return id || '图片模型'
+  return id || 'รูปภาพ模型'
 }
 
 /** 任意非空字符串均可作为生图模型 id */
@@ -119,7 +119,7 @@ function findImageModelRow(
   return id ? models.find((m) => m.id === id) : undefined
 }
 
-/** 当前模型允许的清晰度 */
+/** 当前模型允许的ความคมชัด */
 export function resolutionsForImageModel(
   modelId: string | undefined | null,
   catalog?: MediaModelsCatalog | null,
@@ -155,7 +155,7 @@ export function aspectRatiosForImageModel(
   return [...allIds]
 }
 
-/** 将清晰度钳到模型允许列表 */
+/** 将ความคมชัด钳到模型允许列表 */
 export function clampImageResolutionForModel(
   modelId: string | undefined | null,
   resolution: string | undefined | null,

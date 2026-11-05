@@ -38,7 +38,12 @@ def public_image_reference(raw: str | None) -> str | None:
     if not local or not local.resolve().is_relative_to(storage.STATIC_ROOT.resolve()) or not local.is_file():
         return None
     published = str(storage.republish_url(url, sync=True) or "")
-    return _public_reference(published) or _public_reference(storage.to_public_url(url))
+    res = _public_reference(published) or _public_reference(storage.to_public_url(url))
+    if not res:
+        temp_url = storage.upload_temp_public_url(local)
+        if temp_url:
+            res = _public_reference(temp_url)
+    return res
 
 
 def project_image_reference_inputs(project: Any) -> tuple[list[str], list[str]]:

@@ -10,12 +10,12 @@ type Props = {
   onClose: () => void
 }
 
-/** 开始创作：选择漫剧、自由画布或短视频。 */
+/** 开始创作：เลือกละครซีรีส์、自由画布或วิดีโอสั้น。 */
 export default function CreateChoiceModal({ open, onClose }: Props) {
   const nav = useNavigate()
   const { t, m } = useI18n()
 
-  // 跳转到目标产品并关闭弹层
+  // 跳转到目标产品并ปิด弹层
   function go(path: string) {
     onClose()
     nav(path)

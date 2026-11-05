@@ -1,4 +1,4 @@
-/** 画布资产自定义节点：类型图标 + 媒体卡片 + 选中工具栏 */
+/** 画布แอสเซทกำหนดเอง节点：ประเภท图标 + 媒体卡片 + 选中工具栏 */
 import {
   memo,
   useCallback,
@@ -36,7 +36,7 @@ import { dramaApi, type DramaAsset } from '../../../api/drama'
 import { CanvasNodeUploadBar } from './nodes/CanvasNodeUploadBar'
 import { DRAMA_VOICE_BINDING_ENABLED } from '../../../lib/dramaVoiceBinding'
 
-/** 画布视频缩略：仅展示封面，不拦截单击（单击要选中并显示提示词面板） */
+/** 画布วิดีโอ缩略：仅展示封面，不拦截单击（单击要选中并显示คำแนะนำ词面板） */
 function CanvasAssetVideoPreview({
   src,
   onAspect,
@@ -66,7 +66,7 @@ function CanvasAssetVideoPreview({
   )
 }
 
-/** 渲染单个画布资产节点 */
+/** เรนเดอร์单个画布แอสเซท节点 */
 function CanvasAssetNodeComponent({ id, data, selected }: NodeProps<Node<CanvasAssetNodeData>>) {
   const { projectId, updateNodeTextContent, renameNode } = useCanvasStore()
   const updateNodeInternals = useUpdateNodeInternals()
@@ -74,7 +74,7 @@ function CanvasAssetNodeComponent({ id, data, selected }: NodeProps<Node<CanvasA
   const Icon = option.icon
   const isText = data.kind === 'text'
   const mediaSrc = resolveDramaMediaUrl(data.mediaUrl)
-  /* 框选多张时只给唯一选中节点展开编辑条，其余只显示选中描边 */
+  /* 框选多张时只给唯一选中节点ขยายแก้ไข条，其余只显示选中描边 */
   const soloSelected = useStore((state) => {
     let selectedId: string | null = null
     for (const node of state.nodes) {
@@ -103,22 +103,22 @@ function CanvasAssetNodeComponent({ id, data, selected }: NodeProps<Node<CanvasA
         ? displayName
         : null
 
-  // renaming 是否正在编辑节点名称
-  // draftName 编辑中的名称草稿
-  // previewOpen 是否打开大屏预览
-  // mediaAspect 媒体宽高比（宽/高），用于预览框横竖自适应
+  // renaming 是否正在แก้ไข节点名称
+  // draftName แก้ไข中的名称ฉบับร่าง
+  // previewOpen 是否打开大屏ดูตัวอย่าง
+  // mediaAspect 媒体宽高比（宽/高），用于ดูตัวอย่าง框横竖自适应
   const [renaming, setRenaming] = useState(false)
   const [draftName, setDraftName] = useState(displayName)
   const [previewOpen, setPreviewOpen] = useState(false)
   const [previewAsset, setPreviewAsset] = useState<DramaAsset | null>(null)
   const [mediaAspect, setMediaAspect] = useState<number | null>(null)
-  // 音频节点用 mediaUrl；角色音色只用 voiceUrl 做预览弹层，卡片内仍显示形象图
+  // เสียง节点用 mediaUrl；ตัวละครน้ำเสียง只用 voiceUrl 做ดูตัวอย่าง弹层，卡片内仍显示形象图
   const voiceSrc = data.kind === 'character' ? resolveDramaMediaUrl(voiceUrl) : ''
   const audioSrc =
     data.kind === 'audio' ? mediaSrc || resolveDramaMediaUrl(voiceUrl) : voiceSrc
   const textContent = typeof data.textContent === 'string' ? data.textContent : ''
   const canPreview = Boolean(mediaSrc || audioSrc || textContent.trim())
-  // 仅「音频」节点内联播放器；角色有音色时仍显示形象图，试听走工具条
+  // 仅「เสียง」节点内联播放器；ตัวละคร有น้ำเสียง时仍显示形象图，试听走工具条
   const showInlineAudio = data.kind === 'audio' && Boolean(audioSrc)
   const frameSize = canvasMediaFrameSize(data.kind, mediaSrc ? mediaAspect : null)
   const orientationClass =
@@ -138,7 +138,7 @@ function CanvasAssetNodeComponent({ id, data, selected }: NodeProps<Node<CanvasA
     updateNodeInternals(id)
   }, [id, frameSize.width, frameSize.height, updateNodeInternals])
 
-  /** 图片加载后按自然尺寸更新预览框比例 */
+  /** รูปภาพ加载后按自然尺寸อัปเดตดูตัวอย่าง框อัตราส่วน */
   const handleImageLoad = useCallback((event: SyntheticEvent<HTMLImageElement>) => {
     const el = event.currentTarget
     if (el.naturalWidth > 0 && el.naturalHeight > 0) {
@@ -146,7 +146,7 @@ function CanvasAssetNodeComponent({ id, data, selected }: NodeProps<Node<CanvasA
     }
   }, [])
 
-  /** 视频 metadata 就绪后更新预览框比例 */
+  /** วิดีโอ metadata 就绪后อัปเดตดูตัวอย่าง框อัตราส่วน */
   const handleVideoAspect = useCallback((aspect: number) => {
     if (aspect > 0) setMediaAspect(aspect)
   }, [])
@@ -158,7 +158,7 @@ function CanvasAssetNodeComponent({ id, data, selected }: NodeProps<Node<CanvasA
     [id, updateNodeTextContent],
   )
 
-  /** 进入重命名 */
+  /** เข้าสู่重命名 */
   const startRename = (event: MouseEvent) => {
     event.stopPropagation()
     event.preventDefault()
@@ -166,7 +166,7 @@ function CanvasAssetNodeComponent({ id, data, selected }: NodeProps<Node<CanvasA
     setRenaming(true)
   }
 
-  /** 提交重命名 */
+  /** ส่ง重命名 */
   const commitRename = () => {
     setRenaming(false)
     const next = draftName.trim()
@@ -194,7 +194,7 @@ function CanvasAssetNodeComponent({ id, data, selected }: NodeProps<Node<CanvasA
     return () => { active = false }
   }, [previewOpen, projectId, data.assetId])
 
-  /** 双击卡片：放大预览（单击留给选中 / 提示词面板） */
+  /** 双击卡片：ขยายขนาดดูตัวอย่าง（单击留给选中 / คำแนะนำ词面板） */
   const handleCardDoubleClick = (event: MouseEvent) => {
     const target = event.target as HTMLElement
     if (target.closest('textarea, input, button, a')) return
@@ -203,7 +203,7 @@ function CanvasAssetNodeComponent({ id, data, selected }: NodeProps<Node<CanvasA
     setPreviewOpen(true)
   }
 
-  /** 角标放大：不冒泡，避免抢走节点选中 */
+  /** 角标ขยายขนาด：不冒泡，避免抢走节点选中 */
   const handleExpandClick = (event: MouseEvent) => {
     event.stopPropagation()
     event.preventDefault()
@@ -251,7 +251,7 @@ function CanvasAssetNodeComponent({ id, data, selected }: NodeProps<Node<CanvasA
 
       <div
         className={`pf-library-card fc-asset-card${canPreview ? ' is-previewable' : ''}`}
-        title={canPreview ? '双击放大预览' : undefined}
+        title={canPreview ? '双击ขยายขนาดดูตัวอย่าง' : undefined}
         onDoubleClick={handleCardDoubleClick}
       >
         <AssetCover
@@ -280,7 +280,7 @@ function CanvasAssetNodeComponent({ id, data, selected }: NodeProps<Node<CanvasA
           ) : data.generating ? (
             <div className="fc-generating">
               <Loader2 size={28} className="fc-spin" />
-              <span>生成中…</span>
+              <span>กำลังสร้าง…</span>
             </div>
           ) : mediaSrc && data.kind === 'video' && isPlayableVideoUrl(mediaSrc) ? (
             <CanvasAssetVideoPreview src={mediaSrc} onAspect={handleVideoAspect} />
@@ -313,8 +313,8 @@ function CanvasAssetNodeComponent({ id, data, selected }: NodeProps<Node<CanvasA
             <button
               type="button"
               className="fc-asset-expand nodrag nopan nowheel"
-              title="放大预览"
-              aria-label={`放大预览 ${displayName}`}
+              title="ขยายขนาดดูตัวอย่าง"
+              aria-label={`ขยายขนาดดูตัวอย่าง ${displayName}`}
               onClick={handleExpandClick}
               onPointerDown={(event) => event.stopPropagation()}
             >

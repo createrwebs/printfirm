@@ -31,8 +31,8 @@ export const CAPABILITY_ORDER: ModelCapability[] = ["text", "image", "video", "a
 export const CAPABILITY_LABELS: Record<ModelCapability, string> = {
   text: "文本",
   image: "图像",
-  video: "视频",
-  audio: "配音",
+  video: "วิดีโอ",
+  audio: "เสียงพากย์",
 };
 
 /** 写入 TokenFree 渠道的全部预设 id */
@@ -94,7 +94,7 @@ export function clampDefaultToPreset(cap: ModelCapability, modelId: string | nul
   return opts[0]?.id || "";
 }
 
-/** 加载时检测「历史默认值被钳到预设」以便提示管理员确认 */
+/** 加载时检测「历史ค่าเริ่มต้น值被钳到预设」以便คำแนะนำผู้ดูแลระบบ (Admin)确认 */
 export function detectDefaultRemaps(
   raw: Partial<Record<`${ModelCapability}_model`, string>> | null | undefined,
 ): Array<{ capability: ModelCapability; from: string; to: string }> {
@@ -111,7 +111,7 @@ export function detectDefaultRemaps(
   return out;
 }
 
-/** 默认站点默认值（四类各取第一项） */
+/** ค่าเริ่มต้น站点ค่าเริ่มต้น值（四类各取第一项） */
 export function defaultPresetDefaults(): Record<`${ModelCapability}_model`, string> {
   return {
     text_model: clampDefaultToPreset("text", ""),

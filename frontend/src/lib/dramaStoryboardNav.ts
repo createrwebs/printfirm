@@ -1,4 +1,4 @@
-/** 分镜入口：跳过中间分集页，直达首集编辑 */
+/** 分镜入口：跳过中间分集页，直达首集แก้ไข */
 import { dramaApi, type DramaEpisode } from '../api/drama'
 
 /** 已有分集只读取；没有分集才按剧本切一次。force 才走重切。 */
@@ -13,7 +13,7 @@ export async function loadDramaEpisodes(
   return dramaApi.seedEpisodes(projectId, force)
 }
 
-/** 确保已切分并返回首集（或指定集）编辑路径；无分集则回大纲 */
+/** 确保已切分并กลับ首集（或指定集）แก้ไข路径；无分集则回大纲 */
 export async function resolveStoryboardPath(
   projectId: number,
   preferredEpisodeId?: number | null,

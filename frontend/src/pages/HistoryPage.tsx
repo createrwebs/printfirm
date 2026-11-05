@@ -65,23 +65,23 @@ export default function HistoryPage() {
   const location = useLocation()
   const { t, m, locale } = useI18n()
   /*
-   * items 当前页项目
-   * total 筛选后总数（后端）
+   * items 当前页โปรเจกต์
+   * total ตัวกรอง后总数（后端）
    * stats 顶部统计
    * templates 模板名映射
    * error 错误文案
-   * loading 加载中
-   * busyId 单条操作中的项目 id
+   * loading กำลังโหลด
+   * busyId 单条การดำเนินการ中的โปรเจกต์ id
    * packing 打包中
    * packProgress 打包进度
    * selected 勾选 id
-   * tab 状态 Tab
-   * typeMode 类型筛选（pipeline_mode）
-   * q 搜索框
-   * debouncedQ 防抖后的搜索词
+   * tab สถานะ Tab
+   * typeMode ประเภทตัวกรอง（pipeline_mode）
+   * q ค้นหา框
+   * debouncedQ 防抖后的ค้นหา词
    * page 页码
    * pageSize 每页条数
-   * preview 预览弹层
+   * preview ดูตัวอย่าง弹层
    */
   const [items, setItems] = useState<HistoryItem[]>([])
   const [total, setTotal] = useState(0)
@@ -112,7 +112,7 @@ export default function HistoryPage() {
     [items, stats.generating],
   )
 
-  // 搜索防抖
+  // ค้นหา防抖
   useEffect(() => {
     const t = window.setTimeout(() => setDebouncedQ(q.trim()), 300)
     return () => window.clearTimeout(t)
@@ -176,7 +176,7 @@ export default function HistoryPage() {
   const pageCount = pageCountOf(total, pageSize)
   const pageItems = items
 
-  // 筛选后若当前页超出范围则回退
+  // ตัวกรอง后若当前页超出范围则回退
   useEffect(() => {
     if (page > pageCount) setPage(pageCount)
   }, [page, pageCount])
@@ -371,7 +371,7 @@ export default function HistoryPage() {
                     <button type="button" className="pf-btn-text" onClick={() => continueEdit(p)}><IconEdit size={14} />{t('history.continueEdit')}</button>
                     <button type="button" className="pf-btn-text" disabled={!p.final_video_url} onClick={() => p.final_video_url && setPreview({ url: api.assetUrl(p.final_video_url, p.updated_at), title: p.title, projectId: p.id })}><IconEye size={14} />{t('common.preview')}</button>
                     <button type="button" className="pf-btn-text" disabled={!canDownload(p) || busyId === p.id || packing} onClick={() => downloadOne(p)}><IconDownload size={14} />{busyId === p.id ? t('common.downloading') : t('common.download')}</button>
-                    <button type="button" className="pf-btn-text" disabled={!p.final_video_url} onClick={() => nav(withReturn(`/marketplace/from-printfilm?project=${p.id}`, `${location.pathname}${location.search}`))}><IconSend size={14} />发布到市场</button>
+                    <button type="button" className="pf-btn-text" disabled={!p.final_video_url} onClick={() => nav(withReturn(`/marketplace/from-printfilm?project=${p.id}`, `${location.pathname}${location.search}`))}><IconSend size={14} />เผยแพร่สู่ตลาด</button>
                   </>}
                 />
               })}

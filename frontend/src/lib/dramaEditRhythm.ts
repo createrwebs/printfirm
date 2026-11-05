@@ -1,5 +1,5 @@
 /**
- * 短剧剪辑节奏公式（社区 Skill 六式，用于分镜时长建议 / 整集导出规划）
+ * ละครสั้น剪辑节奏公式（社区 Skill 六式，用于分镜ความยาว建议 / 整集导出规划）
  * 对齐 docs/EPISODE_RULES.md §10 P3
  */
 
@@ -15,45 +15,45 @@ export type DramaEditRhythmPreset = {
   id: DramaEditRhythmId
   label: string
   hint: string
-  /** 相对节拍权重，会归一化到目标总秒数 */
+  /** 相对节拍权重，会归一化到目标总วินาที数 */
   weights: number[]
 }
 
 export const DRAMA_EDIT_RHYTHM_PRESETS: DramaEditRhythmPreset[] = [
   {
     id: 'breath',
-    label: '呼吸式',
-    hint: '缓入—展开—回落，适合建立与抒情',
+    label: 'จังหวะลมหายใจ (Breath)',
+    hint: 'เริ่มช้า—ขยายอารมณ์—ผ่อนลง เหมาะสำหรับสร้างฉากและถ่ายทอดอารมณ์',
     weights: [3, 5, 4, 3],
   },
   {
     id: 'heartbeat',
-    label: '心跳式',
-    hint: '短促加速，适合冲突与对峙',
+    label: 'จังหวะชีพจรเต้น (Heartbeat)',
+    hint: 'กระชับ เร่งความเร็ว เหมาะสำหรับฉากเผชิญหน้าและความขัดแย้ง',
     weights: [2, 2, 3, 2, 4],
   },
   {
     id: 'wave',
-    label: '海浪式',
-    hint: '层层推高再泄力，适合高潮戏',
+    label: 'จังหวะคลื่นซัด (Wave)',
+    hint: 'ไต่ระดับอารมณ์แล้วปล่อยลง เหมาะสำหรับฉากไคลแมกซ์',
     weights: [3, 4, 5, 6, 3],
   },
   {
     id: 'elastic',
-    label: '弹性时间',
-    hint: '关键动作拉长，其余压缩',
+    label: 'จังหวะเวลายืดหยุ่น (Elastic)',
+    hint: 'ขยายช่วงการกระทำสำคัญ บีบอัดช่วงอื่นๆ',
     weights: [2, 6, 2, 3],
   },
   {
     id: 'pulse',
-    label: '脉冲式',
-    hint: '规律跳动，适合卡点与群像',
+    label: 'จังหวะพัลส์เป็นช่วง (Pulse)',
+    hint: 'จังหวะสม่ำเสมอ เหมาะสำหรับตรงบีทเพลงและแนะนำกลุ่มตัวละคร',
     weights: [3, 3, 3, 3],
   },
   {
     id: 'silence_hammer',
-    label: '静默锤击',
-    hint: '蓄势静场后猛切，适合反转',
+    label: 'จังหวะค้อนแห่งความเงียบ (Silence Hammer)',
+    hint: 'เงียบสงบสั่งสมพลังแล้วตัดฉับทันที เหมาะสำหรับฉากหักมุม',
     weights: [5, 2, 6],
   },
 ]
@@ -61,7 +61,7 @@ export const DRAMA_EDIT_RHYTHM_PRESETS: DramaEditRhythmPreset[] = [
 const SEGMENT_MIN = 3
 const SEGMENT_MAX = 15
 
-// 按节奏公式为 N 段分配秒数（钳制 3–15，合计贴近 targetTotal）
+// 按节奏公式为 N 段分配วินาที数（钳制 3–15，合计贴近 targetTotal）
 export function suggestRhythmDurations(
   segmentCount: number,
   rhythmId: DramaEditRhythmId,
@@ -100,11 +100,11 @@ export function suggestRhythmDurations(
   return clamped
 }
 
-// 整集导出规划：为每镜建议时长（D-2 / 已有分镜条数）
+// 整集导出规划：为每镜建议ความยาว（D-2 / 已有分镜条数）
 export function suggestEpisodeFragmentDurations(
   fragmentCount: number,
   rhythmId: DramaEditRhythmId,
-  /** 单镜目标时长均值 */
+  /** 单镜目标ความยาว均值 */
   perFragmentTarget = 10,
 ): number[] {
   const count = Math.max(1, Math.floor(fragmentCount))

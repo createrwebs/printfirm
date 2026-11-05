@@ -1,4 +1,4 @@
-/** 分集分镜 → 共享资产节点连线到各分镜视频节点 */
+/** 分 ตอน分镜 → 共享แอสเซท节点连线到各分镜วิดีโอ节点 */
 import type { Edge, Node } from '@xyflow/react'
 import {
   resolveDramaMediaUrl,
@@ -50,12 +50,12 @@ export const EPISODE_ASSET_ROW_GAP = 14
 export const EPISODE_ASSET_POOL_GAP = 40
 export const EPISODE_GRID_START_Y = 32
 
-// 分镜视频节点 id
+// 分镜วิดีโอ节点 id
 export function episodeFragmentNodeId(fragmentId: number): string {
   return `frag-${fragmentId}`
 }
 
-// 出境资产节点 id（全局按 assetId 唯一，跨分镜复用）
+// 出境แอสเซท节点 id（ทั่วไป按 assetId 唯一，跨分镜复用）
 export function episodeAssetNodeId(assetId: number): string {
   return `asset-${assetId}`
 }
@@ -93,7 +93,7 @@ export function episodeSequenceHandles(fromIndex: number, toIndex: number, cols:
   return { sourceHandle: 'seq-out-b', targetHandle: 'seq-in-t' }
 }
 
-// 构建：左侧共享资产池 → 曲线连到右侧分镜网格
+// 构建：左侧共享แอสเซท池 → 曲线连到右侧分镜网格
 export function buildEpisodeFragmentFlow(
   fragments: DramaFragment[],
   assets: DramaAsset[] = [],
@@ -161,8 +161,8 @@ export function buildEpisodeFragmentFlow(
           fragmentId,
           label: fragLabels.get(fragmentId) || `镜 ${fragmentId}`,
         })),
-        name: asset?.name || `资产 ${assetId}`,
-        typeLabel: tab || asset?.type || '资产',
+        name: asset?.name || `แอสเซท ${assetId}`,
+        typeLabel: tab || asset?.type || 'แอสเซท',
         previewUrl: resolveDramaMediaUrl(asset?.cover || asset?.url) || '',
       },
       draggable: true,

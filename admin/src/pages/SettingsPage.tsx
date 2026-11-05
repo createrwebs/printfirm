@@ -21,13 +21,13 @@ const TABS: { id: SettingsTab; label: string }[] = [
   { id: "site", label: "站点工具" },
 ];
 
-// 页头：标题 + 统一保存按钮
+// 页头：标题 + 统一บันทึก按钮
 function SettingsPageHeader() {
   const { action } = useSettingsSaveSlot();
   return (
     <header className="settings-page-hero">
       <div className="min-w-0">
-        <h1 className="settings-page-title">系统设置</h1>
+        <h1 className="settings-page-title">ตั้งค่าระบบ</h1>
         <p className="settings-head-desc">
           管理生成模型、任务运行、存储连接、支付计费与站点工具。
         </p>
@@ -40,14 +40,14 @@ function SettingsPageHeader() {
           onClick={() => void action.onSave()}
         >
           {action.saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-          {action.label ?? "保存"}
+          {action.label ?? "บันทึก"}
         </button>
       ) : null}
     </header>
   );
 }
 
-// 系统设置内容区
+// ตั้งค่าระบบ内容区
 function SettingsPageInner() {
   const [tab, setTab] = useState<SettingsTab>("routing");
 
@@ -55,7 +55,7 @@ function SettingsPageInner() {
     <div className="settings-page admin-page">
       <SettingsPageHeader />
 
-      <div className="settings-tabs" role="tablist" aria-label="系统设置分区">
+      <div className="settings-tabs" role="tablist" aria-label="ตั้งค่าระบบ分区">
         {TABS.map(({ id, label }) => (
           <button
             key={id}

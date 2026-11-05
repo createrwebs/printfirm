@@ -13,7 +13,7 @@ import SeriesDetail from './SeriesDetail'
 import FromPrintfilm from './FromPrintfilm'
 import './marketplace.css'
 
-// 独立下游路由壳；不替换原 studio、作品或个人设置页面。
+// 独立下游路由壳；不替换原 studio、作品或个人ตั้งค่า页面。
 export default function Marketplace() {
   return <div className="pf-market-shell"><AppShell wide><div className="pf-market"><Gate><Routes>
     <Route index element={<Gallery key="works" />} /><Route path="recruits" element={<Gallery key="recruits" recruits />} />

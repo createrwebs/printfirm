@@ -1,4 +1,4 @@
-/** 分镜条规格标签：优先展示成片真实像素，legacy 无 meta 时探测 video 元数据 */
+/** 分镜条规格แท็ก：优先展示成片真实像素，legacy 无 meta 时探测 video 元数据 */
 import { useEffect, useState } from 'react'
 import {
   formatProjectOutputLabel,
@@ -16,7 +16,7 @@ type DramaFragmentClipSpecProps = {
   videoUrl?: string
 }
 
-// 渲染单个分镜的画幅 · 清晰度标签
+// เรนเดอร์单个分镜的画幅 · ความคมชัดแท็ก
 export function DramaFragmentClipSpec({
   fragmentParams,
   episodeParams,

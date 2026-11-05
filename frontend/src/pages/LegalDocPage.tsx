@@ -4,7 +4,7 @@ import { useI18n } from '../i18n'
 import { getLegalDoc, type LegalDoc } from '../lib/legalContent'
 import { GITHUB_REPO_URL } from '../lib/siteLinks'
 
-/** 渲染单份法律文档正文 */
+/** เรนเดอร์单份法律เอกสารเนื้อหาหลัก */
 function LegalBody({ doc }: { doc: LegalDoc }) {
   const { t } = useI18n()
   return (

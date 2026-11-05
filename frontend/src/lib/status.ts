@@ -12,7 +12,7 @@ export const RUNNING = new Set([
   'PARALLEL_ASSETS',
 ])
 
-// 按当前界面语言取状态文案（兼容旧的 STATUS_CN[code] 写法）
+// 按当前界面语言取สถานะ文案（兼容旧的 STATUS_CN[code] 写法）
 export const STATUS_CN: Record<string, string> = new Proxy(
   {},
   {
@@ -56,7 +56,7 @@ export function effectiveStatus(project: {
   const auds = shots.filter((s) => s.audio_url).length
   const vids = shots.filter((s) => s.video_url).length
   const n = shots.length
-  // full 管线配音由视频模型完成，不要求 TTS audio_url
+  // full 管线เสียงพากย์由วิดีโอ模型เสร็จสิ้น，不要求 TTS audio_url
   const assetsOk = full ? imgs === n : imgs === n && auds === n
 
   if (assetsOk) {
@@ -101,7 +101,7 @@ export function shotIsDone(status: string) {
   return ['AUDIO_READY', 'VIDEO_READY', 'DONE', 'IMAGE_READY'].includes(status)
 }
 
-/** 分镜表按素材完备度展示，不盲信 shot.status（AUDIO_READY 只代表配音） */
+/** 分镜表按素材完备度展示，不盲信 shot.status（AUDIO_READY 只代表เสียงพากย์） */
 export type ShotDisplayKind =
   | 'failed'
   | 'generating'
@@ -117,7 +117,7 @@ export type ShotAssetLike = {
 }
 
 /*
- * SHOT_TASK_ACTIVE 任务中心进行中状态
+ * SHOT_TASK_ACTIVE 任务中心进行中สถานะ
  * PROJECT_WIDE_TASKS 整片占用，单镜生成需避开
  */
 const SHOT_TASK_ACTIVE = [
@@ -135,7 +135,7 @@ const PROJECT_WIDE_TASKS = new Set([
   'shot_regen_audio',
 ])
 
-/** 按图/视频是否齐推断单镜展示态 */
+/** 按图/วิดีโอ是否齐推断单镜展示态 */
 export function shotDisplayKind(
   shot: ShotAssetLike,
   opts?: { pipelineMode?: string | null; generating?: boolean },
@@ -149,7 +149,7 @@ export function shotDisplayKind(
   return 'image_ready'
 }
 
-/** 该镜素材是否已齐（静图看图，全流程看视频） */
+/** 该镜素材是否已齐（静图看图，全流程看วิดีโอ） */
 export function shotDisplayDone(kind: ShotDisplayKind) {
   return kind === 'image_ready' || kind === 'video_ready'
 }
@@ -174,7 +174,7 @@ type TaskLike = {
   cancel_requested?: boolean | null
 }
 
-/** 整片流水线 / 合成 / 整片配音进行中 */
+/** 整片流水线 / 合成 / 整片เสียงพากย์进行中 */
 export function isProjectWideBusy(project: {
   status?: string
   active_tasks?: TaskLike[] | null
@@ -213,15 +213,15 @@ export const KEPU_STEPS = [
   { key: 'topic', label: '选题' },
   { key: 'style', label: '风格' },
   { key: 'confirm', label: '确认分镜' },
-  { key: 'assets', label: '参考图画面' },
-  { key: 'videos', label: '镜头视频' },
-  { key: 'compose', label: '合成预览' },
+  { key: 'assets', label: 'ภาพอ้างอิง画面' },
+  { key: 'videos', label: '镜头วิดีโอ' },
+  { key: 'compose', label: '合成ดูตัวอย่าง' },
 ]
 
 export const CREATE_STEPS = KEPU_STEPS
 export const BOARD_STEPS = KEPU_STEPS
 
-/** 静图成片跳过「镜头视频」步 */
+/** 静图成片跳过「镜头วิดีโอ」步 */
 export function kepuSteps(pipelineMode?: string | null) {
   if (pipelineMode === 'image_text') {
     return IMAGE_TEXT_STEPS
@@ -299,18 +299,18 @@ export function kepuPhaseHint(project: {
   shots?: Array<{ image_url?: string | null; audio_url?: string | null; video_url?: string | null }>
 }): string {
   if (project.pipeline_mode === 'image_text') {
-    if (isRunning(effectiveStatus(project))) return '当前步骤正在制作，完成后可查看结果并继续下一步。'
+    if (isRunning(effectiveStatus(project))) return '当前步骤正在制作，เสร็จสิ้น后可ดู结果并继续ถัดไป。'
     const phase = kepuBillingPhase(project)
-    if (phase === 'script') return '保存文案后生成分镜，确认每张卡片里的旁白和画面。'
-    if (phase === 'assets') return '确认分镜后生成图片与配音；已完成的素材会继续保留。'
-    return '图片与配音已齐，可以试听后合成带运镜和字幕的成片。'
+    if (phase === 'script') return 'บันทึก文案后สร้างสตอรี่บอร์ด，确认每张卡片里的เสียงบรรยาย和画面。'
+    if (phase === 'assets') return '确认分镜后สร้างรูปภาพ与เสียงพากย์；เสร็จสมบูรณ์的素材会继续保留。'
+    return 'รูปภาพ与เสียงพากย์已齐，可以试听后合成带运镜和คำบรรยาย (ซับไตเติล)的成片。'
   }
   if (isRunning(effectiveStatus(project))) {
-    return '生成进行中，可在右侧查看各阶段进度。'
+    return '生成进行中，可在右侧ดู各阶段进度。'
   }
   const phase = kepuBillingPhase(project)
-  if (phase === 'script') return '先在风格页点「生成故事板」，本步只拆分镜脚本（预扣文字模型）。'
-  if (phase === 'assets') return '确认分镜后，使用画风参考图逐镜生成图片，并参考前镜画面保持角色与风格一致。'
-  if (phase === 'videos') return '图片已齐。使用每镜图片生成视频与声音，后镜参考上一镜尾帧延续画面。'
-  return '镜头视频已齐。检查各镜头画面与声音后，即可合成成片。'
+  if (phase === 'script') return '先在风格页点「生成故事板」，本步只拆บทสตอรี่บอร์ด（预扣文字模型）。'
+  if (phase === 'assets') return '确认分镜后，使用画风ภาพอ้างอิง逐镜สร้างรูปภาพ，并参考前镜画面保持ตัวละคร与风格一致。'
+  if (phase === 'videos') return 'รูปภาพ已齐。使用每镜รูปภาพสร้างวิดีโอ与声音，后镜参考上一镜尾帧延续画面。'
+  return '镜头วิดีโอ已齐。检查各镜头画面与声音后，即可合成成片。'
 }
