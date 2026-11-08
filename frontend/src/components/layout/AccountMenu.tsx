@@ -49,14 +49,40 @@ export default function AccountMenu({ user, open, marketplaceEnabled, onOpenChan
 
   if (!user) return <Link to="/auth?next=/" className="pf-topbar-account" title={t('nav.login')} aria-label={t('nav.login')}><UserRound size={18} aria-hidden /></Link>
 
-  return <div ref={wrapperRef} className="pf-topbar-account-wrap" onBlur={(event) => {
+  const balanceYuan = ((user.balance_fen ?? 0) / 100).toFixed(2)
+
+  return <div ref={wrapperRef} className="pf-topbar-account-wrap" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }} onBlur={(event) => {
     if (!event.currentTarget.contains(event.relatedTarget)) onOpenChange(false)
   }}>
+    <Link
+      to="/pricing"
+      title="เครดิตคงเหลือจาก ToraAPI (คลิกเพื่อดูหรือซิงค์เครดิต)"
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 4,
+        padding: '4px 10px',
+        borderRadius: 999,
+        fontSize: 12,
+        fontWeight: 600,
+        background: 'rgba(163, 230, 53, 0.14)',
+        color: '#a3e635',
+        textDecoration: 'none',
+        whiteSpace: 'nowrap',
+      }}
+    >
+      <Wallet size={13} aria-hidden />
+      <span>เครดิต ¥{balanceYuan}</span>
+    </Link>
     <button ref={buttonRef} type="button" className={`pf-topbar-account${open ? ' is-active' : ''}`} title={`${user.nickname} · ${t('nav.accountMenu')}`} aria-label={t('nav.accountMenu')} aria-expanded={open} aria-controls="pf-account-menu" onClick={() => onOpenChange(!open)} onKeyDown={(event) => {
       if (event.key === 'ArrowDown') { event.preventDefault(); onOpenChange(true) }
     }}><UserAvatar user={user} size="sm" /></button>
     {open && <div ref={panelRef} id="pf-account-menu" className="pf-topbar-account-panel">
-      <div className="pf-topbar-account-heading"><strong>{user.nickname || t('common.creator')}</strong><span>{user.email}</span></div>
+      <div className="pf-topbar-account-heading">
+        <strong>{user.nickname || t('common.creator')}</strong>
+        <span>{user.email}</span>
+        <span style={{ color: '#a3e635', fontWeight: 600, marginTop: 2 }}>เครดิต ToraAPI: ¥{balanceYuan}</span>
+      </div>
       <nav aria-label={t('nav.accountMenu')}>
         <div className="pf-topbar-account-group" role="group" aria-label={t('nav.myCreation')}>
           <span>{t('nav.myCreation')}</span>

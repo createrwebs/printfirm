@@ -35,7 +35,7 @@ export function EpisodeEditPromptEditor({
   assets,
   referencedIds,
   editing,
-  placeholder = '输入คำบรรยายภาพ、บทสนทนา、เสียงบรรยาย；键入 @ 引用แอสเซท或插入ความยาว…',
+  placeholder = 'ป้อนคำบรรยายภาพ, บทสนทนา, เสียงบรรยาย; พิมพ์ @ เพื่ออ้างอิงแอสเซทหรือแทรกความยาว…',
   onContentChange,
   onOpenAsset,
 }: Props) {

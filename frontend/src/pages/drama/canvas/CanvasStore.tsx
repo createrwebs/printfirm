@@ -236,7 +236,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
       })
       .catch((err) => {
         if (cancelled) return
-        setErrorMessage(err instanceof Error ? err.message : '加载画布ล้มเหลว')
+        setErrorMessage(err instanceof Error ? err.message : 'โหลดผืนผ้าใบไม่สำเร็จ')
         readyRef.current = true
       })
       .finally(() => {
@@ -374,7 +374,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
       const pair = pickAudioCharacterPair(source, target)
       if (pair) {
         void bindVoiceFromEdgeRef.current(pair.audio.id, pair.character.id).catch((err) => {
-          setErrorMessage(err instanceof Error ? err.message : 'น้ำเสียง绑定ล้มเหลว')
+          setErrorMessage(err instanceof Error ? err.message : 'ผูกน้ำเสียงไม่สำเร็จ')
         })
       }
     },
@@ -414,7 +414,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
               params: { on_canvas: true },
             })
             if (usedIds.has(retry.id)) {
-              setErrorMessage('สร้าง节点ล้มเหลว：แอสเซท已存在于画布')
+              setErrorMessage('สร้างโหนดไม่สำเร็จ: แอสเซทมีอยู่บนผืนผ้าใบแล้ว')
               return
             }
             assetId = retry.id
@@ -529,7 +529,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
           .filter((n): n is Node<CanvasAssetNodeData> => Boolean(n && n.data.kind === 'character'))
         for (const character of linkedCharacters) {
           void bindVoiceFromEdgeRef.current(nodeId, character.id).catch((err) => {
-            setErrorMessage(err instanceof Error ? err.message : 'น้ำเสียง绑定ล้มเหลว')
+            setErrorMessage(err instanceof Error ? err.message : 'ผูกน้ำเสียงไม่สำเร็จ')
           })
         }
       }
@@ -545,7 +545,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
       if (!node) throw new Error('节点不存在')
       const isAudioNode = node.data.kind === 'audio'
       if (!source.url && !source.cover) {
-        throw new Error(isAudioNode ? '所选แอสเซท没有可用เสียง' : '所选แอสเซท没有可用รูปภาพ')
+        throw new Error(isAudioNode ? 'แอสเซทที่เลือกไม่มีเสียงที่พร้อมใช้งาน' : 'แอสเซทที่เลือกไม่มีรูปภาพที่พร้อมใช้งาน')
       }
       const assetId = await ensureNodeAsset(nodeId)
       const promptHint = isAudioNode ? '' : readEditableVisualPrompt(source)
@@ -621,7 +621,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
           .filter((n): n is Node<CanvasAssetNodeData> => Boolean(n && n.data.kind === 'character'))
         for (const character of linkedCharacters) {
           void bindVoiceFromEdgeRef.current(nodeId, character.id).catch((err) => {
-            setErrorMessage(err instanceof Error ? err.message : 'น้ำเสียง绑定ล้มเหลว')
+            setErrorMessage(err instanceof Error ? err.message : 'ผูกน้ำเสียงไม่สำเร็จ')
           })
         }
       }
@@ -665,7 +665,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
       if (!audioNode || !characterNode) return
       const audioUrl = String(audioNode.data.mediaUrl || '').trim()
       if (!audioUrl) {
-        setErrorMessage('请先给เสียง节点อัปโหลด或选用เสียง，再连到ตัวละคร')
+        setErrorMessage('กรุณาอัปโหลดหรือเลือกเสียงให้โหนดเสียงก่อน แล้วจึงเชื่อมต่อกับตัวละคร')
         return
       }
 
@@ -674,8 +674,8 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
       const list = await dramaApi.listAssets(projectId)
       let character = list.find((a) => a.id === characterAssetId)
       let audio = list.find((a) => a.id === audioAssetId)
-      if (!character) throw new Error('แอสเซทตัวละคร不存在')
-      if (!audio) throw new Error('เสียงแอสเซท不存在')
+      if (!character) throw new Error('ไม่พบแอสเซทตัวละคร')
+      if (!audio) throw new Error('ไม่พบแอสเซทเสียง')
 
       if (!(audio.url || '').trim()) {
         audio = await dramaApi.updateAsset(audioAssetId, {
@@ -699,11 +699,11 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
   const generateNodeImage = useCallback(
     async (nodeId: string, prompt: string, options?: Partial<ImageGenerationOptions>) => {
       const trimmed = prompt.trim()
-      if (!trimmed) throw new Error('请输入คำแนะนำ词')
+      if (!trimmed) throw new Error('กรุณากรอกพรอมต์')
       pushSnapshot()
       const node = nodesRef.current.find((n) => n.id === nodeId)
       if (!node) throw new Error('节点不存在')
-      if (node.data.kind === 'video') throw new Error('วิดีโอ节点请使用วิดีโอ生成')
+      if (node.data.kind === 'video') throw new Error('โหนดวิดีโอกรุณาใช้การสร้างวิดีโอ')
 
       setNodes((current) =>
         current.map((n) =>
@@ -777,7 +777,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
           },
         })
         const mediaUrl = latest.url || latest.cover || ''
-        if (!mediaUrl) throw new Error('生图超时，请ลองใหม่')
+        if (!mediaUrl) throw new Error('การสร้างภาพหมดเวลา กรุณาลองใหม่อีกครั้ง')
         setNodes((current) =>
           current.map((n) =>
             n.id === nodeId
@@ -832,7 +832,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
   const generateNodeVideo = useCallback(
     async (nodeId: string, prompt: string, options?: Partial<VideoGenerationOptions>) => {
       const trimmed = prompt.trim()
-      if (!trimmed) throw new Error('请输入คำแนะนำ词')
+      if (!trimmed) throw new Error('กรุณากรอกพรอมต์')
       pushSnapshot()
       const node = nodesRef.current.find((n) => n.id === nodeId)
       if (!node) throw new Error('节点不存在')
@@ -870,7 +870,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
           referenceAssetIds: collectConnectedAssetIds(nodeId),
         })
         const mediaUrl = resolveDramaMediaUrl(latest.url || latest.cover || '')
-        if (!mediaUrl) throw new Error('生วิดีโอ超时，请ลองใหม่')
+        if (!mediaUrl) throw new Error('การสร้างวิดีโอหมดเวลา กรุณาลองใหม่อีกครั้ง')
         setNodes((current) =>
           current.map((n) =>
             n.id === nodeId

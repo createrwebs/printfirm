@@ -13,7 +13,7 @@ export type PayCheckout = {
   pay_type: 'alipay' | 'wxpay' | string
   amount_fen: number
   credit_fen: number
-  /** qr=弹窗扫码；redirect=新开易支付收银台 */
+  /** qr=สแกน QR ในหน้าต่าง; redirect=เปิดหน้าชำระเงิน */
   pay_mode?: 'qr' | 'redirect' | string
   qr_payload: string
   payurl?: string
@@ -29,51 +29,44 @@ type Props = {
   onPaid: () => void
 }
 
-/** 将剩余วินาที数格式化为分วินาที倒计时。 */
+/** แปลงวินาทีที่เหลือเป็นรูปแบบนาที:วินาที */
 function formatRemain(sec: number) {
   const m = Math.floor(sec / 60)
   const s = sec % 60
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
 }
 
-/** 扫码支付弹窗：展示二维码或等待收银台回跳，并轮询订单สถานะ */
+/** ป๊อปอัปชำระเงิน: แสดง QR code หรือรอผลการชำระเงิน พร้อมตรวจสอบสถานะออเดอร์ */
 export default function PaymentModal({ open, checkout, onClose, onPaid, teamId }: Props) {
-  /*
-   * qrDataUrl 二维码 data URL
-   * remain 剩余วินาที数
-   * status 当前สถานะ文案
-   * checking ด้วยตนเอง确认中
-   */
   const [qrDataUrl, setQrDataUrl] = useState('')
   const [remain, setRemain] = useState(300)
   const [status, setStatus] = useState<'waiting' | 'paid' | 'expired'>('waiting')
   const [checking, setChecking] = useState(false)
   const [error, setError] = useState('')
 
-  // 轮询和ด้วยตนเอง确认都读取最近一次ส่ง的回调，父组件重เรนเดอร์不会重启订单计时。
   const onPaidRef = useRef(onPaid)
   useLayoutEffect(() => {
     onPaidRef.current = onPaid
   }, [onPaid])
 
-  /** ยกเลิก支付：ปิด弹窗，并尽量把待支付订单置为 closed */
+  /** ยกเลิกการชำระเงิน: ปิดหน้าต่าง และเปลี่ยนสถานะคำสั่งซื้อเป็น closed */
   async function handleCancel() {
     const tradeNo = checkout?.out_trade_no
     if (tradeNo && status !== 'paid') {
       try {
         await (teamId ? teamsApi.closeOrder(teamId, tradeNo) : api.closeBillingOrder(tradeNo))
       } catch {
-        /* 忽略ปิดล้มเหลว，仍允许退出弹窗 */
+        /* ข้ามข้อผิดพลาดในการยกเลิก ยังคงอนุญาตให้ปิดโมดอลได้ */
       }
     }
     onClose()
   }
 
-  /** 新开易支付收银台（支付宝无原生码时） */
+  /** เปิดหน้าชำระเงินในหน้าต่างใหม่ */
   function openCashier() {
     const url = (checkout?.payurl || '').trim()
     if (!url) {
-      setError('未获取到支付链接，请稍后ลองใหม่')
+      setError('ไม่พบลิงก์ชำระเงิน กรุณาลองใหม่อีกครั้ง')
       return
     }
     window.open(url, '_blank', 'noopener,noreferrer')
@@ -81,11 +74,6 @@ export default function PaymentModal({ open, checkout, onClose, onPaid, teamId }
 
   useEffect(() => {
     if (!open || !checkout) return
-    /*
-     * expiredAt 过期เวลา戳
-     * isRedirect 是否收银台跳转模式
-     * payload 需编码为二维码的内容
-     */
     const expiredAt = Date.now() + (checkout.expire_seconds ?? 300) * 1000
     const payurl = (checkout.payurl || '').trim()
     const isRedirect = checkout.pay_mode === 'redirect' || (!checkout.qr_payload && !!payurl)
@@ -98,10 +86,9 @@ export default function PaymentModal({ open, checkout, onClose, onPaid, teamId }
     const payload = checkout.qr_payload || checkout.img || ''
     let cancelled = false
 
-    /** 按网关กลับ值展示二维码รูปภาพ、编码二维码或打开收银台。 */
+    /** แสดงรูปภาพคิวอาร์โค้ด หรือเปิดหน้าชำระเงิน */
     async function paintQr() {
       if (isRedirect) {
-        // 无原生二维码：直接新开易支付站点，弹窗仅等待到账
         if (!cancelled && payurl) {
           window.open(payurl, '_blank', 'noopener,noreferrer')
         }
@@ -109,10 +96,9 @@ export default function PaymentModal({ open, checkout, onClose, onPaid, teamId }
       }
       if (!payload) {
         setQrDataUrl('')
-        setError('未获取到支付二维码，请稍后ลองใหม่')
+        setError('ไม่พบคิวอาร์โค้ดชำระเงิน กรุณาลองใหม่อีกครั้ง')
         return
       }
-      // 若网关直接กลับรูปภาพ URL，优先使用
       if (/^https?:\/\//i.test(payload) && /\.(png|jpe?g|gif|webp)(\?|$)/i.test(payload)) {
         if (!cancelled) setQrDataUrl(payload)
         return
@@ -126,7 +112,7 @@ export default function PaymentModal({ open, checkout, onClose, onPaid, teamId }
         })
         if (!cancelled) setQrDataUrl(url)
       } catch {
-        if (!cancelled) setError('二维码สร้างไม่สำเร็จ')
+        if (!cancelled) setError('สร้างคิวอาร์โค้ดไม่สำเร็จ')
       }
     }
 
@@ -138,7 +124,6 @@ export default function PaymentModal({ open, checkout, onClose, onPaid, teamId }
       if (left <= 0) {
         setStatus('expired')
         window.clearInterval(tick)
-        // 倒计时结束：后端自动ปิด（拉取一次触发过期清理）
         void (teamId ? teamsApi.order(teamId, checkout.out_trade_no) : api.getBillingOrder(checkout.out_trade_no)).catch(() => undefined)
       }
     }, 250)
@@ -169,7 +154,7 @@ export default function PaymentModal({ open, checkout, onClose, onPaid, teamId }
     }
   }, [open, checkout, teamId])
 
-  /** 主动查询订单到账สถานะ，与后台轮询共用最新支付สำเร็จ回调。 */
+  /** ตรวจสอบสถานะการชำระเงิน */
   async function confirmPaid() {
     if (!checkout) return
     setChecking(true)
@@ -182,12 +167,12 @@ export default function PaymentModal({ open, checkout, onClose, onPaid, teamId }
       } else {
         setError(
           checkout.pay_mode === 'redirect'
-            ? '尚未检测到支付结果，请在支付页เสร็จสิ้น后再试'
-            : '尚未检测到支付结果，请稍后再试或继续扫码',
+            ? 'ยังไม่พบผลการชำระเงิน กรุณาชำระเงินในหน้าต่างใหม่ให้เสร็จก่อนแล้วลองอีกครั้ง'
+            : 'ยังไม่พบผลการชำระเงิน กรุณารอสักครู่หรือสแกนคิวอาร์โค้ดเพื่อชำระเงิน',
         )
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : '查询ล้มเหลว')
+      setError(e instanceof Error ? e.message : 'ตรวจสอบสถานะล้มเหลว')
     } finally {
       setChecking(false)
     }
@@ -199,16 +184,16 @@ export default function PaymentModal({ open, checkout, onClose, onPaid, teamId }
   const isRedirect = checkout.pay_mode === 'redirect' || (!checkout.qr_payload && !!checkout.payurl)
   const title = isRedirect
     ? isAlipay
-      ? '支付宝支付'
-      : '微信支付'
+      ? 'ชำระเงินผ่าน Alipay'
+      : 'ชำระเงินผ่าน WeChat Pay'
     : isAlipay
-      ? '支付宝扫码支付'
-      : '微信扫码支付'
+      ? 'สแกน QR เพื่อชำระเงินผ่าน Alipay'
+      : 'สแกน QR เพื่อชำระเงินผ่าน WeChat Pay'
   const tip = isRedirect
-    ? '已打开易支付页面，请在新窗口เสร็จสิ้น支付；เสร็จสิ้น后กลับ本页等待到账'
+    ? 'เปิดหน้าชำระเงินแล้ว กรุณาชำระเงินในหน้าต่างใหม่ให้เสร็จสิ้น จากนั้นกลับมารอการยืนยันที่หน้านี้'
     : isAlipay
-      ? '请使用支付宝扫码เสร็จสิ้น支付'
-      : '请使用微信扫码เสร็จสิ้น支付'
+      ? 'กรุณาใช้ Alipay สแกน QR code เพื่อชำระเงิน'
+      : 'กรุณาใช้ WeChat สแกน QR code เพื่อชำระเงิน'
 
   return (
     <Modal
@@ -231,48 +216,48 @@ export default function PaymentModal({ open, checkout, onClose, onPaid, teamId }
 
         <div className="pf-pay-sku-box">
           <strong>{checkout.sku_name}</strong>
-          <span>到账 {cnyAmountDisplay(checkout.credit_fen)}</span>
+          <span>ได้รับ {cnyAmountDisplay(checkout.credit_fen)}</span>
         </div>
 
         <div className="pf-pay-amount">
-          <span>支付金额</span>
+          <span>ยอดชำระ</span>
           <em>{cnyAmountDisplay(checkout.amount_fen)}</em>
         </div>
 
         <div className="pf-pay-qr-wrap">
           {isRedirect ? (
             <div className="pf-pay-qr is-empty pf-pay-redirect-box">
-              <p>支付页已在新窗口打开</p>
+              <p>เปิดหน้าชำระเงินในหน้าต่างใหม่แล้ว</p>
               <button type="button" className="pf-pay-btn primary" onClick={openCashier}>
-                重新打开支付页
+                เปิดหน้าชำระเงินอีกครั้ง
               </button>
             </div>
           ) : qrDataUrl ? (
             <div className="pf-pay-qr">
-              <img src={qrDataUrl} alt="支付二维码" width={220} height={220} />
+              <img src={qrDataUrl} alt="คิวอาร์โค้ดชำระเงิน" width={220} height={220} />
               <span className={`pf-pay-qr-badge ${isAlipay ? 'alipay' : 'wxpay'}`} aria-hidden />
             </div>
           ) : (
-            <div className="pf-pay-qr is-empty">{error || '二维码กำลังโหลด…'}</div>
+            <div className="pf-pay-qr is-empty">{error || 'กำลังโหลดคิวอาร์โค้ด…'}</div>
           )}
           <p className="pf-pay-tip">{tip}</p>
           <p className={`pf-pay-expire${status === 'expired' ? ' is-expired' : ''}`}>
             <span className="pf-pay-clock" aria-hidden />
             {status === 'expired'
               ? isRedirect
-                ? '订单已失效，请ปิด后重新下单'
-                : '二维码已失效，请ปิด后重新下单'
+                ? 'คำสั่งซื้อหมดอายุแล้ว กรุณาปิดแล้วทำรายการใหม่'
+                : 'คิวอาร์โค้ดหมดอายุแล้ว กรุณาปิดแล้วทำรายการใหม่'
               : isRedirect
-                ? `请在 ${formatRemain(remain)} 内เสร็จสิ้น支付`
-                : `二维码将在 ${formatRemain(remain)} 后失效`}
+                ? `กรุณาชำระเงินภายใน ${formatRemain(remain)}`
+                : `คิวอาร์โค้ดจะหมดอายุใน ${formatRemain(remain)}`}
           </p>
           <p className={`pf-pay-wait${status === 'paid' ? ' is-paid' : ''}`}>
             <span className="pf-pay-dot" aria-hidden />
             {status === 'paid'
-              ? '支付สำเร็จ，余额即将อัปเดต'
+              ? 'ชำระเงินสำเร็จ กำลังอัปเดตยอดคงเหลือ'
               : status === 'expired'
-                ? '订单已超时'
-                : '等待支付结果，请勿ปิด页面'}
+                ? 'คำสั่งซื้อหมดเวลาแล้ว'
+                : 'กำลังรอผลการชำระเงิน กรุณาอย่าปิดหน้านี้'}
           </p>
         </div>
 
@@ -280,7 +265,7 @@ export default function PaymentModal({ open, checkout, onClose, onPaid, teamId }
 
         <div className="pf-pay-actions">
           <button type="button" className="pf-pay-btn ghost" onClick={() => void handleCancel()}>
-            ยกเลิก支付
+            ยกเลิกการชำระเงิน
           </button>
           <button
             type="button"
@@ -288,13 +273,13 @@ export default function PaymentModal({ open, checkout, onClose, onPaid, teamId }
             disabled={checking || status === 'paid' || status === 'expired'}
             onClick={() => void confirmPaid()}
           >
-            {checking ? '确认中…' : status === 'paid' ? '已到账' : '我เสร็จสมบูรณ์支付'}
+            {checking ? 'กำลังตรวจสอบ…' : status === 'paid' ? 'ยอดเงินเข้าแล้ว' : 'ฉันชำระเงินเสร็จสิ้นแล้ว'}
           </button>
         </div>
 
         <p className="pf-pay-secure-line">
           <span className="pf-pay-shield" aria-hidden />
-          支付由易支付安全提供，到账以系统通知为准
+          การชำระเงินมีความปลอดภัย ยอดเงินจะเข้าตามการแจ้งเตือนของระบบ
         </p>
       </div>
     </Modal>

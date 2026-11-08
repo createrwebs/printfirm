@@ -14,7 +14,8 @@ from app.services.drama.seed import _extract_scene_names_from_bodies
 class TestDramaLanguage(unittest.TestCase):
     def test_thai_instruction_preserves_screenplay_markers(self):
         instruction = language_instruction("เรื่องราวของคลินิกสัตว์และตัวละครหลัก")
-        self.assertIn("泰语", instruction)
+        self.assertIn("ข้อกำหนดภาษา", instruction)
+        self.assertNotRegex(instruction, r"[\u3400-\u9fff]")
 
     def test_thai_screenplay_markers_are_not_treated_as_language_switch(self):
         body = "### 场1-1\n出场人物：อีมินแจ\n△ อีมินแจเปิดประตู\nอีมินแจ：สวัสดี"

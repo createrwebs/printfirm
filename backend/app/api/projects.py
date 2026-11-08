@@ -53,9 +53,17 @@ from app.services.kepu_projects import list_project_page, project_runtime_view
 router = APIRouter(tags=["projects"])
 
 
-def _demote_after_edit(project: Project, *, recheck_stage: bool = False) -> None:
+def _demote_after_edit(
+    project: Project,
+    *,
+    recheck_stage: bool = False,
+    force_script_ready: bool = False,
+) -> None:
     """改镜头/配乐后作废成片，并按素材把终态打回 script/assets/videos/compose。"""
     project.final_video_url = None
+    if force_script_ready:
+        project.status = ProjectStatus.SCRIPT_READY if project.shots else ProjectStatus.DRAFT
+        return
     if not recheck_stage and project.status not in {
         ProjectStatus.DONE,
         ProjectStatus.AUDITING,
@@ -1010,7 +1018,7 @@ async def update_shot(
         for sibling in project.shots:
             sibling.audio_url = None
     # 统一按素材进度把终态打回对应阶段并作废成片（本端点此前漏调，状态会卡在 DONE）
-    _demote_after_edit(project)
+    _demote_after_edit(project, force_script_ready=audio_dirty)
     shot.version += 1
     await db.commit()
     await db.refresh(shot)

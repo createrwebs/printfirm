@@ -18,7 +18,7 @@ export function TeamPreviewProvider({ children }: { children: ReactNode }) {
   /** 捕获真实 token 和账号代次，所有异步สถานะ写回前必须验证。 */
   const capture = useCallback(() => { const epoch = authEpoch.current; const token = localStorage.getItem('token'); return () => epoch === authEpoch.current && token === localStorage.getItem('token') }, [])
   /** 账号/สมาชิก关系发生变化后拒绝使用旧响应继续导航或การดำเนินการ。 */
-  const requireCurrent = useCallback((valid: () => boolean) => { if (!valid()) throw new DOMException('登录或团队สถานะ已变化', 'AbortError') }, [])
+  const requireCurrent = useCallback((valid: () => boolean) => { if (!valid()) throw new DOMException('สถานะการเข้าสู่ระบบหรือสถานะทีมมีการเปลี่ยนแปลง', 'AbortError') }, [])
   /** 更新单个真实概要。 */
   const cacheTeam = useCallback((team: Team) => { setTeams((old) => [...old.filter((item) => item.id !== team.id), team]) }, [])
   /** เลือก器读取一页团队；目录页另行服务端分页。 */
@@ -33,7 +33,7 @@ export function TeamPreviewProvider({ children }: { children: ReactNode }) {
         return cached ? { ...cached, name: team.name, description: team.description, color: team.color, memberCount: team.memberCount, projectCount: team.projectCount, assetCount: team.assetCount } : team
       }))
     }
-    catch (cause) { if (valid() && !(cause instanceof DOMException && cause.name === 'AbortError')) setError(cause instanceof Error ? cause.message : '团队โหลดไม่สำเร็จ') }
+    catch (cause) { if (valid() && !(cause instanceof DOMException && cause.name === 'AbortError')) setError(cause instanceof Error ? cause.message : 'โหลดข้อมูลทีมไม่สำเร็จ') }
     finally { if (valid()) setLoading(false) }
   }, [capture])
   /** 概览只读取首屏；退出团队或切账号后的响应不可重新加入缓存。 */
@@ -62,7 +62,7 @@ export function TeamPreviewProvider({ children }: { children: ReactNode }) {
   const mutate = useCallback(async <T,>(id: string, action: () => Promise<T>): Promise<T> => {
     const valid = capture(); const result = await action(); requireCurrent(valid)
     setRevision((value) => value + 1)
-    await loadTeam(id).catch((cause) => { if (valid()) setError(cause instanceof Error ? `การดำเนินการเสร็จสมบูรณ์，รีเฟรชล้มเหลว：${cause.message}` : 'การดำเนินการเสร็จสมบูรณ์，请โหลดใหม่团队资料') })
+    await loadTeam(id).catch((cause) => { if (valid()) setError(cause instanceof Error ? `ดำเนินการเสร็จสิ้น แต่รีเฟรชล้มเหลว: ${cause.message}` : 'ดำเนินการเสร็จสิ้น โปรดรีเฟรชข้อมูลทีมใหม่') })
     requireCurrent(valid)
     return result
   }, [capture, loadTeam, requireCurrent])

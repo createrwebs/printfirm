@@ -5,10 +5,14 @@ from __future__ import annotations
 from typing import Annotated
 
 import logging
+import re
+import time
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
+from pathlib import Path as FsPath
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Path
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Path, UploadFile
+from fastapi.concurrency import run_in_threadpool
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -23,6 +27,8 @@ from app.models_drama import (
 )
 from app.schemas_drama import (
     DramaActivateVideoVersionRequest,
+    DramaColabCheckRequest,
+    DramaRenderColabRequest,
     DramaComposeEpisodeRequest,
     DramaConfirmEpisodeOut,
     DramaConfirmEpisodeRequest,
@@ -89,7 +95,14 @@ logger = logging.getLogger("app.drama.episodes")
 
 
 def _fragment_out(frag: DramaEpisodeFragment) -> DramaFragmentOut:
-    asset_ids = [r.asset_id for r in (frag.asset_references or [])]
+    raw_ids = [r.asset_id for r in (frag.asset_references or [])]
+    content_ids = [int(m) for m in re.findall(r"@asset:(\d+)", frag.content or "")]
+    seen: set[int] = set()
+    asset_ids: list[int] = []
+    for aid in raw_ids + content_ids:
+        if aid not in seen and aid > 0:
+            seen.add(aid)
+            asset_ids.append(aid)
     content = prepare_fragment_content(
         frag.content or "",
         duration_sec=int(frag.duration_sec or 0) or None,
@@ -573,28 +586,58 @@ async def save_fragments(
     for item in body.fragments:
         item_id = int(item.id) if item.id else 0
         frag = existing.get(item_id) if item_id > 0 else None
+        is_existing = frag is not None
         if frag is None:
             # 先挂上空集合，flush 后不要再 lazy load asset_references
             frag = DramaEpisodeFragment(episode_id=ep.id)
             frag.asset_references = []
             ep.fragments.append(frag)
             await db.flush()
+        prev_video = (frag.video or "") if is_existing else ""
+        prev_cover = (frag.cover or "") if is_existing else ""
+        prev_params = dict(frag.params or {}) if (is_existing and isinstance(frag.params, dict)) else {}
+        prev_gen = prev_params.get("generation") if isinstance(prev_params.get("generation"), dict) else {}
+        prev_status = str(prev_gen.get("status") or "").strip().lower()
+
         frag.sort_order = item.sort_order
         frag.content = prepare_fragment_content(
             item.content or "",
             duration_sec=int(item.duration_sec or 0) or None,
             is_opening=int(item.sort_order or 0) == 0,
         )
-        frag.cover = (item.cover or "")[:1024]
-        frag.video = (item.video or "")[:1024]
+        new_video = (item.video or "")[:1024]
+        new_cover = (item.cover or "")[:1024]
+        new_params = dict(item.params or {}) if isinstance(item.params, dict) else {}
+
+        # Preserve server-written video/generation/versions when browser sends a stale snapshot
+        if is_existing:
+            if prev_status in {"queued", "running", "generating"} or (
+                prev_status == "done" and prev_video and new_video != prev_video and new_video != ""
+            ):
+                new_video = prev_video
+                new_cover = prev_cover or new_cover
+                new_params["generation"] = prev_gen
+                for k in ("lastFrameUrl", "video_versions", "video_width", "video_height", "video_duration_sec"):
+                    if k in prev_params:
+                        new_params[k] = prev_params[k]
+            elif "video_versions" in prev_params and "video_versions" not in new_params:
+                new_params["video_versions"] = prev_params["video_versions"]
+
+        frag.cover = new_cover
+        frag.video = new_video
         frag.duration_sec = item.duration_sec
-        frag.params = item.params
+        frag.params = new_params
         keep_ids.add(int(frag.id))
 
+        req_ids = list(item.asset_ids or [])
+        content_ids = [int(m) for m in re.findall(r"@asset:(\d+)", item.content or "")]
+        for cid in content_ids:
+            if cid not in req_ids:
+                req_ids.append(cid)
         asset_ids = await filter_valid_project_asset_ids(
             db,
             ep.project_id,
-            list(item.asset_ids or []),
+            req_ids,
         )
         await replace_fragment_asset_refs(db, frag, asset_ids)
 
@@ -651,6 +694,161 @@ async def activate_video_version(
     await db.commit()
     await db.refresh(fragment)
     return {"ok": True, **payload}
+
+
+@router.post(
+    "/fragments/{fragment_id}/upload",
+    response_model=DramaFragmentOut,
+    summary="อัปโหลดวิดีโอหรือรูปปกของฉาก (Fragment)",
+    description="อัปโหลดไฟล์วิดีโอ (MP4/MOV/WebM/MKV สูงสุด 200MB) หรือไฟล์รูปภาพปกฉาก (JPG/PNG/WebP/GIF สูงสุด 20MB) สำหรับฉากที่เลือก บันทึกทั้งบนเซิร์ฟเวอร์และอัปโหลดขึ้น Backblaze B2 / OSS",
+)
+async def upload_fragment_media(
+    fragment_id: Annotated[int, Path(description="รหัสฉาก (Fragment ID)")],
+    file: UploadFile = File(..., description="ไฟล์วิดีโอหรือรูปภาพของฉาก"),
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> DramaFragmentOut:
+    from app.services import storage as storage_svc
+    from app.services.drama.generation import (
+        archive_fragment_video_version,
+        write_fragment_last_frame_url,
+        write_fragment_video_output_meta,
+    )
+    from app.services.drama.output_settings import resolve_episode_video_output
+    from app.services.ffmpeg_compose import (
+        extract_video_last_frame,
+        extract_video_poster_frame,
+    )
+
+    result = await db.execute(
+        select(DramaEpisodeFragment)
+        .where(DramaEpisodeFragment.id == fragment_id)
+        .options(selectinload(DramaEpisodeFragment.asset_references))
+    )
+    fragment = result.scalar_one_or_none()
+    if not fragment:
+        raise HTTPException(status_code=404, detail="ไม่พบฉากที่ระบุ")
+    ep = await get_owned_episode(db, fragment.episode_id, user)
+    project = await get_owned_drama_project(db, ep.project_id, user)
+
+    content_type = (file.content_type or "").lower()
+    image_allowed = {
+        "image/jpeg": ".jpg",
+        "image/jpg": ".jpg",
+        "image/png": ".png",
+        "image/webp": ".webp",
+        "image/gif": ".gif",
+    }
+    video_allowed = {
+        "video/mp4": ".mp4",
+        "video/quicktime": ".mov",
+        "video/webm": ".webm",
+        "video/x-matroska": ".mkv",
+    }
+    ext = video_allowed.get(content_type) or image_allowed.get(content_type)
+    is_video = content_type in video_allowed
+    if not ext:
+        suffix = FsPath(file.filename or "").suffix.lower()
+        if suffix in {".mp4", ".mov", ".webm", ".mkv"}:
+            ext = suffix
+            is_video = True
+        elif suffix in {".jpg", ".jpeg", ".png", ".webp", ".gif"}:
+            ext = ".jpg" if suffix == ".jpeg" else suffix
+            is_video = False
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail="รองรับเฉพาะไฟล์วิดีโอ (MP4/MOV/WebM/MKV) หรือรูปภาพ (JPG/PNG/WebP/GIF)",
+            )
+
+    upload_fp = file.file
+    try:
+        upload_fp.seek(0, 2)
+        size = upload_fp.tell()
+        upload_fp.seek(0)
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=400, detail=f"ไม่สามารถอ่านไฟล์ที่อัปโหลดได้: {exc}") from exc
+    if size <= 0:
+        raise HTTPException(status_code=400, detail="ไฟล์ว่างเปล่า")
+    max_bytes = 200 * 1024 * 1024 if is_video else 20 * 1024 * 1024
+    if size > max_bytes:
+        raise HTTPException(
+            status_code=400,
+            detail="ไฟล์วิดีโอต้องไม่เกิน 200MB" if is_video else "ไฟล์รูปภาพต้องไม่เกิน 20MB",
+        )
+
+    stamp = f"{int(time.time())}_{uuid.uuid4().hex[:6]}"
+    pdir = storage_svc.project_dir(ep.project_id)
+    dest = (
+        pdir / f"shot_{fragment.id}_{stamp}{ext}"
+        if is_video
+        else pdir / f"shot_{fragment.id}_{stamp}_cover{ext}"
+    )
+    try:
+        upload_fp.seek(0)
+        dest.write_bytes(upload_fp.read())
+        url = await run_in_threadpool(storage_svc.publish_local, dest, sync=True)
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=500, detail=f"บันทึกและอัปโหลดไฟล์ล้มเหลว: {exc}") from exc
+
+    if is_video:
+        await cancel_fragment_video_tasks_for_fragments(db, [fragment.id])
+        archive_fragment_video_version(fragment)
+        cover_url = ""
+        last_frame_url: str | None = None
+
+        poster_dest = pdir / f"shot_{fragment.id}_{stamp}_poster.jpg"
+        if await run_in_threadpool(extract_video_poster_frame, dest, poster_dest):
+            cover_url = await run_in_threadpool(storage_svc.publish_local, poster_dest, sync=True)
+
+        last_dest = pdir / f"shot_{fragment.id}_{stamp}_last.jpg"
+        if await run_in_threadpool(extract_video_last_frame, dest, last_dest):
+            last_frame_url = await run_in_threadpool(storage_svc.publish_local, last_dest, sync=True)
+
+        fragment.video = url
+        if cover_url:
+            fragment.cover = cover_url
+        write_fragment_last_frame_url(fragment, last_frame_url)
+
+        ratio, resolution = resolve_episode_video_output(ep.params, project.params)
+        await run_in_threadpool(
+            write_fragment_video_output_meta,
+            fragment,
+            aspect_ratio=ratio,
+            resolution=resolution,
+            video_path=dest,
+        )
+        params = dict(fragment.params or {})
+        params.pop("generation_attempts", None)
+        gen = dict(params.get("generation") or {}) if isinstance(params.get("generation"), dict) else {}
+        gen.pop("error", None)
+        gen.pop("root_error", None)
+        gen.update({
+            "status": "done",
+            "source": "upload",
+            "video": fragment.video,
+            "cover": fragment.cover or "",
+            "lastFrameUrl": last_frame_url,
+            "finished_at": datetime.now(UTC).isoformat(),
+            "message": "อัปโหลดวิดีโอสำเร็จ",
+        })
+        params["generation"] = gen
+        if last_frame_url:
+            params["lastFrameUrl"] = last_frame_url
+        fragment.params = params
+    else:
+        fragment.cover = url
+        params = dict(fragment.params or {})
+        params["cover_url"] = url
+        gen = dict(params.get("generation") or {}) if isinstance(params.get("generation"), dict) else {}
+        if fragment.video:
+            gen["cover"] = url
+            params["generation"] = gen
+        fragment.params = params
+
+    await db.commit()
+    await db.refresh(fragment)
+    return _fragment_out(fragment)
 
 
 @router.post(
@@ -821,7 +1019,6 @@ async def generate_episode(
         "deferred_count": deferred_count,
         "remaining_not_queued": 0,
     }
-
 
 @router.get(
     "/episodes/{episode_id}/generate_status",
@@ -1022,3 +1219,502 @@ async def cancel_all_video_jobs(
     result = await cancel_all_episode_video_jobs(user.id)
     logger.info("已取消全部视频任务 user_id=%s result=%s", user.id, result)
     return result
+
+@router.post(
+    "/colab/check",
+    summary="ตรวจสอบการเชื่อมต่อ Colab ComfyUI",
+    description="ตรวจสอบว่า URL ของ ComfyUI บน Colab สามารถเชื่อมต่อได้และพร้อมใช้งานหรือไม่",
+)
+async def check_colab(
+    body: DramaColabCheckRequest,
+    user: User = Depends(get_current_user),
+) -> dict:
+    from app.services.colab_comfyui import check_comfyui_health, validate_comfyui_url
+    try:
+        url = validate_comfyui_url(body.url)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    res = await check_comfyui_health(url)
+    if not res.get("ok"):
+        raise HTTPException(
+            status_code=400,
+            detail=f"ไม่สามารถเชื่อมต่อ Colab ComfyUI ได้: {res.get('error')}",
+        )
+    return res
+
+
+@router.post(
+    "/episodes/{episode_id}/render_colab",
+    summary="ส่งเรนเดอร์วิดีโอไปยัง Colab ComfyUI (MiniMax H3)",
+    description="ส่งฉากที่เลือกไปยัง ComfyUI บน Google Colab เพื่อเรนเดอร์วิดีโอด้วย MiniMax H3 โดยใช้รูป Cover และ Prompt ของฉาก",
+)
+async def render_colab_episode(
+    episode_id: Annotated[int, Path(description="分集数据库编号")],
+    body: DramaRenderColabRequest,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> dict:
+    import httpx
+    from app.models_tasks import TaskRun
+    from app.services import storage as storage_svc
+    from app.services.colab_comfyui import (
+        check_comfyui_health,
+        validate_comfyui_url,
+        upload_image_to_comfyui,
+        submit_h3_video_job,
+        submit_wan2_video_job,
+        build_h3_prompt,
+    )
+
+    try:
+        comfy_url = validate_comfyui_url(body.comfyui_url)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    ep = await get_owned_episode(db, episode_id, user)
+    project = await get_owned_drama_project(db, ep.project_id, user)
+    all_frags = await load_episode_fragments(db, episode_id)
+    frags = match_fragments_for_generate(all_frags, body.fragment_ids)
+    if not frags:
+        raise HTTPException(status_code=400, detail="ไม่มีฉากที่เลือกสำหรับการเรนเดอร์")
+
+    # ตรวจสอบเครดิตคงเหลือก่อนส่งงานไปยัง Colab ComfyUI
+    from app.services.billing.settlement import (
+        billing_active,
+        ensure_balance_for_task_batch,
+        freeze_for_task,
+    )
+
+    if billing_active(user):
+        est_duration = max(3, min(15, int(body.duration_sec or (frags[0].duration_sec if frags else 5) or 5)))
+        probe_task = TaskRun(
+            domain="drama",
+            task_type="fragment_video",
+            provider_name="comfyui",
+            requested_by=user.id,
+            team_id=project.team_id,
+            drama_project_id=ep.project_id,
+            episode_id=episode_id,
+            billing_snapshot={"mode": "legacy"},
+            payload={
+                "project_id": ep.project_id,
+                "episode_id": episode_id,
+                "duration_sec": est_duration,
+                "model_id": "MiniMax-H3 (Colab)" if (body.engine or "h3").lower() == "h3" else "Wan 2.2 (Colab)",
+            },
+        )
+        try:
+            await ensure_balance_for_task_batch(db, user, probe_task, len(frags))
+        except ValueError as exc:
+            raise http_exception_for_value_error(exc) from exc
+
+    health = await check_comfyui_health(comfy_url)
+    if not health.get("ok"):
+        raise HTTPException(
+            status_code=400,
+            detail=f"ไม่สามารถเชื่อมต่อ Colab ComfyUI ได้: {health.get('error')}",
+        )
+
+    submitted_tasks: list[int] = []
+    now = datetime.now(UTC)
+
+    from app.models_drama import DramaFragmentAssetRef, DramaAsset
+
+    for frag in frags:
+        # 1. ค้นหาแอสเซทตัวละครและฉากที่ผูกกับช็อตนี้
+        refs_res = await db.execute(
+            select(DramaFragmentAssetRef)
+            .where(DramaFragmentAssetRef.fragment_id == frag.id)
+            .order_by(DramaFragmentAssetRef.id.asc())
+        )
+        ref_records = refs_res.scalars().all()
+        linked_assets: list[DramaAsset] = []
+        for r in ref_records:
+            a = await db.get(DramaAsset, r.asset_id)
+            if a:
+                linked_assets.append(a)
+        assets_map = {a.id: a.name for a in linked_assets}
+
+        # 2. จัดเตรียมภาพอ้างอิงทั้งหมด (Multiple Reference Images):
+        # ลำดับความสำคัญ:
+        # หากผู้ใช้ระบุ body.reference_image_urls มาโดยตรง -> ใช้ตามที่ส่งมา
+        # มิฉะนั้น (Auto Mode):
+        #   - ภาพตัวละครทั้งหมดในช็อตที่มีภาพ cover/url
+        #   - ภาพฉากในช็อตที่มีภาพ cover/url
+        #   - หากไม่มีภาพฉาก แต่ช็อตมีภาพ cover -> ใช้ภาพ cover ของช็อตเป็นฉากอ้างอิง
+        chosen_ref_specs: list[dict[str, Any]] = []
+
+        raw_urls: list[str] = []
+        if body.reference_image_urls and len(body.reference_image_urls) > 0:
+            raw_urls = [u.strip() for u in body.reference_image_urls if (u or "").strip()]
+        elif body.reference_image_url and body.reference_image_url.strip():
+            raw_urls = [body.reference_image_url.strip()]
+
+        if raw_urls:
+            # Match each URL against assets
+            all_assets_cache: list[DramaAsset] | None = None
+            for u_str in raw_urls:
+                matched_asset: DramaAsset | None = None
+                for a in linked_assets:
+                    if (a.cover or "").strip() == u_str or (a.url or "").strip() == u_str:
+                        matched_asset = a
+                        break
+                if not matched_asset:
+                    if all_assets_cache is None:
+                        all_res = await db.execute(
+                            select(DramaAsset).where(DramaAsset.project_id == project.id)
+                        )
+                        all_assets_cache = list(all_res.scalars().all())
+                        for ca in all_assets_cache:
+                            assets_map.setdefault(ca.id, ca.name)
+                    for a in all_assets_cache:
+                        if (a.cover or "").strip() == u_str or (a.url or "").strip() == u_str:
+                            matched_asset = a
+                            break
+
+                if matched_asset:
+                    params = matched_asset.params if isinstance(matched_asset.params, dict) else {}
+                    atype = (matched_asset.type or "").lower()
+                    raw_vdesc = str(
+                        params.get("visualImage")
+                        or params.get("visualPrompt")
+                        or params.get("description")
+                        or params.get("title")
+                        or ""
+                    )
+                    from app.services.colab_comfyui import _clean_ref_description
+                    desc = _clean_ref_description(raw_vdesc)[:200]
+                    chosen_ref_specs.append({
+                        "url": u_str,
+                        "type": atype,
+                        "name": matched_asset.name or "",
+                        "desc": desc,
+                    })
+                else:
+                    allowed_ep_urls: set[str] = set()
+                    for ef in all_frags:
+                        fcov = (getattr(ef, "cover", None) or (ef.params or {}).get("cover_url") or "").strip()
+                        if fcov:
+                            allowed_ep_urls.add(fcov)
+                        flast = (read_fragment_last_frame_url(ef) or "").strip()
+                        if flast:
+                            allowed_ep_urls.add(flast)
+                    if u_str not in allowed_ep_urls:
+                        raise HTTPException(
+                            status_code=400,
+                            detail="ภาพอ้างอิงต้องเป็นภาพของแอสเซทในโปรเจกต์หรือเฟรมของช็อตในตอนนี้",
+                        )
+                    chosen_ref_specs.append({
+                        "url": u_str,
+                        "type": "scene" if u_str == getattr(frag, "cover", None) else "character",
+                        "name": f"ภาพอ้างอิงช็อต {frag.sort_order or frag.id}",
+                        "desc": "",
+                    })
+        else:
+            # Auto Mode: gather characters, scenes, and props/items (1..9 refs)
+            from app.services.colab_comfyui import _clean_ref_description
+            for a in linked_assets:
+                if (a.type or "").lower() == "character" and ((a.cover or "").strip() or (a.url or "").strip()):
+                    img_u = (a.cover or a.url or "").strip()
+                    params = a.params if isinstance(a.params, dict) else {}
+                    desc = _clean_ref_description(str(params.get("visualImage") or params.get("visualPrompt") or params.get("title") or ""))[:200]
+                    chosen_ref_specs.append({
+                        "url": img_u,
+                        "type": "character",
+                        "name": a.name or "",
+                        "desc": desc,
+                    })
+            for a in linked_assets:
+                if (a.type or "").lower() == "scene" and ((a.cover or "").strip() or (a.url or "").strip()):
+                    img_u = (a.cover or a.url or "").strip()
+                    params = a.params if isinstance(a.params, dict) else {}
+                    desc = _clean_ref_description(str(params.get("visualImage") or params.get("visualPrompt") or params.get("description") or ""))[:200]
+                    chosen_ref_specs.append({
+                        "url": img_u,
+                        "type": "scene",
+                        "name": a.name or "",
+                        "desc": desc,
+                    })
+            for a in linked_assets:
+                if (a.type or "").lower() in ("item", "prop") and ((a.cover or "").strip() or (a.url or "").strip()):
+                    img_u = (a.cover or a.url or "").strip()
+                    params = a.params if isinstance(a.params, dict) else {}
+                    desc = _clean_ref_description(str(params.get("visualImage") or params.get("visualPrompt") or params.get("description") or ""))[:200]
+                    chosen_ref_specs.append({
+                        "url": img_u,
+                        "type": "item",
+                        "name": a.name or "",
+                        "desc": desc,
+                    })
+            shot_cov = (getattr(frag, "cover", None) or (frag.params or {}).get("cover_url") or "").strip()
+            if not any(s["type"] == "scene" for s in chosen_ref_specs) and shot_cov:
+                chosen_ref_specs.append({
+                    "url": shot_cov,
+                    "type": "scene",
+                    "name": f"ฉากที่ {frag.sort_order or frag.id}",
+                    "desc": "",
+                })
+
+        if not chosen_ref_specs:
+            raise HTTPException(
+                status_code=400,
+                detail=f"ฉากที่ {frag.sort_order or frag.id} ยังไม่มีภาพตัวละคร ฉาก พร็อพ หรือภาพ Cover สำหรับเป็นภาพอ้างอิง",
+            )
+
+        duration_sec = body.duration_sec or int(frag.duration_sec or 5)
+        duration_sec = max(3, min(15, duration_sec))
+        use_engine = (body.engine or "h3").lower()
+        if use_engine not in {"h3", "wan2"}:
+            raise HTTPException(status_code=400, detail="รองรับเฉพาะ engine h3 หรือ wan2")
+
+        # Auto-switch engine if user's Colab only has MiniMax H3 models installed (prevents wan_2.1_vae 400 error)
+        if use_engine == "wan2":
+            try:
+                async with httpx.AsyncClient(timeout=5.0, verify=False) as vae_probe:
+                    vr = await vae_probe.get(f"{comfy_url}/object_info/VAELoader")
+                    if vr.status_code == 200:
+                        vaes = vr.json().get("VAELoader", {}).get("input", {}).get("required", {}).get("vae_name", [[]])[0]
+                        if isinstance(vaes, list) and "wan_2.1_vae.safetensors" not in vaes and any("minimax_h3" in v for v in vaes):
+                            use_engine = "h3"
+            except Exception:
+                pass
+
+        shot_cov_url = (getattr(frag, "cover", None) or (frag.params or {}).get("cover_url") or "").strip()
+        # In H3 Multi-Ref mode, if real character and scene assets already exist, drop duplicate static shot cover from ref list
+        if (
+            use_engine == "h3"
+            and shot_cov_url
+            and any(s["type"] == "character" for s in chosen_ref_specs)
+            and sum(1 for s in chosen_ref_specs if s["type"] == "scene") > 1
+        ):
+            chosen_ref_specs = [s for s in chosen_ref_specs if s["url"] != shot_cov_url] or chosen_ref_specs
+
+        async def _load_and_upload_comfy_img(img_url: str, prefix: str) -> str | None:
+            image_bytes: bytes | None = None
+            local_path = storage_svc.local_path_from_url(img_url)
+            if local_path and local_path.exists():
+                image_bytes = local_path.read_bytes()
+            else:
+                try:
+                    async with httpx.AsyncClient(timeout=30.0) as client:
+                        resp = await client.get(img_url)
+                        if resp.status_code == 200:
+                            image_bytes = resp.content
+                except Exception as e:
+                    logger.error("Download image %s failed: %s", img_url, e)
+            if not image_bytes:
+                logger.warning("Could not load image bytes for %s, skipping", img_url)
+                return None
+            fname = f"{prefix}_{frag.id}_{uuid.uuid4().hex[:6]}.png"
+            try:
+                return await upload_image_to_comfyui(comfy_url, image_bytes, fname)
+            except Exception as e:
+                logger.error("Upload image to ComfyUI failed: %s", e)
+                return None
+
+        uploaded_names: list[str] = []
+        uploaded_ref_urls: list[str] = []
+        url_to_uploaded: dict[str, str] = {}
+        char_prompt_entries: list[dict[str, Any]] = []
+        scene_prompt_entry: dict[str, Any] | None = None
+        prop_prompt_entries: list[dict[str, Any]] = []
+        ref_descriptions: list[str] = []
+
+        for idx, spec in enumerate(chosen_ref_specs[:9]):
+            ref_url = spec["url"]
+            uploaded = url_to_uploaded.get(ref_url) or await _load_and_upload_comfy_img(ref_url, f"ref_{idx+1}")
+            if not uploaded:
+                continue
+            url_to_uploaded[ref_url] = uploaded
+            uploaded_names.append(uploaded)
+            uploaded_ref_urls.append(ref_url)
+            assigned_pic_tag = f"<Picture {len(uploaded_names)}>"
+            if spec.get("name"):
+                desc_part = f": {spec['desc']}" if spec.get("desc") else ""
+                ref_descriptions.append(f"{spec['name']} ({spec['type']}){desc_part}")
+            if spec["type"] == "character":
+                char_prompt_entries.append({
+                    "name": spec["name"],
+                    "desc": spec["desc"],
+                    "tag": assigned_pic_tag,
+                })
+            elif spec["type"] == "scene" and not scene_prompt_entry:
+                scene_prompt_entry = {
+                    "name": spec["name"],
+                    "desc": spec.get("desc") or "",
+                    "tag": assigned_pic_tag,
+                }
+            elif spec["type"] in ("item", "prop"):
+                prop_prompt_entries.append({
+                    "name": spec["name"],
+                    "desc": spec.get("desc") or "",
+                    "tag": assigned_pic_tag,
+                })
+
+        if not uploaded_names:
+            raise HTTPException(
+                status_code=400,
+                detail=f"ไม่สามารถโหลดและอัปโหลดภาพอ้างอิงของฉากที่ {frag.sort_order or frag.id}",
+            )
+
+        # 3. เตรียม First Frame (เชื่อมเฟรมท้ายจากช็อตก่อนหน้า / ภาพเปิดช็อต) และ Last Frame (ไม่บังคับ)
+        frag_idx = next((i for i, f in enumerate(all_frags) if f.id == frag.id), -1)
+        prev_frag = all_frags[frag_idx - 1] if frag_idx > 0 else None
+        raw_first = (body.first_frame_url or "").strip()
+        resolved_first_url: str | None = None
+        if raw_first and len(frags) == 1:
+            if raw_first.lower() != "none":
+                # In H3 Multi-Ref mode, do not lock first_frame to the static shot cover when character refs are used
+                if not (use_engine == "h3" and char_prompt_entries and shot_cov_url and raw_first == shot_cov_url):
+                    resolved_first_url = raw_first
+        else:
+            if project_link_last_frame_enabled(project) and prev_frag is not None:
+                prev_last = read_fragment_last_frame_url(prev_frag)
+                if not prev_last:
+                    prev_last = await ensure_fragment_last_frame_url(project, prev_frag)
+                if prev_last and prev_last.strip():
+                    resolved_first_url = prev_last.strip()
+            if not resolved_first_url and use_engine != "h3":
+                if shot_cov_url:
+                    resolved_first_url = shot_cov_url
+
+        raw_last = (body.last_frame_url or "").strip()
+        resolved_last_url: str | None = (
+            raw_last if (raw_last and raw_last.lower() != "none" and len(frags) == 1) else None
+        )
+
+        uploaded_first_frame: str | None = None
+        if resolved_first_url:
+            uploaded_first_frame = url_to_uploaded.get(resolved_first_url) or await _load_and_upload_comfy_img(resolved_first_url, "first")
+            if uploaded_first_frame:
+                url_to_uploaded[resolved_first_url] = uploaded_first_frame
+
+        uploaded_last_frame: str | None = None
+        if resolved_last_url:
+            uploaded_last_frame = url_to_uploaded.get(resolved_last_url) or await _load_and_upload_comfy_img(resolved_last_url, "last")
+            if uploaded_last_frame:
+                url_to_uploaded[resolved_last_url] = uploaded_last_frame
+
+        project_ratio = str((project.params or {}).get("aspect_ratio") or "9:16").strip() or "9:16"
+
+        # If prompt_override was auto-cleaned by the modal (which previously stripped @asset:ID tags),
+        # prefer frag.content when its non-tag body matches so @asset:ID character bindings are preserved.
+        raw_script = (frag.content or "").strip()
+        if body.prompt_override and len(frags) == 1:
+            ov = body.prompt_override.strip()
+            norm_ov = re.sub(r"[\s△]+|@(?:duration|asset|character):\s*[\d.]+|【[^】]*】", "", ov)
+            norm_db = re.sub(r"[\s△]+|@(?:duration|asset|character):\s*[\d.]+|【[^】]*】", "", raw_script)
+            if norm_ov and norm_ov != norm_db:
+                raw_script = ov
+
+        try:
+            if use_engine == "h3":
+                prompt_text = build_h3_prompt(
+                    raw_script,
+                    characters=char_prompt_entries,
+                    scene_ref=scene_prompt_entry,
+                    prop_refs=prop_prompt_entries,
+                    duration=duration_sec,
+                    assets_map=assets_map,
+                    has_first_frame=bool(uploaded_first_frame),
+                    has_last_frame=bool(uploaded_last_frame),
+                )
+
+                prompt_id = await submit_h3_video_job(
+                    comfy_url,
+                    prompt=raw_script,
+                    image_filenames=uploaded_names,
+                    first_frame_filename=uploaded_first_frame,
+                    last_frame_filename=uploaded_last_frame,
+                    aspect_ratio=project_ratio,
+                    duration_sec=duration_sec,
+                    seed=body.seed,
+                    characters=char_prompt_entries,
+                    scene_ref=scene_prompt_entry,
+                    prop_refs=prop_prompt_entries,
+                    assets_map=assets_map,
+                )
+                engine_model_label = "MiniMax-H3 (Colab)"
+                engine_msg = "กำลังประมวลผลด้วย Colab ComfyUI (MiniMax H3)..."
+            else:
+                # Default Wan 2.2 Multi-Reference + First/Last Frame
+                prompt_text = raw_script
+                prompt_id = await submit_wan2_video_job(
+                    comfy_url,
+                    prompt=raw_script,
+                    image_filenames=uploaded_names,
+                    first_frame_filename=uploaded_first_frame,
+                    last_frame_filename=uploaded_last_frame,
+                    duration_sec=duration_sec,
+                    seed=body.seed,
+                    resolution="480p",
+                    aspect_ratio=project_ratio,
+                    assets_map=assets_map,
+                    ref_descriptions=ref_descriptions,
+                )
+                engine_model_label = "Wan 2.2 (Colab)"
+                engine_msg = "กำลังประมวลผลด้วย Colab ComfyUI (Wan 2.2)..."
+        except Exception as e:
+            raise HTTPException(
+                status_code=502,
+                detail=f"ส่งคำสั่งสร้างวิดีโอไปยัง Colab ComfyUI ล้มเหลว: {e}",
+            )
+
+        task = TaskRun(
+            domain="drama",
+            task_type="fragment_video",
+            queue_type="media",
+            status="awaiting_poll",
+            provider_name="comfyui",
+            provider_status="submitted",
+            provider_task_id=f"comfyui:{prompt_id}",
+            requested_by=user.id,
+            team_id=project.team_id,
+            drama_project_id=ep.project_id,
+            episode_id=episode_id,
+            fragment_id=frag.id,
+            billing_status="none",
+            billing_snapshot={"mode": "legacy"},
+            current_step_status="polling",
+            progress_percent=10,
+            next_action_at=now + timedelta(seconds=5),
+            payload={
+                "project_id": ep.project_id,
+                "episode_id": episode_id,
+                "fragment_ids": [frag.id],
+                "comfyui_url": comfy_url,
+                "duration_sec": duration_sec,
+                "prompt": prompt_text,
+                "reference_image_urls": uploaded_ref_urls,
+                "uploaded_reference_names": uploaded_names,
+                "model_id": engine_model_label,
+            },
+        )
+        db.add(task)
+        await db.flush()
+        try:
+            await freeze_for_task(db, task)
+        except ValueError as exc:
+            raise http_exception_for_value_error(exc) from exc
+
+        params = dict(frag.params or {})
+        params["generation"] = {
+            "status": "running",
+            "queued_at": now.isoformat(),
+            "message": engine_msg,
+            "task_id": task.id,
+            "provider": "comfyui",
+            "prompt": prompt_text,
+            "reference_image_urls": uploaded_ref_urls,
+            "uploaded_reference_names": uploaded_names,
+            "provider_task_id": f"comfyui:{prompt_id}",
+        }
+        frag.params = params
+        submitted_tasks.append(task.id)
+
+    await db.commit()
+    return {
+        "ok": True,
+        "tasks": submitted_tasks,
+        "message": f"ส่งเรนเดอร์ไปยัง Colab ComfyUI เรียบร้อยแล้ว {len(submitted_tasks)} ฉาก",
+    }

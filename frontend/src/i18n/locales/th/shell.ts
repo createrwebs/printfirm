@@ -24,6 +24,7 @@ export const thShell = {
     copy: 'คัดลอก',
     search: 'ค้นหา',
     home: 'หน้าแรก',
+    marketing: 'สตูดิโอการตลาด',
     creator: 'ครีเอเตอร์',
     dialog: 'กล่องข้อความ',
     pagination: 'การแบ่งหน้า',

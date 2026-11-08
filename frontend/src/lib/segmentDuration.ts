@@ -16,13 +16,13 @@ export const SHOT_DURATION_MAX = 30
 export const SEGMENT_DURATION_PRESETS = [4, 6, 8, 10, 12] as const
 
 /** 与后端一致的คำบรรยาย (ซับไตเติล) cue（后期叠字，非模型烧录） */
-export const SUBTITLE_CUE = '【คำบรรยาย (ซับไตเติล)：后期叠เสียงบรรยายคำบรรยาย (ซับไตเติล)，简体中文逐句同步】'
+export const SUBTITLE_CUE = '【คำบรรยาย: ซิงค์ข้อความทีละประโยคตามเสียงบรรยาย】'
 
 /** 与后端一致的เสียงบรรยาย前缀（科普自然偏快；旧稿「慢速清晰」仍可识别） */
-export const NARRATION_PREFIX = '【เสียงบรรยาย·自然语速·同步คำบรรยาย (ซับไตเติล)】'
+export const NARRATION_PREFIX = '【เสียงบรรยาย: ความเร็วธรรมชาติ ซิงค์คำบรรยาย】'
 
 /** 脚本แก้ไข区 placeholder */
-export const SEGMENT_SCRIPT_PLACEHOLDER = `${SUBTITLE_CUE}\n【BGM：后期混音 · 轻快专业，音量低于人声】\n@duration:4\n过肩工位การดำเนินการ画面…\n@duration:8\n${NARRATION_PREFIX}口播内容…`
+export const SEGMENT_SCRIPT_PLACEHOLDER = `${SUBTITLE_CUE}\n【BGM: ดนตรีประกอบระดับเสียงเบากว่าเสียงพูด】\n@duration:4\nภาพมุมมองข้ามไหล่แสดงการทำงาน...\n@duration:8\n${NARRATION_PREFIX}เนื้อหาเสียงพูด...`
 
 const DURATION_TOKEN_PATTERN = /@duration:(\d+)/g
 
@@ -101,7 +101,7 @@ export function validateSegmentScriptDuration(content: string): {
       valid: false,
       total,
       durations,
-      message: `单个 @duration 需在 ${SEGMENT_DURATION_MIN}–${SEGMENT_DURATION_MAX} วินาที之间`,
+      message: `ค่า @duration แต่ละช่วงต้องอยู่ระหว่าง ${SEGMENT_DURATION_MIN}–${SEGMENT_DURATION_MAX} วินาที`,
     }
   }
 
@@ -110,7 +110,7 @@ export function validateSegmentScriptDuration(content: string): {
       valid: false,
       total,
       durations,
-      message: `镜头ความยาว合计不能超过 ${SHOT_DURATION_MAX} วินาที（当前 ${total}s）`,
+      message: `ความยาวช็อตรวมต้องไม่เกิน ${SHOT_DURATION_MAX} วินาที (ปัจจุบัน ${total}s)`,
     }
   }
 

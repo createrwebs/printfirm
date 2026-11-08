@@ -99,7 +99,7 @@ export function DramaVideoGenOptionsBar({
       nextAspect !== value.aspect_ratio ||
       nextDur !== value.duration_sec
     ) {
-      setAdjustment('所选模型不支持原参数，已调整规格，请核对ความยาว和报价后生成。')
+      setAdjustment('โมเดลที่เลือกไม่รองรับพารามิเตอร์เดิม ระบบได้ปรับขนาดแล้ว โปรดตรวจสอบความยาวและราคาประเมินก่อนสร้าง')
       onChange({
         ...value,
         resolution: nextRes,
@@ -151,7 +151,7 @@ export function DramaVideoGenOptionsBar({
   }
 
   const styleLabel = getImageStyleLabel(value.image_style_id) || 'สไตล์'
-  const modelLabel = catalogModelLabel(value.model_id, videoModels, 'วิดีโอ模型')
+  const modelLabel = catalogModelLabel(value.model_id, videoModels, 'โมเดลวิดีโอ')
   const outputLabel = formatVideoOutputLabel(value.aspect_ratio, value.resolution)
 
   return (
@@ -227,7 +227,7 @@ export function DramaVideoGenOptionsBar({
       ) : null}
 
       {open === 'model' ? (
-        <div className="fc-gen-opt-panel" role="dialog" aria-label="วิดีโอ模型">
+        <div className="fc-gen-opt-panel" role="dialog" aria-label="โมเดลวิดีโอ">
           <div className="fc-gen-opt-panel-title">模型</div>
           <DramaMediaModelPicker
             models={videoModels}
@@ -311,7 +311,7 @@ export function DramaVideoGenOptionsBar({
       ) : null}
 
       {open === 'output' ? (
-        <div className="fc-gen-opt-panel" role="dialog" aria-label="画幅与ความคมชัด">
+        <div className="fc-gen-opt-panel" role="dialog" aria-label="อัตราส่วนและความคมชัด">
           <div className="fc-gen-opt-panel-title">อัตราส่วน</div>
           <div className="fc-gen-chip-row">
             {aspectOptions.map((ratio) => (

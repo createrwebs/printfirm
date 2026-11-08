@@ -93,7 +93,7 @@ export function CanvasMentionPopover({
         </button>
       </div>
       {filtered.length === 0 ? (
-        <div className="fc-mention-empty">无已连线节点 · 先把ตัวละคร/ฉาก连到本节点</div>
+        <div className="fc-mention-empty">ไม่มีโหนดที่เชื่อมต่อ · ลากเส้นเชื่อมตัวละครหรือฉากมาที่โหนดนี้ก่อน</div>
       ) : (
         <ul className="fc-mention-list">
           {filtered.map((item, index) => {

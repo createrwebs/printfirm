@@ -19,6 +19,6 @@ export function formatDramaChargeYuan(yuan: number | undefined | null): string {
 /** 列表/เวิร์กสเตชัน短文案：费用 · 生图 · 生วิดีโอ · 调用 */
 export function formatDramaUsageBrief(usage?: DramaProjectUsageStats | null): string {
   const u = usage || EMPTY_DRAMA_USAGE
-  const calls = u.calls > 0 ? ` · 调用 ${u.calls}` : ''
-  return `${formatDramaChargeYuan(u.charge_yuan)} · 生图 ${u.image_gens} · 生วิดีโอ ${u.video_gens}${calls}`
+  const calls = u.calls > 0 ? ` · เรียก ${u.calls}` : ''
+  return `${formatDramaChargeYuan(u.charge_yuan)} · สร้างภาพ ${u.image_gens} · สร้างวิดีโอ ${u.video_gens}${calls}`
 }

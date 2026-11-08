@@ -131,13 +131,21 @@ async def ensure_balance_for_task(db: AsyncSession, user: User, task: TaskRun) -
     pending = await pending_task_commitment_fen(db, int(user.id))
     available = int(locked.balance_fen or 0)
     required = pending + need
+    if available < required and (getattr(locked, "toraapi_token", "") or "").strip():
+        from app.services.tokenfree_usage import sync_user_toraapi_balance
+
+        await sync_user_toraapi_balance(db, locked)
+        available = int(locked.balance_fen or 0)
+        user.balance_fen = available
     if available < required:
         if pending > 0:
             raise ValueError(
-                f"余额不足：本次需要 ¥{need/100:.2f}（含排队中 ¥{pending/100:.2f}），"
-                f"当前 ¥{available/100:.2f}，请先充值"
+                f"เครดิตไม่เพียงพอ: ครั้งนี้ต้องการ ¥{need/100:.2f} (รวมที่อยู่ในคิว ¥{pending/100:.2f}), "
+                f"ปัจจุบันมี ¥{available/100:.2f}, กรุณาเติมเครดิตที่ https://www.toraapi.com ก่อนใช้งาน"
             )
-        raise ValueError(f"余额不足：需要 ¥{need/100:.2f}，当前 ¥{available/100:.2f}，请先充值")
+        raise ValueError(
+            f"เครดิตไม่เพียงพอ: ต้องการ ¥{need/100:.2f}, ปัจจุบันมี ¥{available/100:.2f}, กรุณาเติมเครดิตที่ https://www.toraapi.com ก่อนใช้งาน"
+        )
     return need
 
 
@@ -168,10 +176,16 @@ async def ensure_balance_for_task_batch(
     additional = unit * qty
     required = pending + additional
     available = int(locked.balance_fen or 0)
+    if available < required and (getattr(locked, "toraapi_token", "") or "").strip():
+        from app.services.tokenfree_usage import sync_user_toraapi_balance
+
+        await sync_user_toraapi_balance(db, locked)
+        available = int(locked.balance_fen or 0)
+        user.balance_fen = available
     if available < required:
         raise ValueError(
-            f"余额不足：批量生成 {qty} 项需 ¥{additional/100:.2f}"
-            f"（含排队中 ¥{pending/100:.2f}），当前 ¥{available/100:.2f}，请先充值"
+            f"เครดิตไม่เพียงพอ: สร้างพร้อมกัน {qty} รายการต้องการ ¥{additional/100:.2f} "
+            f"(รวมที่อยู่ในคิว ¥{pending/100:.2f}), ปัจจุบันมี ¥{available/100:.2f}, กรุณาเติมเครดิตที่ https://www.toraapi.com ก่อนใช้งาน"
         )
     return {
         "unit_estimate_fen": unit,
@@ -205,8 +219,15 @@ async def freeze_for_task(db: AsyncSession, task: TaskRun) -> int:
         return 0
     need = await estimate_task_fen(db, task)
     available = int(user.balance_fen or 0)
+    if available < need and (getattr(user, "toraapi_token", "") or "").strip():
+        from app.services.tokenfree_usage import sync_user_toraapi_balance
+
+        await sync_user_toraapi_balance(db, user)
+        available = int(user.balance_fen or 0)
     if available < need:
-        raise ValueError(f"余额不足：需要 ¥{need/100:.2f}，当前 ¥{available/100:.2f}，请先充值")
+        raise ValueError(
+            f"เครดิตไม่เพียงพอ: ต้องการ ¥{need/100:.2f}, ปัจจุบันมี ¥{available/100:.2f}, กรุณาเติมเครดิตที่ https://www.toraapi.com ก่อนใช้งาน"
+        )
     # 仅通过 _ledger 扣余额，避免双重扣款
     user.frozen_fen = int(user.frozen_fen or 0) + need
     task.billing_estimate_fen = need

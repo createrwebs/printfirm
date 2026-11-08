@@ -36,19 +36,19 @@ export type MediaLibraryPage = {
 
 /** ละครซีรีส์ API 沿用原有错误คำแนะนำ，并共用登录态与 JSON 解析。 */
 const rawRequest = createJsonRequester((response, detail) =>
-  throwApiError(response.status, detail, '请求ล้มเหลว'),
+  throwApiError(response.status, detail, 'คำขอล้มเหลว'),
 )
 /** 所有ละครซีรีส์写入口共用资源占用校验，读取只登记实际归属。 */
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const epoch = workspaceScope.epoch
-  const routeProject = typeof window === 'undefined' ? 0 : Number(window.location.pathname.match(/^\/drama\/projects\/(\d+)/)?.[1] || 0)
+  const routeProject = typeof window === 'undefined' ? 0 : Number(window.location.pathname.match(/\/drama\/projects\/(\d+)/)?.[1] || 0)
   const url = new URL(path, 'http://local')
   const body = typeof init?.body === 'string' ? JSON.parse(init.body || '{}') as { project_id?: number } : {}
   const requestedProject = Number(path.match(/^\/api\/drama\/(?:projects|scripts|canvas)\/(\d+)/)?.[1] || url.searchParams.get('project_id') || body.project_id || 0)
-  if (routeProject && requestedProject && routeProject !== requestedProject) throw new DOMException('โปรเจกต์页面已切换', 'AbortError')
+  if (routeProject && requestedProject && routeProject !== requestedProject) throw new DOMException('สลับหน้าโปรเจกต์แล้ว', 'AbortError')
   const result = await withDramaEditLock(path, init, (next) => rawRequest<T>(path, next))
   if (epoch !== workspaceScope.epoch) throw new DOMException('创作空间已切换', 'AbortError')
-  if (routeProject && typeof window !== 'undefined' && Number(window.location.pathname.match(/^\/drama\/projects\/(\d+)/)?.[1] || 0) !== routeProject) throw new DOMException('โปรเจกต์页面已切换', 'AbortError')
+  if (routeProject && typeof window !== 'undefined' && Number(window.location.pathname.match(/\/drama\/projects\/(\d+)/)?.[1] || 0) !== routeProject) throw new DOMException('สลับหน้าโปรเจกต์แล้ว', 'AbortError')
   recordDramaResponse(path, result, epoch)
   return result
 }
@@ -503,6 +503,43 @@ export const dramaApi = {
       method: 'POST',
       body: JSON.stringify({ fragment_ids, model_id }),
     }),
+  checkColabComfyUI: (url: string) =>
+    request<{
+      ok: boolean
+      devices?: Array<{ name: string; type: string; total_vram_gb: number; free_vram_gb: number }>
+      vram_free_gb?: number
+      vram_total_gb?: number
+      device_name?: string
+      error?: string
+    }>('/api/drama/colab/check', {
+      method: 'POST',
+      body: JSON.stringify({ url }),
+    }),
+
+  renderColabEpisode: (
+    episodeId: number,
+    body: {
+      fragment_ids: number[]
+      comfyui_url: string
+      engine?: string
+      duration_sec?: number
+      prompt_override?: string
+      seed?: number
+      reference_image_url?: string
+      reference_image_urls?: string[]
+      first_frame_url?: string
+      last_frame_url?: string
+    },
+  ) =>
+    request<{
+      ok: boolean
+      tasks: number[]
+      message: string
+    }>(`/api/drama/episodes/${episodeId}/render_colab`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+
   generateStatus: (episodeId: number) =>
     request<{
       episode_id: number
@@ -542,6 +579,15 @@ export const dramaApi = {
       method: 'POST',
       body: JSON.stringify({ version_id: versionId }),
     }),
+
+  uploadFragmentMedia: (fragmentId: number, file: File) => {
+    const body = new FormData()
+    body.append('file', file)
+    return request<DramaFragment>(`/api/drama/fragments/${fragmentId}/upload`, {
+      method: 'POST',
+      body,
+    })
+  },
 
   cancelAllVideoJobs: () =>
     request<{ ok: boolean; purged: number; revoked: number; fragments: number }>(

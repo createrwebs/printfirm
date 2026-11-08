@@ -49,7 +49,7 @@ async function composeEpisodeVideoServer(
     clips.map((c) => c.id),
   )
   const url = resolveDramaMediaUrl(result.video_url)
-  if (!url) throw new Error('服务端合成未กลับ可ดาวน์โหลด地址')
+  if (!url) throw new Error('เซิร์ฟเวอร์เรนเดอร์รวมคลิปโดยไม่ส่งที่อยู่สำหรับดาวน์โหลดกลับมา')
   const blob = await fetchMediaBlob(url)
   onProgress?.({ phase: 'server', done: clips.length, total: clips.length })
   return blob
@@ -62,7 +62,7 @@ export async function composeEpisodeVideoClient(
   options?: { episodeId?: number },
 ): Promise<Blob> {
   if (clips.length === 0) {
-    throw new Error('本集还没有可拼接的分镜วิดีโอ')
+    throw new Error('ตอนนี้ยังไม่มีวิดีโอสตอรี่บอร์ดที่สามารถนำมาต่อกันได้')
   }
 
   const buffers: Uint8Array[] = new Array(clips.length)
@@ -97,7 +97,7 @@ export async function composeEpisodeVideoClient(
       return composeEpisodeVideoServer(episodeId, clips, onProgress)
     }
     throw new Error(
-      `各镜编码不一致，无法在浏览器里无损拼接。请用同一模型、比例和ความคมชัด生成后再试。${
+      `การเข้ารหัสของแต่ละช็อตไม่ตรงกัน ไม่สามารถต่อคลิปแบบไม่สูญเสียคุณภาพในเบราว์เซอร์ได้ โปรดสร้างใหม่โดยใช้โมเดล อัตราส่วนภาพ และความคมชัดเดียวกันแล้วลองอีกครั้ง${
         compat.reason ? `（${compat.reason}）` : ''
       }`,
     )

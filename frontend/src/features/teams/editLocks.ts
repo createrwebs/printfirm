@@ -86,7 +86,7 @@ export async function holdEditLock(target: EditTarget, force = false): Promise<s
       }
       if (existing) clearInterval(existing.timer)
       const entry: Held = { lease, teamId, target, refs: 0, timer: setInterval(() => {
-        void request<Omit<Lease, 'token'>>(`/api/teams/${teamId}/edit-locks/renew`, { method: 'POST', body: JSON.stringify({ token: entry.lease.token, session_id: editSessionId }) }).then((next) => { if (held.get(id) === entry) entry.lease = renewedLease(entry.lease, next) }).catch((cause) => { if (held.get(id) !== entry) return; entry.lost = cause instanceof Error ? cause.message : 'แก้ไข占用已失效'; clearInterval(entry.timer); emit() })
+        void request<Omit<Lease, 'token'>>(`/api/teams/${teamId}/edit-locks/renew`, { method: 'POST', body: JSON.stringify({ token: entry.lease.token, session_id: editSessionId }) }).then((next) => { if (held.get(id) === entry) entry.lease = renewedLease(entry.lease, next) }).catch((cause) => { if (held.get(id) !== entry) return; entry.lost = cause instanceof Error ? cause.message : 'สิทธิ์การแก้ไขหมดอายุแล้ว'; clearInterval(entry.timer); emit() })
       }, 30_000) }
       held.set(id, entry); emit(); return entry
     })()
@@ -105,14 +105,14 @@ export async function releaseEditLock(target: EditTarget, all = false, expectedT
   await request(`/api/teams/${entry.teamId}/edit-locks/release`, { method: 'POST', body: JSON.stringify({ token: entry.lease.token, session_id: editSessionId }), keepalive: true }).catch(() => undefined)
 }
 /** 切换空间和离开标签页时尽早释放；异常退出仍有后端租约过期兜底。 */
-subscribeWorkspace(() => { pending.clear(); for (const entry of held.values()) entry.lost = '空间或登录身份已变化，请重新读取内容后取得แก้ไข权'; emit(); for (const entry of held.values()) void releaseEditLock(entry.target, true) })
+subscribeWorkspace(() => { pending.clear(); for (const entry of held.values()) entry.lost = 'สถานะเวิร์กสเปซหรือการเข้าสู่ระบบเปลี่ยนไป โปรดโหลดเนื้อหาใหม่ก่อนขอสิทธิ์แก้ไข'; emit(); for (const entry of held.values()) void releaseEditLock(entry.target, true) })
 if (typeof window !== 'undefined') window.addEventListener('pagehide', () => { for (const entry of held.values()) void releaseEditLock(entry.target, true) })
 
 /** 补齐已知分集的业务集号，禁止用当前โปรเจกต์猜测归属。 */
 async function episodeTarget(id: number): Promise<EditTarget> {
   let info = episodes.get(id)
   if (!info) { const episode = await request<Row>(`/api/drama/episodes/${id}`); recordDramaResponse(`/api/drama/episodes/${id}`, episode); info = episodes.get(id) }
-  if (!info) throw new Error('无法确认分集归属，请重新打开โปรเจกต์')
+  if (!info) throw new Error('ไม่สามารถยืนยันความเป็นเจ้าของของตอนได้ โปรดเปิดโปรเจกต์ใหม่อีกครั้ง')
   return { projectId: info.projectId, type: 'episode', resourceId: info.number }
 }
 /** 根据现有写入接口解析唯一资源目标。 */
@@ -128,9 +128,9 @@ export async function resolveEditTarget(path: string, init: RequestInit): Promis
   match = path.match(/\/episodes\/(\d+)/)
   if (match) return episodeTarget(Number(match[1]))
   match = path.match(/\/fragments\/(\d+)/)
-  if (match) { const episodeId = fragments.get(Number(match[1])); if (!episodeId) throw new Error('请รีเฟรช分集后再การดำเนินการ此分镜'); return episodeTarget(episodeId) }
+  if (match) { const episodeId = fragments.get(Number(match[1])); if (!episodeId) throw new Error('กรุณารีเฟรชตอนก่อนดำเนินการช็อตนี้'); return episodeTarget(episodeId) }
   match = path.match(/\/assets\/(\d+)/)
-  if (match) { const assetId = Number(match[1]); projectId = assets.get(assetId) || 0; if (!projectId) throw new Error('请重新打开所属โปรเจกต์的แอสเซท后再แก้ไข'); return { projectId, type: 'asset', resourceId: assetId } }
+  if (match) { const assetId = Number(match[1]); projectId = assets.get(assetId) || 0; if (!projectId) throw new Error('กรุณาเปิดแอสเซทของโปรเจกต์ใหม่อีกครั้งก่อนแก้ไข'); return { projectId, type: 'asset', resourceId: assetId } }
   if (!projectId) return null
   if (/canvas/.test(path)) return { projectId, type: 'canvas', resourceId: 0 }
   if (/seed_from_script|script_summary|add_episode/.test(path)) return { projectId, type: 'structure', resourceId: 0 }
@@ -155,13 +155,13 @@ export async function withDramaEditLock<T>(path: string, init: RequestInit | und
   if (!heldToken) return action(scoped)
   try {
     const entry = held.get(key(target))
-    if (!entry || !isSameLease(entry.lease, heldToken) || entry.lost || new Date(entry.lease.expires_at).getTime() <= Date.now()) throw new Error(entry?.lost || 'แก้ไข占用已失效，请重新取得แก้ไข权')
+    if (!entry || !isSameLease(entry.lease, heldToken) || entry.lost || new Date(entry.lease.expires_at).getTime() <= Date.now()) throw new Error(entry?.lost || 'สิทธิ์การแก้ไขหมดอายุแล้ว โปรดขอรับสิทธิ์การแก้ไขใหม่อีกครั้ง')
     const headers = new Headers(scopeHeaders)
     headers.set('X-Edit-Session', editSessionId); headers.set('X-Edit-Token', entry.lease.token); headers.set('X-Edit-Version', String(entry.lease.version))
     return await action({ ...init, headers })
   } catch (cause) {
     const error = cause as Error & { status?: number }
-    if (error.status === 423 || error.status === 428 || (error.status === 409 && /แก้ไข版本|占用|แก้ไข权/.test(error.message))) {
+    if (error.status === 423 || error.status === 428 || (error.status === 409 && /สิทธิ์การแก้ไข|แก้ไข版本|占用|แก้ไข权/.test(error.message))) {
       const entry = held.get(key(target))
       if (entry && isSameLease(entry.lease, heldToken)) { entry.lost = error.message; clearInterval(entry.timer); emit() }
     }

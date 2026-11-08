@@ -265,7 +265,7 @@ export function AdminLayout() {
           </div>
           <div className="admin-brand-copy">
             <div className="admin-brand-name">
-              PRINTFILM<span>®</span>
+              Tora FILM<span>®</span>
             </div>
             <div className="admin-brand-sub">{t("nav.consoleTitle")}</div>
           </div>

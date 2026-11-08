@@ -37,8 +37,8 @@ function EpisodeFragmentNodeComponent({
           <button
             type="button"
             className="ep-frag-link-btn nodrag nopan"
-            title="关联出境แอสเซท"
-            aria-label="关联出境แอสเซท"
+            title="เชื่อมโยงแอสเซทที่ปรากฏ"
+            aria-label="เชื่อมโยงแอสเซทที่ปรากฏ"
             disabled={readOnly}
             onClick={() => onRequestLinkAsset?.(data.fragmentId)}
           >
@@ -70,19 +70,19 @@ function EpisodeFragmentNodeComponent({
       </div>
 
       <div className="ep-frag-prompt">
-        <label>คำแนะนำ词</label>
+        <label>พรอมต์</label>
         {selected ? (
           <textarea
             className="ep-frag-prompt-input nodrag nowheel"
             value={data.content}
             readOnly={readOnly}
             onChange={handlePromptChange}
-            placeholder="บทสตอรี่บอร์ด / Seedance คำแนะนำ词…"
+            placeholder="สตอรี่บอร์ด / พรอมต์ Seedance..."
             rows={5}
           />
         ) : (
           <p className="ep-frag-prompt-text">
-            {(data.content || '').trim() || '（空คำแนะนำ词）'}
+            {(data.content || '').trim() || '(ไม่มีพรอมต์)'}
           </p>
         )}
       </div>

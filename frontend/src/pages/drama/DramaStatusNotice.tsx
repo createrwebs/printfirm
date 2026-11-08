@@ -47,16 +47,16 @@ export function DramaErrorNotice({ message, className, onDismiss }: { message: s
   return (
     <DramaStatusNotice
       tone={networkError ? 'warning' : 'error'}
-      title={networkError ? '暂时无法连接服务' : 'การดำเนินการ未เสร็จสิ้น'}
+      title={networkError ? 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ชั่วคราว' : 'การดำเนินการยังไม่เสร็จสิ้น'}
       icon={networkError ? <WifiOff size={17} strokeWidth={1.8} /> : undefined}
       className={className}
       onDismiss={onDismiss}
     >
       {networkError ? (
         <>
-          <p>请检查网络连接后ลองใหม่。如有生成任务进行中，可稍后ดู任务สถานะ。</p>
+          <p>กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ตแล้วลองใหม่อีกครั้ง หากมีงานสร้างกำลังทำงานอยู่ สามารถตรวจสอบสถานะงานในภายหลังได้</p>
           <details className="drama-status-notice-details">
-            <summary>ดู错误รายละเอียด</summary>
+            <summary>ดูรายละเอียดข้อผิดพลาด</summary>
             <p>{message}</p>
           </details>
         </>

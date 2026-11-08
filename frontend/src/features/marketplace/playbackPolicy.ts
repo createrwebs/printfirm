@@ -10,8 +10,8 @@ export function isFreeEpisode(series: { sale_type?: string; free_episode_count?:
 export function previewStatusLabel(status: string | undefined, free: boolean) {
   if (free) return '无需试看'
   const labels: Record<string, string> = {
-    none: '未生成', missing: '未生成', pending: 'กำลังรอคิว', running: '正在生成短试看',
-    done: '短试看已就绪', failed: 'สร้างไม่สำเร็จ，可ลองใหม่', cancelled: '任务ยกเลิกแล้ว',
+    none: 'ยังไม่ได้สร้าง', missing: 'ยังไม่ได้สร้าง', pending: 'กำลังรอคิว', running: 'กำลังสร้างตัวอย่างสั้น',
+    done: 'ตัวอย่างสั้นพร้อมแล้ว', failed: 'สร้างไม่สำเร็จ สามารถลองใหม่ได้', cancelled: 'งานถูกยกเลิกแล้ว',
   }
   return labels[status || 'none'] || status
 }

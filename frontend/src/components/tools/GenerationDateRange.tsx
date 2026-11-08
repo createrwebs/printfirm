@@ -30,12 +30,12 @@ export default function GenerationDateRange({ from, to, onChange }: Props) {
     return () => cancelAnimationFrame(frame)
   }, [open, from, today, panelRef])
   const presets = [
-    { label: text('全部เวลา', 'All time'), start: '', end: '' },
+    { label: text('ทั้งหมด', 'All time'), start: '', end: '' },
     ...[7, 30].map(days => {
       const start = new Date(); start.setDate(start.getDate() - days + 1)
-      return { label: text(`最近 ${days} 天`, `Last ${days} days`), start: dayKey(start), end: today }
+      return { label: text(`${days} วันล่าสุด`, `Last ${days} days`), start: dayKey(start), end: today }
     }),
-    { label: text('本月', 'This month'), start: dayKey(shiftMonth(new Date(), 0)), end: today },
+    { label: text('เดือนนี้', 'This month'), start: dayKey(shiftMonth(new Date(), 0)), end: today },
   ]
 
   function pick(value: string) {
@@ -66,8 +66,8 @@ export default function GenerationDateRange({ from, to, onChange }: Props) {
     const rangeStart = draftFrom < end ? draftFrom : end
     const rangeEnd = draftFrom < end ? end : draftFrom
     return <div className={`gen-calendar-month ${offset ? 'is-second' : ''}`}>
-      <div className="gen-calendar-month-label">{current.toLocaleDateString(text('zh-CN', 'en-US'), { year: 'numeric', month: 'long' })}</div>
-      <div className="gen-calendar-weekdays">{text('一 二 三 四 五 六 日', 'M T W T F S S').split(' ').map((day, index) => <span key={index}>{day}</span>)}</div>
+      <div className="gen-calendar-month-label">{current.toLocaleDateString(text('th-TH', 'en-US'), { year: 'numeric', month: 'long' })}</div>
+      <div className="gen-calendar-weekdays">{text('จ อ พ พฤ ศ ส อา', 'M T W T F S S').split(' ').map((day, index) => <span key={index}>{day}</span>)}</div>
       <div className="gen-calendar-grid" onPointerLeave={() => setHovered('')}>
         {Array.from({ length: start }, (_, index) => <span key={`blank-${index}`} />)}
         {Array.from({ length: days }, (_, index) => {
@@ -83,26 +83,26 @@ export default function GenerationDateRange({ from, to, onChange }: Props) {
       </div>
     </div>
   }
-  const display = from ? `${from.replaceAll('-', '.')} — ${(to || from).replaceAll('-', '.')}` : text('全部เวลา', 'All time')
+  const display = from ? `${from.replaceAll('-', '.')} — ${(to || from).replaceAll('-', '.')}` : text('เวลาทั้งหมด', 'All time')
 
   return <div className={`gen-date-control ${from ? 'has-value' : ''}`}>
     <button type="button" className={`gen-date-trigger ${open ? 'is-open' : ''}`} ref={triggerRef}
-      aria-haspopup="dialog" aria-expanded={open} aria-controls={open ? id : undefined} aria-label={text('เลือก日期范围', 'Choose date range')}
+      aria-haspopup="dialog" aria-expanded={open} aria-controls={open ? id : undefined} aria-label={text('เลือกช่วงวันที่', 'Choose date range')}
       onClick={() => { setDraftFrom(from); setDraftTo(to); setHovered(''); setMonth(shiftMonth(from ? parseDay(from) : new Date(), 0)); setOpen(previous => !previous) }}>
       <CalendarDays size={17} aria-hidden /><span>{display}</span><ChevronDown size={14} aria-hidden />
     </button>
-    {from && <button type="button" className="gen-date-clear" aria-label={text('清除日期ตัวกรอง', 'Clear date filter')} onClick={() => onChange('', '')}><X size={13} /></button>}
-    {open && createPortal(<div ref={panelRef} style={position} className="gen-floating gen-calendar-popup" role="dialog" id={id} aria-label={text('เลือกเวลา范围', 'Select date range')}>
-      <header className="gen-calendar-header"><span><CalendarDays size={17} />{text('เลือกเวลา范围', 'Select date range')}</span><button type="button" className="gen-plain-icon" aria-label={text('ปิด日期เลือก', 'Close date picker')} onClick={() => { setOpen(false); triggerRef.current?.focus() }}><X size={16} /></button></header>
+    {from && <button type="button" className="gen-date-clear" aria-label={text('ล้างตัวกรองวันที่', 'Clear date filter')} onClick={() => onChange('', '')}><X size={13} /></button>}
+    {open && createPortal(<div ref={panelRef} style={position} className="gen-floating gen-calendar-popup" role="dialog" id={id} aria-label={text('เลือกช่วงเวลา', 'Select date range')}>
+      <header className="gen-calendar-header"><span><CalendarDays size={17} />{text('เลือกช่วงเวลา', 'Select date range')}</span><button type="button" className="gen-plain-icon" aria-label={text('ปิดตัวเลือกวันที่', 'Close date picker')} onClick={() => { setOpen(false); triggerRef.current?.focus() }}><X size={16} /></button></header>
       <div className="gen-calendar-presets">{presets.map(preset => <button type="button" key={preset.label}
         className={draftFrom === preset.start && draftTo === preset.end ? 'is-active' : ''}
         onClick={() => { setDraftFrom(preset.start); setDraftTo(preset.end); setHovered(''); setMonth(shiftMonth(preset.start ? parseDay(preset.start) : new Date(), 0)) }}>{preset.label}{draftFrom === preset.start && draftTo === preset.end && <Check size={12} />}</button>)}</div>
-      <div className="gen-calendars"><button type="button" className="gen-calendar-prev gen-plain-icon" aria-label={text('上个月', 'Previous month')} onClick={() => setMonth(value => shiftMonth(value, -1))}><ChevronLeft size={18} /></button>
+      <div className="gen-calendars"><button type="button" className="gen-calendar-prev gen-plain-icon" aria-label={text('เดือนก่อนหน้า', 'Previous month')} onClick={() => setMonth(value => shiftMonth(value, -1))}><ChevronLeft size={18} /></button>
         {calendar(0)}{calendar(1)}
-        <button type="button" className="gen-calendar-next gen-plain-icon" aria-label={text('下个月', 'Next month')} onClick={() => setMonth(value => shiftMonth(value, 1))}><ChevronRight size={18} /></button>
+        <button type="button" className="gen-calendar-next gen-plain-icon" aria-label={text('เดือนถัดไป', 'Next month')} onClick={() => setMonth(value => shiftMonth(value, 1))}><ChevronRight size={18} /></button>
       </div>
-      <footer className="gen-calendar-footer"><div><span>{draftFrom || text('开始日期', 'Start date')}</span><ArrowRight size={14} /><span>{draftTo || (draftFrom ? text('เลือก结束日期', 'Choose end date') : text('结束日期', 'End date'))}</span></div>
-        <button type="button" className="gen-primary" onClick={() => { onChange(draftFrom, draftFrom ? draftTo || draftFrom : ''); setOpen(false); triggerRef.current?.focus() }}>{text('应用ตัวกรอง', 'Apply')}</button>
+      <footer className="gen-calendar-footer"><div><span>{draftFrom || text('วันที่เริ่มต้น', 'Start date')}</span><ArrowRight size={14} /><span>{draftTo || (draftFrom ? text('เลือกวันที่สิ้นสุด', 'Choose end date') : text('วันที่สิ้นสุด', 'End date'))}</span></div>
+        <button type="button" className="gen-primary" onClick={() => { onChange(draftFrom, draftFrom ? draftTo || draftFrom : ''); setOpen(false); triggerRef.current?.focus() }}>{text('ใช้ตัวกรอง', 'Apply')}</button>
       </footer>
     </div>, document.body)}
   </div>

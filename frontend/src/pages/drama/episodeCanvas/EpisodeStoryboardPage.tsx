@@ -149,7 +149,7 @@ function EpisodeStoryboardInner() {
         setAssets(assetList || [])
       })
       .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : '加载分 ตอนล้มเหลว')
+        if (!cancelled) setError(err instanceof Error ? err.message : 'โหลดตอนไม่สำเร็จ')
       })
       .finally(() => {
         if (!cancelled) setBusy(false)
@@ -189,7 +189,7 @@ function EpisodeStoryboardInner() {
         setEpisode(saved)
         setFragments(saved.fragments || [])
         setDirty(false)
-        setStatus('已บันทึก')
+        setStatus('บันทึกแล้ว')
         window.setTimeout(() => setStatus(''), 1600)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'บันทึกไม่สำเร็จ')
@@ -318,17 +318,17 @@ function EpisodeStoryboardInner() {
           <button
             type="button"
             className="ep-storyboard-back"
-            aria-label="กลับ分 ตอน"
-            title="กลับ分 ตอน"
+            aria-label="กลับหน้ารายการตอน"
+            title="กลับหน้ารายการตอน"
             onClick={() => navigate(backHref)}
           >
             <ChevronLeft size={20} strokeWidth={1.8} />
           </button>
           <div className="ep-storyboard-title">
-            <strong>{episode?.name || `分 ตอน ${eid}`}</strong>
+            <strong>{episode?.name || `ตอนที่ ${eid}`}</strong>
             <span>
               分镜故事板 · {fragments.length} 镜
-              {dirty ? ' · 未บันทึก' : status ? ` · ${status}` : ''}
+              {dirty ? ' · ยังไม่ได้บันทึก' : status ? ` · ${status}` : ''}
             </span>
           </div>
         </div>
@@ -338,7 +338,7 @@ function EpisodeStoryboardInner() {
             className="ep-storyboard-btn ghost"
             onClick={() => navigate(`/drama/projects/${pid}/canvas`)}
           >
-            แอสเซท画布
+            แคนวาสแอสเซท
           </button>
           <button
             type="button"
@@ -355,7 +355,7 @@ function EpisodeStoryboardInner() {
         {fragments.length === 0 && !busy ? (
           <div className="ep-storyboard-empty">
             <strong>暂无分镜</strong>
-            <span>请先回分 ตอนแก้ไข页เพิ่มสตอรี่บอร์ด</span>
+            <span>กรุณากลับไปหน้าแก้ไขตอนเพื่อเพิ่มสตอรี่บอร์ดก่อน</span>
           </div>
         ) : null}
         <ReactFlow
@@ -389,12 +389,12 @@ function EpisodeStoryboardInner() {
       <Modal
         open={linkTargetFragId != null}
         onClose={() => setLinkTargetFragId(null)}
-        title="关联出境แอสเซท"
+        title="เชื่อมโยงแอสเซทที่ปรากฏ"
         size="lg"
       >
-        <p className="ep-storyboard-picker-hint">เลือก本镜出ฉาก的ตัวละคร / ฉาก / อุปกรณ์/พร็อพ</p>
+        <p className="ep-storyboard-picker-hint">เลือกตัวละคร / ฉาก / อุปกรณ์ที่ปรากฏในช็อตนี้</p>
         {pickerAssets.length === 0 ? (
-          <p className="ep-storyboard-picker-empty">暂无可选แอสเซท，请先到แอสเซท画布生成</p>
+          <p className="ep-storyboard-picker-empty">ยังไม่มีแอสเซทให้เลือก กรุณาไปสร้างที่ผืนผ้าใบแอสเซทก่อน</p>
         ) : (
           <div className="ep-storyboard-picker-grid">
             {pickerAssets.map((asset) => {

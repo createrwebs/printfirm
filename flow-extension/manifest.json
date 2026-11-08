@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "PrintFilm → Google Flow",
+  "version": "1.0.0",
+  "description": "Receives prompt + reference images from PrintFilm and fills them into Google Flow.",
+  "permissions": ["storage"],
+  "host_permissions": [
+    "https://labs.google/*",
+    "https://flow.google.com/*",
+    "http://localhost/*",
+    "http://127.0.0.1/*"
+  ],
+  "background": { "service_worker": "background.js" },
+  "content_scripts": [
+    { "matches": ["http://localhost:5173/*"], "js": ["bridge.js"], "run_at": "document_idle" },
+    { "matches": ["https://labs.google/*", "https://flow.google.com/*"], "js": ["flow.js"], "run_at": "document_idle" }
+  ]
+}

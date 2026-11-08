@@ -18,11 +18,11 @@ export function withReturn(path: string, from: string | undefined): string {
 }
 
 // 模块内统一页头。地址带站内 from 时回到来源页，否则用调用方指定的广场。
-export function PageHeading({ title, description, back, backLabel = 'กลับ广场' }: { title: string; description: string; back?: string; backLabel?: string }) {
+export function PageHeading({ title, description, back, backLabel = 'กลับไปที่ตลาด' }: { title: string; description: string; back?: string; backLabel?: string }) {
   const [search] = useSearchParams()
   const from = internalReturn(search.get('from'))
   const href = from || back
-  const label = from ? 'กลับ上一页' : backLabel
+  const label = from ? 'กลับไปหน้าก่อนหน้า' : backLabel
   return <header className="pf-market-page-heading">{href && <Link className="pf-market-back" to={href}><ArrowLeft size={15} />{label}</Link>}<h1>{title}</h1><p>{description}</p></header>
 }
 
@@ -38,8 +38,8 @@ export function FormSection({ step, title, description, children }: { step: stri
 
 // 侧栏展示实际发布规则，不把流程说明显示为เสร็จสมบูรณ์สถานะ。
 export function PublishGuide({ recruit = false, saleType = 'copyright_contact' }: { recruit?: boolean; saleType?: 'free' | 'copyright_contact' | 'platform_unlock' }) {
-  const steps = recruit ? [['说明需求', '写清用途、预算和交付要求。'], ['ส่ง审核', 'ผ่านการตรวจสอบ后进入招募广场。'], ['联系客服', 'ผู้สร้างสรรค์ (Creator)先联系客服表达接单意向。'], ['线下合作', '客服协调需求、预算、合同及交付。']] : [['完善作品', 'อัปโหลดวิดีโอ与封面，填写作品介绍。'], ['确认版权', 'PrintFilm 作品使用有效授权函，其他平台作品ส่ง证明材料；暂缺材料可联系客服。'], ['ส่ง审核', '作品与版权材料一并ส่ง，由ผู้ดูแลระบบ (Admin)统一审核。'], ['上架发布', 'ผ่านการตรวจสอบ后，由你主动上架。']]
-  const saleNotice = saleType === 'free' ? '上架后可完整免费观看。免费不代表可任意商用，使用仍须遵守作者授权范围。' : saleType === 'platform_unlock' ? '观众按标价购买所购版本的永久在线播放权益，不包含版权转让；ผู้สร้างสรรค์ (Creator)按已ตกลง的比例获得收益。' : '版权合作参考价供洽谈使用。最终价格、授权范围、转让手续与相关费用请和客服确认，咨询不代表成交。'
-  return <aside className="pf-market-guide"><div className="pf-market-guide-heading"><ShieldCheck size={21} /><h2>{recruit ? '从需求到合作' : '从作品到市场'}</h2></div><ol>{steps.map(([title, description], index) => <li key={title}><span>{String(index + 1).padStart(2, '0')}</span><div><strong>{title}</strong><p>{description}</p></div></li>)}</ol><div className="pf-market-guide-note"><strong>{recruit ? '先明确，再合作' : '了解收益与授权'}</strong><p>{recruit ? 'ผู้สร้างสรรค์ (Creator)通过平台客服接单。具体合作条件在线下协商确认，咨询不代表已接单或成交。' : saleNotice}</p>{!recruit && <p>版权证明不能代替音乐、字体、肖像等素材的必要授权。</p>}</div></aside>
+  const steps = recruit ? [['ระบุความต้องการ', 'เขียนวัตถุประสงค์ งบประมาณ และข้อกำหนดการส่งมอบให้ชัดเจน'], ['ส่งตรวจสอบ', 'เมื่อผ่านการตรวจสอบจะเข้าสู่ตลาดรับสมัคร'], ['ติดต่อฝ่ายบริการลูกค้า', 'ครีเอเตอร์ติดต่อฝ่ายบริการลูกค้าเพื่อแจ้งความจำนงในการรับงาน'], ['ร่วมงานแบบออฟไลน์', 'ฝ่ายบริการลูกค้าประสานงานความต้องการ งบประมาณ สัญญา และการส่งมอบ']] : [['เตรียมผลงานให้สมบูรณ์', 'อัปโหลดวิดีโอและภาพหน้าปก พร้อมกรอกคำแนะนำผลงาน'], ['ยืนยันลิขสิทธิ์', 'ผลงาน PrintFilm ใช้หนังสือมอบอำนาจที่มีผล ส่วนผลงานจากแพลตฟอร์มอื่นให้แนบหลักฐาน หากเอกสารไม่ครบติดต่อฝ่ายบริการลูกค้า'], ['ส่งตรวจสอบ', 'ส่งผลงานและข้อมูลลิขสิทธิ์พร้อมกัน โดยผู้ดูแลระบบตรวจสอบ'], ['วางจำหน่ายผลงาน', 'เมื่อผ่านการตรวจสอบแล้ว คุณสามารถกดวางจำหน่ายได้ด้วยตนเอง']]
+  const saleNotice = saleType === 'free' ? 'เมื่อวางจำหน่ายแล้วสามารถรับชมฟรีได้เต็มเรื่อง การรับชมฟรีไม่ได้หมายความว่าสามารถนำไปใช้ในเชิงพาณิชย์ได้อย่างอิสระ การใช้งานยังคงต้องเป็นไปตามขอบเขตการอนุญาตของผู้สร้างสรรค์' : saleType === 'platform_unlock' ? 'ผู้ชมชำระเงินตามราคาที่กำหนดเพื่อรับสิทธิ์ในการรับชมออนไลน์เวอร์ชันที่ซื้อตลอดไป โดยไม่รวมการโอนลิขสิทธิ์ ครีเอเตอร์จะได้รับส่วนแบ่งรายได้ตามสัดส่วนที่ตกลงไว้' : 'ราคาอ้างอิงความร่วมมือด้านลิขสิทธิ์ใช้สำหรับการเจรจา ราคาขั้นสุดท้าย ขอบเขตการอนุญาต ขั้นตอนการโอนสิทธิ์ และค่าธรรมเนียมที่เกี่ยวข้อง โปรดยืนยันกับฝ่ายบริการลูกค้า การปรึกษาไม่ได้หมายถึงการปิดการขาย'
+  return <aside className="pf-market-guide"><div className="pf-market-guide-heading"><ShieldCheck size={21} /><h2>{recruit ? 'จากความต้องการสู่ความร่วมมือ' : 'จากผลงานสู่ตลาด'}</h2></div><ol>{steps.map(([title, description], index) => <li key={title}><span>{String(index + 1).padStart(2, '0')}</span><div><strong>{title}</strong><p>{description}</p></div></li>)}</ol><div className="pf-market-guide-note"><strong>{recruit ? 'กำหนดให้ชัดเจนก่อนร่วมงาน' : 'เข้าใจรายได้และการอนุญาตสิทธิ์'}</strong><p>{recruit ? 'ครีเอเตอร์รับงานผ่านฝ่ายบริการลูกค้าของแพลตฟอร์ม เงื่อนไขความร่วมมือเฉพาะเจาะจงจะได้รับการประสานงานยืนยัน การปรึกษาไม่ได้หมายความว่าตกลงรับงานหรือปิดการขายแล้ว' : saleNotice}</p>{!recruit && <p>หลักฐานลิขสิทธิ์ไม่สามารถแทนที่การอนุญาตสิทธิ์ที่จำเป็นสำหรับเพลง ฟอนต์ บุคคล หรือองค์ประกอบอื่นๆ ได้</p>}</div></aside>
 }
 

@@ -4,7 +4,7 @@ import { createJsonRequester, uploadFile } from './client'
 
 /** Skill API 保留本模块的错误文案，避免依赖ละครซีรีส์客户端。 */
 const request = createJsonRequester((_response, detail) => {
-  throw new Error(typeof detail === 'string' ? detail : '请求ล้มเหลว')
+  throw new Error(typeof detail === 'string' ? detail : 'คำขอล้มเหลว')
 })
 
 export type AgentSkill = {

@@ -101,7 +101,7 @@ export function formatOutputSettingsLabel(
 /** 解析模型展示名（无目录时回退 id） */
 export function getImageModelLabel(modelId: string | undefined | null): string {
   const id = (modelId || '').trim()
-  return id || 'รูปภาพ模型'
+  return id || 'โมเดลรูปภาพ'
 }
 
 /** 任意非空字符串均可作为生图模型 id */

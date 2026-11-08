@@ -41,28 +41,28 @@ type CanvasNodeGeneratePanelProps = {
 function panelCopy(kind: CanvasNodeKind, hasMedia: boolean) {
   if (kind === 'video') {
     return {
-      title: hasMedia ? 'แก้ไข并重生วิดีโอ' : 'AI สร้างวิดีโอ',
-      placeholder: 'คำอธิบายวิดีโอภาพ、镜头运动与氛围；键入 @ 引用已连线节点…',
-      hint: 'Enter สร้างวิดีโอ · @ 仅可引用已连线节点 · Shift+Enter 换行',
+      title: hasMedia ? 'แก้ไขและสร้างวิดีโอใหม่' : 'สร้างวิดีโอด้วย AI',
+      placeholder: 'อธิบายภาพวิดีโอ การเคลื่อนกล้อง และบรรยากาศ พิมพ์ @ เพื่ออ้างอิงโหนดที่เชื่อมต่อ...',
+      hint: 'Enter เพื่อสร้างวิดีโอ · @ อ้างอิงได้เฉพาะโหนดที่เชื่อมต่อ · Shift+Enter เพื่อขึ้นบรรทัดใหม่',
     }
   }
   if (kind === 'character') {
     return {
-      title: hasMedia ? 'แก้ไข并重生ตัวละคร' : 'AI 生ตัวละคร',
-      placeholder: 'คำอธิบายตัวละคร外貌、服饰与气质…',
+      title: hasMedia ? 'แก้ไขและสร้างตัวละครใหม่' : 'สร้างตัวละครด้วย AI',
+      placeholder: 'อธิบายลักษณะตัวละคร เครื่องแต่งกาย และบุคลิก...',
       hint: 'Enter 生成 · Shift+Enter 换行',
     }
   }
   if (kind === 'scene') {
     return {
-      title: hasMedia ? 'แก้ไข并重生ฉาก' : 'AI 生ฉาก',
-      placeholder: 'คำอธิบายฉาก环境、光线与氛围…',
+      title: hasMedia ? 'แก้ไขและสร้างฉากใหม่' : 'สร้างฉากด้วย AI',
+      placeholder: 'อธิบายสภาพแวดล้อมฉาก แสง และบรรยากาศ...',
       hint: 'Enter 生成 · Shift+Enter 换行',
     }
   }
   return {
-    title: hasMedia ? 'แก้ไข并重生รูปภาพ' : 'AI 生图',
-    placeholder: 'คำอธิบายภาพ内容；键入 @ 引用已连线节点…',
+    title: hasMedia ? 'แก้ไขและสร้างรูปภาพใหม่' : 'สร้างรูปภาพด้วย AI',
+    placeholder: 'อธิบายเนื้อหาภาพ พิมพ์ @ เพื่ออ้างอิงโหนดที่เชื่อมต่อ...',
     hint: 'Enter 生成 · @ 仅可引用已连线节点 · Shift+Enter 换行',
   }
 }
@@ -238,7 +238,7 @@ export function CanvasNodeGeneratePanel({
         updateNodePrompt(nodeId, next)
       }
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : 'คำอธิบาย优化ล้มเหลว')
+      setErrorMessage(err instanceof Error ? err.message : 'ปรับแต่งคำอธิบายไม่สำเร็จ')
     } finally {
       setOptimizing(false)
     }
@@ -275,7 +275,7 @@ export function CanvasNodeGeneratePanel({
         ) : null}
       </div>
       <div className="fc-generate-prompt-meta">
-        <span>คำแนะนำ词{allowMention ? <span className="fc-generate-mention-hint"> · @ 引用连线节点</span> : null}</span>
+        <span>พรอมต์{allowMention ? <span className="fc-generate-mention-hint"> · @ อ้างอิงโหนดที่เชื่อมต่อ</span> : null}</span>
         <span className="fc-generate-count">{Array.from(prompt).length.toLocaleString()} 字</span>
       </div>
       <CanvasPromptEditor
@@ -321,8 +321,8 @@ export function CanvasNodeGeneratePanel({
           uploadError={uploadError}
         />
         {referenceLimits ? (
-          <span className="fc-generate-reference-limits" title="首尾帧和画风板计入ภาพอ้างอิง片数量；0 表示模型不支持此类参考。">
-            参考上限：รูปภาพ {referenceLimits.images} · วิดีโอ {referenceLimits.videos} · เสียง {referenceLimits.audios}
+          <span className="fc-generate-reference-limits" title="เฟรมแรก-เฟรมท้ายและกระดานสไตล์จะนับรวมในจำนวนภาพอ้างอิง โดย 0 หมายถึงโมเดลไม่รองรับการอ้างอิงประเภทนี้">
+            ขีดจำกัดอ้างอิง: รูปภาพ {referenceLimits.images} · วิดีโอ {referenceLimits.videos} · เสียง {referenceLimits.audios}
           </span>
         ) : null}
       </div>
@@ -338,16 +338,16 @@ export function CanvasNodeGeneratePanel({
             disabled={!canOptimize}
             title={
               selectedIds.length
-                ? '优化คำบรรยายภาพ，并保留บทพูด与 @ 引用'
-                : '请先เลือก Skill'
+                ? 'ปรับแต่งคำบรรยายภาพ พร้อมคงบทพูดและการอ้างอิง @'
+                : 'กรุณาเลือก Skill ก่อน'
             }
             onClick={() => void optimizePrompt()}
           >
             {optimizing ? <Loader2 size={14} className="fc-spin" /> : <Wand2 size={14} strokeWidth={1.8} />}
-            คำอธิบาย优化
+            ปรับแต่งคำอธิบาย
           </button>
-          <button type="submit" className="fc-generate-submit" disabled={!canSubmit} aria-label={generating || busy ? 'กำลังสร้าง' : '生成'}>
-            <span>{generating || busy ? 'กำลังสร้าง' : '生成'}</span>
+          <button type="submit" className="fc-generate-submit" disabled={!canSubmit} aria-label={generating || busy ? 'กำลังสร้าง' : 'สร้าง'}>
+            <span>{generating || busy ? 'กำลังสร้าง' : 'สร้าง'}</span>
             {isBusy && !optimizing ? (
               <Loader2 size={16} className="fc-spin" />
             ) : (

@@ -253,7 +253,10 @@ def _build_route(
     upstream_model: str,
     channel: SystemModelChannel,
 ) -> ResolvedModelRoute | None:
-    api_key = channel.api_key or ""
+    from app.services.tokenfree_gateway import TOKENFREE_CHANNEL_ID, current_user_toraapi_token
+
+    user_key = (current_user_toraapi_token.get() or "").strip() if channel.id == TOKENFREE_CHANNEL_ID else ""
+    api_key = user_key or channel.api_key or ""
     if not api_key:
         return None
     protocol = channel.protocol if channel.protocol != "auto" else _auto_protocol(channel, upstream_model)

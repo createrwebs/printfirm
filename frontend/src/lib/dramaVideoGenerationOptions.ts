@@ -105,7 +105,7 @@ export function formatVideoOutputLabel(
 /** 解析模型展示名（无目录时回退 id） */
 export function getVideoModelLabel(modelId: string | undefined | null) {
   const id = (modelId || '').trim()
-  return id || 'วิดีโอ模型'
+  return id || 'โมเดลวิดีโอ'
 }
 
 /** 任意非空字符串均可作为วิดีโอ模型 id（后台 TokenFree 目录） */

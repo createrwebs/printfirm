@@ -9,7 +9,7 @@ import { STATUS_CN, shotsByNo } from '../../lib/status'
 import { downloadSingleVideo } from '../../lib/clientDownload'
 import { withReturn } from '../../features/marketplace/ui'
 
-const PANEL_TABS = ['文案', 'ภาพ', 'เสียงพากย์', '转ฉาก'] as const
+const PANEL_TABS = ['บทพูด', 'ภาพ', 'เสียงพากย์', 'การเปลี่ยนฉาก'] as const
 
 export default function EditorPage() {
   const { id } = useParams()
@@ -18,7 +18,7 @@ export default function EditorPage() {
   const location = useLocation()
   const [project, setProject] = useState<Project | null>(null)
   const [activeShotId, setActiveShotId] = useState<number | null>(null)
-  const [tab, setTab] = useState<(typeof PANEL_TABS)[number]>('文案')
+  const [tab, setTab] = useState<(typeof PANEL_TABS)[number]>('บทพูด')
   const [narration, setNarration] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -88,7 +88,7 @@ export default function EditorPage() {
       await api.regenImage(project.id, shot.id)
       setProject(await api.getProject(project.id))
     } catch (err) {
-      setError(err instanceof Error ? err.message : '重สร้างไม่สำเร็จ')
+      setError(err instanceof Error ? err.message : 'สร้างใหม่ไม่สำเร็จ')
     } finally {
       setBusy(false)
     }
@@ -106,7 +106,7 @@ export default function EditorPage() {
       const s = next.shots.find((x) => x.id === created.id)
       if (s) selectShot(s)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'เพิ่ม镜头ล้มเหลว')
+      setError(err instanceof Error ? err.message : 'เพิ่มช็อตล้มเหลว')
     } finally {
       setBusy(false)
     }
@@ -126,7 +126,7 @@ export default function EditorPage() {
     try {
       setProject(await api.reorderShots(project.id, ids))
     } catch (err) {
-      setError(err instanceof Error ? err.message : '调序ล้มเหลว')
+      setError(err instanceof Error ? err.message : 'จัดลำดับใหม่ล้มเหลว')
     } finally {
       setBusy(false)
     }
@@ -159,7 +159,7 @@ export default function EditorPage() {
         url: api.assetUrl(project.final_video_url, project.updated_at),
       })
     } catch (err) {
-      setError(err instanceof Error ? err.message : '导出ล้มเหลว')
+      setError(err instanceof Error ? err.message : 'ส่งออกล้มเหลว')
     } finally {
       setBusy(false)
     }
@@ -172,7 +172,7 @@ export default function EditorPage() {
       await api.regenAudio(project.id, shot.id)
       setProject(await api.getProject(project.id))
     } catch (err) {
-      setError(err instanceof Error ? err.message : '重เสียงพากย์ล้มเหลว')
+      setError(err instanceof Error ? err.message : 'สร้างเสียงพากย์ใหม่ล้มเหลว')
     } finally {
       setBusy(false)
     }
@@ -249,7 +249,7 @@ export default function EditorPage() {
               }
             }}
           >
-            ดูตัวอย่าง播放
+            เล่นดูตัวอย่าง
           </button>
           <button
             type="button"
@@ -257,7 +257,7 @@ export default function EditorPage() {
             disabled={busy || !project.final_video_url}
             onClick={() => void exportFilm()}
           >
-            导出วิดีโอ
+            ส่งออกวิดีโอ
           </button>
           <button
             type="button"
@@ -277,9 +277,9 @@ export default function EditorPage() {
       <div className="pf-editor">
         <aside>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-            <strong>ฉาก列表</strong>
+            <strong>รายการช็อต</strong>
             <button type="button" className="pf-link" disabled={busy} onClick={() => void addShot()}>
-              + เพิ่ม镜头
+              + เพิ่มช็อต
             </button>
           </div>
           {orderedShots.map((s) => (
@@ -305,7 +305,7 @@ export default function EditorPage() {
             </button>
           ))}
           <p className="pf-muted" style={{ fontSize: '0.8rem', marginTop: '0.75rem' }}>
-            总ความยาว{' '}
+            ความยาวรวม{' '}
             {Math.floor(totalDuration / 60)
               .toString()
               .padStart(2, '0')}
@@ -337,7 +337,7 @@ export default function EditorPage() {
         <section>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.65rem' }}>
             <strong>
-              {shot ? `镜头 ${shot.shot_no}` : 'ดูตัวอย่าง'} · {isPortrait ? '9:16' : '16:9'}
+              {shot ? `ช็อตที่ ${shot.shot_no}` : 'ตัวอย่าง'} · {isPortrait ? '9:16' : '16:9'}
             </strong>
             <div style={{ display: 'flex', gap: 8 }}>
               <input
@@ -373,7 +373,7 @@ export default function EditorPage() {
             ) : shotImage ? (
               <img key={`i-${shot?.id}-${shot?.version}`} src={shotImage} alt="" />
             ) : (
-              <span className="empty">暂无ภาพ</span>
+              <span className="empty">ยังไม่มีภาพ</span>
             )}
           </div>
           {shot?.audio_url ? (
@@ -429,19 +429,19 @@ export default function EditorPage() {
               fontSize: '0.9rem',
             }}
           >
-            可用「อัปโหลดภาพ」替换本镜图，或「AI 重绘」按คำแนะนำ词重生。
+            สามารถใช้ "อัปโหลดภาพ" เพื่อแทนที่ภาพในช็อตนี้ หรือ "วาดใหม่ด้วย AI" ตามพรอมต์
           </div>
 
           <div style={{ marginTop: '1rem' }}>
             <div className="pf-panel-tabs">
-              {['คลังวัตถุดิบ', '收藏素材', 'AI 生成素材', '我的อัปโหลด'].map((t) => (
+              {['คลังวัตถุดิบ', 'สื่อที่บันทึกไว้', 'สื่อสร้างด้วย AI', 'สื่อที่ฉันอัปโหลด'].map((t) => (
                 <button key={t} type="button" disabled>
                   {t}
                 </button>
               ))}
             </div>
             <p className="pf-muted" style={{ fontSize: '0.85rem' }}>
-              คลังวัตถุดิบ即将推出。当前可用上方「อัปโหลดภาพ」或「AI 重绘」替换本镜图。
+              คลังวัตถุดิบจะเปิดให้บริการเร็วๆ นี้ ขณะนี้สามารถใช้ "อัปโหลดภาพ" หรือ "วาดใหม่ด้วย AI" เพื่อแทนที่ภาพในช็อตนี้ได้
             </p>
           </div>
         </section>
@@ -460,7 +460,7 @@ export default function EditorPage() {
             ))}
           </div>
 
-          {tab === '文案' ? (
+          {tab === 'บทพูด' ? (
             <>
               <label className="pf-muted" style={{ fontSize: '0.85rem', display: 'block' }}>
                 文案内容
@@ -487,7 +487,7 @@ export default function EditorPage() {
               </button>
               <div style={{ marginTop: '0.85rem' }}>
                 <strong style={{ fontSize: '0.88rem' }}>
-                  样式ตั้งค่า <ComingSoon />
+                  ตั้งค่าสไตล์ <ComingSoon />
                 </strong>
                 <p className="pf-muted" style={{ fontSize: '0.8rem' }}>
                   字体 / 字号 / 颜色 / 对齐占位
@@ -500,7 +500,7 @@ export default function EditorPage() {
                 disabled={busy}
                 onClick={saveNarration}
               >
-                บันทึก文案
+                บันทึกบทพูด
               </button>
             </>
           ) : null}
@@ -508,7 +508,7 @@ export default function EditorPage() {
           {tab === 'ภาพ' ? (
             <>
               <p className="pf-muted" style={{ fontSize: '0.88rem' }}>
-                可用ดูตัวอย่าง区「อัปโหลดภาพ」替换本镜图，或「AI 重绘」按คำแนะนำ词重生。
+                สามารถใช้ "อัปโหลดภาพ" ในส่วนดูตัวอย่าง หรือ "วาดใหม่ด้วย AI" ตามพรอมต์เพื่อสร้างภาพใหม่
               </p>
               <button
                 type="button"
@@ -516,7 +516,7 @@ export default function EditorPage() {
                 disabled={busy}
                 onClick={regenImage}
               >
-                สร้างใหม่当前镜头
+                สร้างช็อตปัจจุบันใหม่
               </button>
             </>
           ) : null}
@@ -524,7 +524,7 @@ export default function EditorPage() {
           {tab === 'เสียงพากย์' ? (
             <>
               <p className="pf-muted" style={{ fontSize: '0.88rem' }}>
-                替换当前镜头เสียงพากย์（沿用โปรเจกต์น้ำเสียง）。
+                แทนที่เสียงพากย์ของช็อตปัจจุบัน (ใช้น้ำเสียงเดิมของโปรเจกต์)
               </p>
               <button
                 type="button"
@@ -532,14 +532,14 @@ export default function EditorPage() {
                 disabled={busy}
                 onClick={regenAudio}
               >
-                替换เสียงพากย์
+                เปลี่ยนเสียงพากย์
               </button>
             </>
           ) : null}
 
-          {tab === '转ฉาก' ? (
+          {tab === 'การเปลี่ยนฉาก' ? (
             <div className="pf-hint">
-              转ฉาก效果（淡入淡出、闪白、运镜衔接等）即将推出。
+              เอฟเฟกต์การเปลี่ยนฉาก (เช่น เฟดเข้าออก แฟลชขาว การเคลื่อนกล้อง) จะเปิดให้ใช้งานเร็วๆ นี้
             </div>
           ) : null}
 
@@ -549,7 +549,7 @@ export default function EditorPage() {
             style={{ marginTop: '1rem' }}
             disabled
           >
-            นำไปใช้กับทั้งหมด同类镜头 <ComingSoon />
+            นำไปใช้กับช็อตประเภทเดียวกันทั้งหมด <ComingSoon />
           </button>
         </aside>
       </div>

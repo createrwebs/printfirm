@@ -42,23 +42,23 @@ export function assetDetailInfo(asset: AssetDetailRecord) {
   const uploaded = (hasSnapshot ? snapshot.source : gen.source) === 'upload'
   const options = hasSnapshot ? object(snapshot.parameters) : { ...params, ...object(params.videoOptions), ...gen }
   const model = uploaded ? '' : display(hasSnapshot ? snapshot.model_id : options.model_id)
-  const source = uploaded ? 'อัปโหลด' : (hasSnapshot ? snapshot.source === 'generated' : Boolean(model)) ? 'AI 生成' : '未记录'
+  const source = uploaded ? 'อัปโหลด' : (hasSnapshot ? snapshot.source === 'generated' : Boolean(model)) ? 'AI สร้าง' : 'ไม่มีบันทึก'
   const prompt = display(hasSnapshot ? snapshot.prompt : params.visualPrompt || params.visualImage || params.voicePrompt || params.prompt || params.description)
   // An explicit empty frozen list is authoritative; never borrow a later form's references.
   const references = uploaded ? [] : normalizeAssetDetailReferences(
     Object.hasOwn(snapshot, 'references') ? snapshot.references : asset.references,
   )
   const labels: Record<string, string> = {
-    aspect_ratio: snapshot.parameter_source === 'request' ? '设定画幅' : '比例',
-    resolution: snapshot.parameter_source === 'request' ? '设定ความละเอียด' : 'ความละเอียด',
-    size: snapshot.parameter_source === 'request' ? '设定尺寸' : '尺寸', duration_sec: 'ความยาว', duration: 'ความยาว',
-    requested_duration_sec: '设定ความยาว', video_mode: '生成方式', count: '生成数量', negative: '负向คำแนะนำ词',
-    strength: '参考强度', motion: '运动幅度',
-    image_style_id: 'สไตล์ภาพ', generate_audio: '生成声音', watermark: '水印', camera_fixed: 'กล้องนิ่ง (Static)',
-    seed: '随机种子', speaker: 'น้ำเสียง', sample_text: '试听文本', sampleText: '试听文本',
+    aspect_ratio: snapshot.parameter_source === 'request' ? 'อัตราส่วนภาพที่ตั้งค่า' : 'อัตราส่วนภาพ',
+    resolution: snapshot.parameter_source === 'request' ? 'ความละเอียดที่ตั้งค่า' : 'ความละเอียด',
+    size: snapshot.parameter_source === 'request' ? 'ขนาดที่ตั้งค่า' : 'ขนาด', duration_sec: 'ความยาว', duration: 'ความยาว',
+    requested_duration_sec: 'ความยาวที่ตั้งค่า', video_mode: 'รูปแบบการสร้าง', count: 'จำนวนที่สร้าง', negative: 'คำสั่งเชิงลบ (Negative Prompt)',
+    strength: 'ความเข้มข้นของการอ้างอิง', motion: 'ระดับการเคลื่อนไหว',
+    image_style_id: 'สไตล์ภาพ', generate_audio: 'สร้างเสียง', watermark: 'ลายน้ำ', camera_fixed: 'กล้องนิ่ง (Static)',
+    seed: 'Seed สุ่ม', speaker: 'น้ำเสียง', sample_text: 'ข้อความตัวอย่างเสียง', sampleText: 'ข้อความตัวอย่างเสียง',
   }
   const parameters = uploaded ? [] : Object.entries(labels).flatMap(([key, label]) => {
-    const modes: Record<string, string> = { text_to_video: '文生วิดีโอ', first_last_frame: '首尾帧', omni_reference: '全能参考' }
+    const modes: Record<string, string> = { text_to_video: 'ข้อความเป็นวิดีโอ (Text to Video)', first_last_frame: 'เฟรมแรกและเฟรมสุดท้าย (First & Last Frame)', omni_reference: 'อ้างอิงรอบด้าน (Omni Reference)' }
     const raw = options[key]
     const value = key === 'video_mode' ? modes[display(raw)] || ''
       : key === 'image_style_id' ? getImageStyleLabel(display(raw)) || display(raw)

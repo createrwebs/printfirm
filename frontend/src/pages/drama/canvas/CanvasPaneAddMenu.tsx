@@ -40,7 +40,7 @@ export function CanvasPaneAddMenu({ screen, onSelect, onClose }: CanvasPaneAddMe
       className="fc-pane-add-menu"
       style={{ left, top }}
       role="menu"
-      aria-label="双击สร้างใหม่节点"
+      aria-label="ดับเบิลคลิกเพื่อสร้างโหนดใหม่"
     >
       {ADD_NODE_OPTIONS.map((option) => {
         const Icon = option.icon

@@ -100,6 +100,13 @@ async def execute_task_run(task_id: int) -> None:
                 if not task:
                     return
                 handler = get_task_handler(task.domain, task.task_type)
+                if task.requested_by:
+                    from app.models import User
+                    from app.services.tokenfree_gateway import current_user_toraapi_token
+
+                    req_user = await db.get(User, int(task.requested_by))
+                    if req_user and (getattr(req_user, "toraapi_token", "") or "").strip():
+                        current_user_toraapi_token.set(req_user.toraapi_token.strip())
             # Handlers read the loaded task snapshot and own their database sessions.
             # Release this read transaction before waiting on a provider or its semaphore.
             result = await handler.executor(task) if handler else {"ok": False, "error": "missing_handler"}

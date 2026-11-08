@@ -81,11 +81,11 @@ export function CanvasNodeUploadBar({
       const assetId = await ensureNodeAsset(nodeId)
       const list = await dramaApi.listAssets(projectId)
       const asset = list.find((a) => a.id === assetId)
-      if (!asset) throw new Error('แอสเซทตัวละคร不存在')
+      if (!asset) throw new Error('ไม่พบแอสเซทตัวละคร')
       setBindAsset(asset)
       setBindOpen(true)
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : '无法打开น้ำเสียง绑定')
+      setErrorMessage(err instanceof Error ? err.message : 'ไม่สามารถเปิดหน้าต่างผูกน้ำเสียงได้')
     } finally {
       setBindBusy(false)
     }
@@ -101,20 +101,20 @@ export function CanvasNodeUploadBar({
       const okType =
         file.type.startsWith('audio/') || /\.(mp3|wav|m4a|aac|ogg|webm)$/i.test(name)
       if (!okType) {
-        setErrorMessage('请เลือกเสียง文件（MP3 / WAV / M4A 等）')
+        setErrorMessage('กรุณาเลือกไฟล์เสียง (MP3 / WAV / M4A ฯลฯ)')
         return
       }
       if (file.size > 30 * 1024 * 1024) {
-        setErrorMessage('เสียง不能超过 30MB')
+        setErrorMessage('ไฟล์เสียงต้องมีขนาดไม่เกิน 30MB')
         return
       }
     } else {
       if (!file.type.startsWith('image/')) {
-        setErrorMessage('请เลือกรูปภาพ文件')
+        setErrorMessage('กรุณาเลือกไฟล์รูปภาพ')
         return
       }
       if (file.size > 20 * 1024 * 1024) {
-        setErrorMessage('รูปภาพ不能超过 20MB')
+        setErrorMessage('รูปภาพต้องมีขนาดไม่เกิน 20MB')
         return
       }
     }
@@ -134,7 +134,7 @@ export function CanvasNodeUploadBar({
       const assetId = await ensureNodeAsset(nodeId)
       const list = await dramaApi.listAssets(projectId)
       const asset = list.find((a) => a.id === assetId)
-      if (!asset) throw new Error('แอสเซทตัวละคร不存在')
+      if (!asset) throw new Error('ไม่พบแอสเซทตัวละคร')
       const { character } = await generateAndBindCharacterVoice(projectId, asset)
       // syncNodeFromAsset 内部 markDirty，写入 voiceLabel/voiceUrl 并触发自动บันทึก
       syncNodeFromAsset(nodeId, character)
@@ -175,7 +175,7 @@ export function CanvasNodeUploadBar({
           onClick={() => setPickerOpen(true)}
         >
           <FolderOpen size={14} strokeWidth={1.8} />
-          从แอสเซท库เลือก
+          เลือกจากคลังแอสเซท
         </button>
         {DRAMA_VOICE_BINDING_ENABLED && isCharacter ? (
           hasVoice && voiceUrl ? (
@@ -192,10 +192,10 @@ export function CanvasNodeUploadBar({
                 className="fc-toolbar-chip"
                 disabled={toolbarBusy}
                 onClick={() => void openVoiceBindModal()}
-                title="เปลี่ยน或解绑น้ำเสียง；也可改连其他เสียง节点"
+                title="เปลี่ยนหรือยกเลิกการผูกน้ำเสียง หรือเชื่อมต่อไปยังโหนดเสียงอื่น"
               >
                 {bindBusy ? <Loader2 size={14} className="fc-spin" /> : <AudioLines size={14} strokeWidth={1.8} />}
-                {bindBusy ? '打开中…' : 'เปลี่ยน'}
+                {bindBusy ? 'กำลังเปิด...' : 'เปลี่ยน'}
               </button>
             </>
           ) : (
@@ -205,24 +205,24 @@ export function CanvasNodeUploadBar({
                 className="fc-toolbar-chip"
                 disabled={toolbarBusy}
                 onClick={() => void handleGenerateVoice()}
-                title="按การตั้งค่าบทบาทตัวละคร AI 生成น้ำเสียง"
+                title="สร้างน้ำเสียงด้วย AI ตามการตั้งค่าบทบาทตัวละคร"
               >
                 {voiceLoading ? (
                   <Loader2 size={14} className="fc-spin" />
                 ) : (
                   <AudioLines size={14} strokeWidth={1.8} />
                 )}
-                {voiceLoading ? 'กำลังสร้าง…' : '生成น้ำเสียง'}
+                {voiceLoading ? 'กำลังสร้าง...' : 'สร้างน้ำเสียง'}
               </button>}
               <button
                 type="button"
                 className="fc-toolbar-chip"
                 disabled={toolbarBusy}
                 onClick={() => void openVoiceBindModal()}
-                title="อัปโหลด/เลือกน้ำเสียง，或把「เสียง」节点连到本ตัวละคร"
+                title="อัปโหลด/เลือกน้ำเสียง หรือเชื่อมต่อโหนดเสียงกับตัวละครนี้"
               >
                 {bindBusy ? <Loader2 size={14} className="fc-spin" /> : null}
-                {bindBusy ? '打开中…' : 'ผูกน้ำเสียง'}
+                {bindBusy ? 'กำลังเปิด…' : 'ผูกน้ำเสียง'}
               </button>
             </>
           )
@@ -235,7 +235,7 @@ export function CanvasNodeUploadBar({
         projectId={projectId}
         defaultTab="all"
         allowedTypes={canvasKindToLibraryTypes(kind)}
-        title="从แอสเซท库เลือก"
+        title="เลือกจากคลังแอสเซท"
         confirmLabel="确认使用"
         onPick={async (source) => {
           await applyLibraryMediaToNode(nodeId, source)

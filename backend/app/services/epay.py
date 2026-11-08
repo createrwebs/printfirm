@@ -56,7 +56,7 @@ def build_submit_fields(
     if pay_type not in {"alipay", "wxpay"}:
         raise ValueError("pay_type must be alipay or wxpay")
     if not s.epay_pid or not s.epay_key:
-        raise ValueError("易支付未配置 EPAY_PID / EPAY_KEY")
+        raise ValueError("ยังไม่ได้ตั้งค่า EPAY_PID / EPAY_KEY")
     notify = (notify_url or s.epay_notify_url or "").strip()
     ret = (return_url or s.epay_return_url or "").strip()
     # Avoid "/api/" in notify_url — pay.gitcc.com WAF blocks those payloads.

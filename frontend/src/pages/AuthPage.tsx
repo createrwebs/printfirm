@@ -6,56 +6,31 @@ import { api } from '../api'
 import BrandMark from '../components/BrandMark'
 import LanguageSwitch from '../components/layout/LanguageSwitch'
 import { useI18n } from '../i18n'
-import { isValidAuthPassword, isValidEmailInput } from '../lib/validateAuthForm'
 
-type AuthMode = 'login' | 'register' | 'forgot' | 'reset'
-
-// 仅允许站内相对路径回跳，防止开放重定向
 function safeNextPath(raw: string | null, fallback = '/') {
   if (!raw) return fallback
   if (!raw.startsWith('/') || raw.startsWith('//') || raw.includes('://')) return fallback
-  return raw
-}
-
-// 由 URL ?mode= / ?token= 决定初始 Auth 模式
-function modeFromParams(params: URLSearchParams): AuthMode {
-  const mode = (params.get('mode') || '').toLowerCase()
-  if (mode === 'reset' || params.get('token')) return 'reset'
-  if (mode === 'forgot') return 'forgot'
-  if (mode === 'register') return 'register'
-  return 'login'
+  const base = (import.meta.env.BASE_URL || '/').replace(/\/+$/, '')
+  const stripped =
+    base && (raw === base || raw.startsWith(`${base}/`) || raw.startsWith(`${base}?`))
+      ? raw.slice(base.length) || '/'
+      : raw
+  if (stripped.startsWith('/auth')) return fallback
+  return stripped
 }
 
 export default function AuthPage() {
   const nav = useNavigate()
   const { t } = useI18n()
-  const [params, setSearchParams] = useSearchParams()
+  const [params] = useSearchParams()
   const nextPath = safeNextPath(params.get('next'), '/')
-  /*
-   * mode 当前表单模式
-   * email / password / confirmPassword / nickname 表单字段
-   * notice สำเร็จคำแนะนำ（找回已发送、รีเซ็ตสำเร็จ）
-   * error / loading ส่ง态
-   */
-  const [mode, setMode] = useState<AuthMode>(() => modeFromParams(params))
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [nickname, setNickname] = useState('')
+
+  const [toraUsername, setToraUsername] = useState('')
+  const [toraPassword, setToraPassword] = useState('')
   const [error, setError] = useState('')
-  const [notice, setNotice] = useState('')
   const [loading, setLoading] = useState(false)
-  const [providers, setProviders] = useState<Awaited<ReturnType<typeof api.authProviders>> | null>(null)
-  const [tokenCopied, setTokenCopied] = useState(false)
-  const resetToken = (params.get('token') || '').trim()
-  const localBrowser = ['127.0.0.1', 'localhost', '[::1]'].includes(window.location.hostname)
 
   useEffect(() => {
-    let active = true
-    void api.authProviders().then((value) => {
-      if (active) setProviders(value)
-    }).catch(() => undefined)
-
     const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''))
     const oauthToken = hash.get('access_token')
     const oauthError = params.get('oauth_error')
@@ -64,128 +39,35 @@ export default function AuthPage() {
       window.history.replaceState({}, document.title, `${window.location.pathname}${window.location.search.replace(/([?&])oauth_error=[^&]*/g, '').replace(/[?&]$/, '')}`)
       window.dispatchEvent(new Event(USER_UPDATED_EVENT))
       nav(nextPath, { replace: true })
-      return () => { active = false }
+      return
     }
     if (oauthError) setError(oauthError)
-    return () => { active = false }
   }, [nav, nextPath, params])
-
-  // 切换模式并同步 URL（保留 next）
-  function switchMode(next: AuthMode) {
-    setMode(next)
-    setError('')
-    setNotice('')
-    setPassword('')
-    setConfirmPassword('')
-    if (next === 'register') setNickname('')
-    const nextParams = new URLSearchParams()
-    if (nextPath && nextPath !== '/') nextParams.set('next', nextPath)
-    if (next === 'forgot') nextParams.set('mode', 'forgot')
-    else if (next === 'reset' && resetToken) {
-      nextParams.set('mode', 'reset')
-      nextParams.set('token', resetToken)
-    } else if (next === 'register') nextParams.set('mode', 'register')
-    setSearchParams(nextParams, { replace: true })
-  }
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault()
     setError('')
-    setNotice('')
 
-    if (mode === 'forgot') {
-      const trimmedEmail = email.trim()
-      if (!isValidEmailInput(trimmedEmail)) {
-        setError(t('auth.emailInvalid'))
-        return
-      }
-      setLoading(true)
-      try {
-        const res = await api.forgotPassword(trimmedEmail)
-        setNotice(res.message || t('auth.forgotSent'))
-      } catch (err) {
-        setError(err instanceof Error ? err.message : t('common.fail'))
-      } finally {
-        setLoading(false)
-      }
-      return
-    }
-
-    if (mode === 'reset') {
-      if (!resetToken) {
-        setError(t('auth.resetTokenMissing'))
-        return
-      }
-      if (!isValidAuthPassword(password)) {
-        setError(password.length > 64 ? t('auth.passwordTooLong') : t('auth.passwordTooShort'))
-        return
-      }
-      if (password !== confirmPassword) {
-        setError(t('auth.passwordMismatch'))
-        return
-      }
-      setLoading(true)
-      try {
-        await api.resetPassword(resetToken, password)
-        setPassword('')
-        setConfirmPassword('')
-        switchMode('login')
-        setNotice(t('auth.resetSuccess'))
-      } catch (err) {
-        setError(err instanceof Error ? err.message : t('common.fail'))
-      } finally {
-        setLoading(false)
-      }
-      return
-    }
-
-    const trimmedEmail = email.trim()
-    if (mode === 'register' && !nickname.trim()) {
-      setError(t('auth.nicknameRequired'))
-      return
-    }
-    if (!isValidEmailInput(trimmedEmail)) {
-      setError(t('auth.emailInvalid'))
-      return
-    }
-    if (!isValidAuthPassword(password)) {
-      setError(password.length > 64 ? t('auth.passwordTooLong') : t('auth.passwordTooShort'))
+    if (!toraUsername.trim() || !toraPassword) {
+      setError('กรุณากรอก Username และ Password ของ ToraAPI')
       return
     }
 
     setLoading(true)
     try {
-      const res =
-        mode === 'login'
-          ? await api.login(trimmedEmail, password)
-          : await api.register(trimmedEmail, password, nickname.trim())
+      const res = await api.loginWithToraApi('', '', {
+        username: toraUsername.trim(),
+        password: toraPassword,
+      })
       localStorage.setItem('token', res.access_token)
-      window.dispatchEvent(new Event(USER_UPDATED_EVENT))
-      nav(nextPath)
+      window.dispatchEvent(new CustomEvent(USER_UPDATED_EVENT, { detail: res.user }))
+      nav(nextPath, { replace: true })
     } catch (err) {
       setError(err instanceof Error ? err.message : t('common.fail'))
     } finally {
       setLoading(false)
     }
   }
-
-  const title =
-    mode === 'login'
-      ? t('auth.loginTitle')
-      : mode === 'register'
-        ? t('auth.registerTitle')
-        : mode === 'forgot'
-          ? t('auth.forgotTitle')
-          : t('auth.resetTitle')
-
-  const submitLabel =
-    mode === 'login'
-      ? t('auth.login')
-      : mode === 'register'
-        ? t('auth.register')
-        : mode === 'forgot'
-          ? t('auth.sendReset')
-          : t('auth.savePassword')
 
   return (
     <div className="auth-shell">
@@ -194,111 +76,55 @@ export default function AuthPage() {
           <BrandMark />
           <LanguageSwitch />
         </div>
-        <h1>{title}</h1>
+        <h1>เข้าสู่ระบบด้วยบัญชี ToraAPI</h1>
         <form onSubmit={onSubmit} className="stack" noValidate>
-          {mode === 'register' && (
-            <label>
-              {t('auth.nickname')}
-              <input value={nickname} onChange={(e) => setNickname(e.target.value)} />
-            </label>
-          )}
-          {(mode === 'login' || mode === 'register' || mode === 'forgot') && (
-            <label>
-              {t('auth.email')}
-              <input
-                type="email"
-                inputMode="email"
-                autoComplete="username"
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value)
-                  if (error) setError('')
-                }}
-              />
-            </label>
-          )}
-          {(mode === 'login' || mode === 'register' || mode === 'reset') && (
-            <label>
-              {mode === 'reset' ? t('auth.newPassword') : t('auth.password')}
-              <input
-                type="password"
-                autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value)
-                  if (error) setError('')
-                }}
-              />
-            </label>
-          )}
-          {mode === 'reset' && (
-            <label>
-              {t('auth.confirmPassword')}
-              <input
-                type="password"
-                autoComplete="new-password"
-                value={confirmPassword}
-                onChange={(e) => {
-                  setConfirmPassword(e.target.value)
-                  if (error) setError('')
-                }}
-              />
-            </label>
-          )}
-          {notice ? <p className="auth-notice" role="status">{notice}</p> : null}
+          <p className="auth-hint" style={{ marginBottom: 8, lineHeight: 1.5 }}>
+            ระบบเชื่อมต่อและหักเครดิตจากบัญชี <strong>ToraAPI</strong> ของคุณโดยตรง
+            หากยังไม่มีบัญชีหรือเครดิตไม่เพียงพอ กรุณาไปที่{' '}
+            <a href="https://www.toraapi.com" target="_blank" rel="noopener noreferrer">
+              toraapi.com
+            </a>
+          </p>
+          <label>
+            ชื่อผู้ใช้ (Username)
+            <input
+              type="text"
+              placeholder="กรอก Username ของ toraapi.com"
+              autoComplete="username"
+              value={toraUsername}
+              onChange={(e) => {
+                setToraUsername(e.target.value)
+                if (error) setError('')
+              }}
+            />
+          </label>
+          <label>
+            รหัสผ่าน (Password)
+            <input
+              type="password"
+              placeholder="กรอกรหัสผ่านของคุณ"
+              autoComplete="current-password"
+              value={toraPassword}
+              onChange={(e) => {
+                setToraPassword(e.target.value)
+                if (error) setError('')
+              }}
+            />
+          </label>
           {error ? <p className="error" role="alert">{error}</p> : null}
           <button className="btn primary" disabled={loading}>
-            {loading ? t('auth.processing') : submitLabel}
+            {loading ? t('auth.processing') : 'เข้าสู่ระบบ'}
           </button>
         </form>
-        {mode === 'login' && providers?.google.enabled && (
-          <button
-            type="button"
-            className="btn"
-            onClick={() => { window.location.assign(api.googleLoginUrl(nextPath)) }}
-          >
-            Continue with Google
-          </button>
-        )}
-        {mode === 'login' && providers?.chatgpt.reason && providers.local_token_debug && localBrowser && (
-          <p className="auth-hint">ChatGPT login ยังไม่เปิดเป็น OAuth ทั่วไป จึงไม่รับหรือแสดง ChatGPT token</p>
-        )}
-        {providers?.local_token_debug && localBrowser && localStorage.getItem('token') && (
-          <details className="auth-dev-token">
-            <summary>Local API token สำหรับทดสอบ</summary>
-            <textarea readOnly rows={4} value={localStorage.getItem('token') || ''} />
-            <button
-              type="button"
-              className="linkish"
-              onClick={() => {
-                const token = localStorage.getItem('token') || ''
-                const copied = navigator.clipboard?.writeText(token)
-                if (copied) void copied.then(() => setTokenCopied(true))
-              }}
-            >
-              {tokenCopied ? 'คัดลอกแล้ว' : 'คัดลอก token'}
-            </button>
-          </details>
-        )}
-        {mode === 'login' && (
-          <button type="button" className="linkish" onClick={() => switchMode('forgot')}>
-            {t('auth.forgotLink')}
-          </button>
-        )}
-        {(mode === 'login' || mode === 'register') && (
-          <button
-            type="button"
-            className="linkish"
-            onClick={() => switchMode(mode === 'login' ? 'register' : 'login')}
-          >
-            {mode === 'login' ? t('auth.toRegister') : t('auth.toLogin')}
-          </button>
-        )}
-        {(mode === 'forgot' || mode === 'reset') && (
-          <button type="button" className="linkish" onClick={() => switchMode('login')}>
-            {t('auth.backToLogin')}
-          </button>
-        )}
+        <a
+          href="https://www.toraapi.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="linkish"
+          style={{ display: 'inline-block', textAlign: 'center', marginTop: 8 }}
+        >
+          ยังไม่มีบัญชี? สมัครสมาชิกและเติมเครดิตที่ toraapi.com
+        </a>
       </div>
       <div className="auth-visual" aria-hidden>
         <div className="ink-wash" />

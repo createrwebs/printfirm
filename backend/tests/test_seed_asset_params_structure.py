@@ -53,3 +53,32 @@ def test_thai_character_prompt_uses_thai_structure_and_labels():
     assert "คำสั่งบังคับ" in prompt
     assert "ตัวตน：สัตว์ประจำเคส" in prompt
     assert "身份：" not in prompt
+
+
+def test_character_prompt_keeps_short_visual_context_fields():
+    params = build_character_params(
+        {
+            "name": "ดันโฮ",
+            "visualImage": "ลูกแมวสีส้มอ้วน",
+            "title": "ตัวละครรอง",
+            "identityBackground": "พยัคฆ์ขาวตัวสุดท้ายที่ปลอมตัวเป็นแมวเพื่อหลบกฎหมาย",
+            "growthExperience": "เริ่มจากการหลบซ่อนและค่อย ๆ ยอมรับชะตาของตน",
+            "relationships": "ผูกพันกับมินแจและคอยปกป้องร้าน",
+        }
+    )
+    prompt = params["visualPrompt"]
+    assert "พยัคฆ์ขาวตัวสุดท้าย" in prompt
+    assert "ยอมรับชะตา" in prompt
+    assert "ปกป้องร้าน" in prompt
+
+
+def test_asset_seed_stale_marker_has_recovery_boundary():
+    from datetime import datetime, timedelta, timezone
+
+    from app.api.drama.assets import _asset_seed_is_stale
+
+    recent = (datetime.now(timezone.utc) - timedelta(minutes=1)).isoformat()
+    old = (datetime.now(timezone.utc) - timedelta(minutes=31)).isoformat()
+    assert _asset_seed_is_stale({"assets_seed_generating_at": recent}) is False
+    assert _asset_seed_is_stale({"assets_seed_generating_at": old}) is True
+    assert _asset_seed_is_stale({}) is True

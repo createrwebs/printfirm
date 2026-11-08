@@ -7,6 +7,7 @@ import WeChatGroupFab from './components/layout/WeChatGroupFab'
 import AuthPage from './pages/AuthPage'
 import HistoryPage from './pages/HistoryPage'
 import HomePage from './pages/HomePage'
+import MarketingStudioPage from './pages/MarketingStudioPage'
 import MethodPage from './pages/MethodPage'
 import GenerationPage from './pages/GenerationPage'
 import GenerationTasksPage from './pages/GenerationTasksPage'
@@ -52,48 +53,50 @@ function PersonalBusinessOverlays() {
 /** 用户端路由及全局交互宿主，团队界面使用真实认证服务。 */
 export default function App() {
   return (
-    <TeamPreviewProvider><BrowserRouter>
+    <TeamPreviewProvider><BrowserRouter basename={import.meta.env.BASE_URL || '/videostory'}>
       <Routes>
         <Route path="/marketplace/*" element={<Suspense fallback={<p>正在加载作品与招募…</p>}><Marketplace /></Suspense>} />
-        <Route path="/" element={<HomePage />} />
+        <Route path="/" element={<RequireAuth><HomePage /></RequireAuth>} />
+        <Route path="/marketing-studio" element={<RequireAuth><MarketingStudioPage /></RequireAuth>} />
+        <Route path="/marketing" element={<Navigate to="/marketing-studio" replace />} />
         <Route path="/method" element={<MethodPage />} />
         <Route path="/auth" element={<AuthPage />} />
-        <Route path="/templates" element={<TemplatesPage />} />
+        <Route path="/templates" element={<RequireAuth><TemplatesPage /></RequireAuth>} />
         <Route path="/tools/video" element={<RequireAuth><GenerationPage kind="video" /></RequireAuth>} />
         <Route path="/tools/image" element={<RequireAuth><GenerationPage kind="image" /></RequireAuth>} />
         <Route path="/tools/audio" element={<RequireAuth><GenerationPage kind="audio" /></RequireAuth>} />
         <Route path="/tasks" element={<RequireAuth><GenerationTasksPage /></RequireAuth>} />
-        <Route path="/assets" element={<AssetLibraryPage />} />
+        <Route path="/assets" element={<RequireAuth><AssetLibraryPage /></RequireAuth>} />
         <Route path="/help" element={<HelpPage />} />
         <Route path="/terms" element={<TermsPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/contact" element={<ContactPage />} />
-        <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/settings" element={<RequireAuth><SettingsPage /></RequireAuth>} />
         <Route path="/teams" element={<RequireAuth><TeamPage /></RequireAuth>} />
         <Route path="/teams/join" element={<TeamInvitationPage />} />
         <Route path="/team-invitations" element={<TeamInvitationPage />} />
         <Route path="/teams/:teamId" element={<RequireAuth><TeamPage /></RequireAuth>} />
-        <Route path="/pricing" element={<PricingPage />} />
-        <Route path="/history" element={<HistoryPage />} />
-        <Route path="/studio/new" element={<CreateProjectPage />} />
-        <Route path="/studio/sessions/:sessionId" element={<CreationSessionEditorBridge />} />
-        <Route path="/studio/:id/style" element={<StyleConfigPage />} />
-        <Route path="/studio/:id/editor" element={<EditorPage />} />
-        <Route path="/studio/:id" element={<StoryboardPage />} />
-        <Route path="/studio" element={<StudioPage />} />
+        <Route path="/pricing" element={<RequireAuth><PricingPage /></RequireAuth>} />
+        <Route path="/history" element={<RequireAuth><HistoryPage /></RequireAuth>} />
+        <Route path="/studio/new" element={<RequireAuth><CreateProjectPage /></RequireAuth>} />
+        <Route path="/studio/sessions/:sessionId" element={<RequireAuth><CreationSessionEditorBridge /></RequireAuth>} />
+        <Route path="/studio/:id/style" element={<RequireAuth><StyleConfigPage /></RequireAuth>} />
+        <Route path="/studio/:id/editor" element={<RequireAuth><EditorPage /></RequireAuth>} />
+        <Route path="/studio/:id" element={<RequireAuth><StoryboardPage /></RequireAuth>} />
+        <Route path="/studio" element={<RequireAuth><StudioPage /></RequireAuth>} />
         {/* Agent home (mirrors novel agent entry) */}
-        <Route path="/drama" element={<DramaListPage />} />
-        <Route path="/canvas" element={<CanvasListPage />} />
-        <Route path="/drama/dramas" element={<DramaListPage />} />
-        <Route path="/drama/assets" element={<AssetLibraryPage />} />
-        <Route path="/drama/projects/:projectId" element={<ProjectWorkspacePage />} />
-        <Route path="/drama/projects/:projectId/episodes" element={<EpisodesPage />} />
-        <Route path="/drama/projects/:projectId/episodes/:episodeId" element={<EpisodeEditPage />} />
+        <Route path="/drama" element={<RequireAuth><DramaListPage /></RequireAuth>} />
+        <Route path="/canvas" element={<RequireAuth><CanvasListPage /></RequireAuth>} />
+        <Route path="/drama/dramas" element={<RequireAuth><DramaListPage /></RequireAuth>} />
+        <Route path="/drama/assets" element={<RequireAuth><AssetLibraryPage /></RequireAuth>} />
+        <Route path="/drama/projects/:projectId" element={<RequireAuth><ProjectWorkspacePage /></RequireAuth>} />
+        <Route path="/drama/projects/:projectId/episodes" element={<RequireAuth><EpisodesPage /></RequireAuth>} />
+        <Route path="/drama/projects/:projectId/episodes/:episodeId" element={<RequireAuth><EpisodeEditPage /></RequireAuth>} />
         <Route
           path="/drama/projects/:projectId/episodes/:episodeId/canvas"
-          element={<EpisodeStoryboardPage />}
+          element={<RequireAuth><EpisodeStoryboardPage /></RequireAuth>}
         />
-        <Route path="/drama/projects/:projectId/canvas" element={<CanvasPage />} />
+        <Route path="/drama/projects/:projectId/canvas" element={<RequireAuth><CanvasPage /></RequireAuth>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <WeChatGroupFab />

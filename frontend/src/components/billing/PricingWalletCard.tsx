@@ -78,7 +78,29 @@ export default function PricingWalletCard({ wallet, usage, loggedIn, updatedAt, 
         <Link className="pf-pricing-wallet-login" to="/auth?next=%2Fpricing">{t('pricing.walletLogin')}<ArrowUpRight size={14} aria-hidden /></Link>
       ) : error ? (
         <p className="pf-pricing-wallet-error" role="status">{t('pricing.walletFailed')}<button type="button" onClick={onRetry} aria-label={t('pricing.retry')}><RefreshCw size={13} aria-hidden />{t('pricing.retry')}</button></p>
-      ) : <p className="pf-pricing-wallet-dark-updated"><span className={loading ? 'is-loading' : ''} aria-hidden />{loading && !hasBalance ? t('pricing.loadingWallet') : t('pricing.updatedAt', { time: formatUpdated(updatedAt) })}</p>}
+      ) : (
+        <>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
+            <a
+              className="pf-pricing-wallet-login"
+              href={wallet?.topup_url || 'https://www.toraapi.com'}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              เติมเครดิตที่ ToraAPI<ArrowUpRight size={14} aria-hidden />
+            </a>
+            <button
+              type="button"
+              className="pf-pricing-wallet-history"
+              onClick={onRetry}
+              disabled={loading}
+            >
+              <RefreshCw size={13} aria-hidden /> ซิงค์เครดิต ToraAPI
+            </button>
+          </div>
+          <p className="pf-pricing-wallet-dark-updated"><span className={loading ? 'is-loading' : ''} aria-hidden />{loading && !hasBalance ? t('pricing.loadingWallet') : t('pricing.updatedAt', { time: formatUpdated(updatedAt) })}</p>
+        </>
+      )}
     </aside>
   )
 }

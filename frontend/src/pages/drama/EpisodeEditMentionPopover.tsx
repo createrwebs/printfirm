@@ -227,7 +227,7 @@ export function EpisodeEditMentionPopover({
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => onScopeChange('episode')}
             >
-              本 ตอน
+              ตอนนี้
             </button>
             <button
               type="button"
@@ -263,7 +263,7 @@ export function EpisodeEditMentionPopover({
           </label>
           <div className="drama-ep-mention-pop-list">
             {filteredAssets.length === 0 ? (
-              <p className="drama-ep-mention-pop-empty">无匹配แอสเซท</p>
+              <p className="drama-ep-mention-pop-empty">ไม่พบแอสเซทที่ตรงกัน</p>
             ) : (
               filteredAssets.map((asset, index) => {
                 const preview = resolveDramaMediaUrl(asset.cover || asset.url)
@@ -303,7 +303,7 @@ export function EpisodeEditMentionPopover({
           >
             <Clapperboard size={16} />
             <span>
-              <strong>插入ความยาว</strong>
+              <strong>แทรกความยาว</strong>
               <em>剩余可用 {remaining}s</em>
             </span>
           </button>
@@ -315,7 +315,7 @@ export function EpisodeEditMentionPopover({
             <Aperture size={16} />
             <span>
               <strong>景别 / 运镜</strong>
-              <em>插入ช็อตทัศนียภาพ、ภาพโคลสอัพ (Close-up)、推拉摇移等前缀</em>
+              <em>แทรกช็อตทัศนียภาพ, โคลสอัพ, ซูมเข้า-ออก แพนกล้อง ฯลฯ</em>
             </span>
           </button>
         </div>
@@ -350,7 +350,7 @@ export function EpisodeEditMentionPopover({
               type="number"
               min={1}
               max={remaining || FRAGMENT_CONTENT_DURATION_MAX}
-              placeholder="กำหนดเองวินาที数"
+              placeholder="ระบุจำนวนวินาทีที่ต้องการ"
               value={customDuration}
               onChange={(e) => setCustomDuration(e.target.value)}
               onMouseDown={(e) => e.stopPropagation()}

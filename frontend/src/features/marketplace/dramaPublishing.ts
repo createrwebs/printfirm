@@ -23,7 +23,7 @@ export function sourceRelation(episode: PublishEpisode, target?: PublishSeries) 
 
 export function publishSelection(context: DramaPublishContext, selected: number[], updates: number[], target?: PublishSeries) {
   return context.episodes.filter(item => selected.includes(item.id)).sort((a, b) => a.episode_number - b.episode_number).map(episode => {
-    if (!episode.ready) throw new Error(`${episode.name}：${episode.reason || '分集尚未全部生成เสร็จสิ้น'}`)
+    if (!episode.ready) throw new Error(`${episode.name}：${episode.reason || 'ตอนยังสร้างไม่เสร็จสมบูรณ์ทั้งหมด'}`)
     const { changed } = sourceRelation(episode, target)
     if (changed && !updates.includes(episode.id)) throw new Error(`请确认更新「${episode.name}」的新版本`)
     return { episode_id: episode.id, source_version: episode.source_version, update: changed }
@@ -31,8 +31,8 @@ export function publishSelection(context: DramaPublishContext, selected: number[
 }
 
 const phaseLabels: Record<string, string> = {
-  queued: 'กำลังรอคิว', pending: 'กำลังรอคิว', syncing: '同步素材', downloading: '同步素材', copying: '同步素材',
-  composing: '拼接整集', concatenating: '拼接整集', validating: '校验วิดีโอ', ready: '已就绪', failed: '同步ล้มเหลว',
+  queued: 'กำลังรอคิว', pending: 'กำลังรอคิว', syncing: 'ซิงค์แอสเซท', downloading: 'ซิงค์แอสเซท', copying: 'ซิงค์แอสเซท',
+  composing: 'รวมคลิปทั้งตอน', concatenating: 'รวมคลิปทั้งตอน', validating: 'ตรวจสอบวิดีโอ', ready: 'พร้อมแล้ว', failed: 'ซิงค์ล้มเหลว',
 }
 export function handoffLabel(handoff: Handoff) {
   return phaseLabels[handoff.phase || ''] || handoff.label || phaseLabels[handoff.status] || '同步中'

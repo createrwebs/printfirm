@@ -47,7 +47,10 @@ SCENE_LOCATION_RE = re.compile(
     re.I,
 )
 # 出场人物行
-CAST_LINE_RE = re.compile(r"^(?:出场人物|ตัวละครที่ออกฉาก|ตัวละคร(?:ในฉาก)?|รายชื่อตัวละคร|Characters|Cast)[：:][ \t]*(.+)$", re.I)
+CAST_LINE_RE = re.compile(
+    r"^\*{0,2}\s*(?:出场人物|ตัวละครที่ออกฉาก|ตัวละคร(?:ในฉาก)?|รายชื่อตัวละคร|Characters|Cast)\s*\*{0,2}\s*[：:]\s*\*{0,2}[ \t]*(.+)$",
+    re.I,
+)
 EMPTY_CAST = {"无", "无出场", "无人物", "-", "—", "无。", "ไม่มี", "ไม่มีตัวละคร"}
 
 FRAGMENT_DURATION_MIN = 3
@@ -146,13 +149,14 @@ def normalize_scene_location_name(raw: str) -> str:
 
 def parse_cast_names(raw: str) -> list[str]:
     # 解析「出场人物：A、B」
-    trimmed = (raw or "").strip()
+    raw_clean = (raw or "").rstrip("* \t")
+    trimmed = raw_clean.strip()
     if not trimmed or trimmed.rstrip("。.．") in EMPTY_CAST:
         return []
     names = [
-        part.strip()
+        part.strip().strip("*").strip()
         for part in re.split(r"[、，,／/|]", trimmed)
-        if part.strip() and part.strip() not in EMPTY_CAST
+        if part.strip() and part.strip().strip("*").strip() not in EMPTY_CAST
     ]
     # 去重保序
     seen: set[str] = set()
@@ -221,7 +225,7 @@ def split_episode_content_into_scenes(content: str) -> list[dict[str, str]]:
 
     for line in lines:
         trimmed = line.strip()
-        if re.match(r"^#+\s*(?:Summary|สรุป|หมายเหตุ)", trimmed, re.IGNORECASE):
+        if re.match(r"^(?:#+|\*{1,2})?\s*(?:Summary|สรุป|สรุปเนื้อหา|หมายเหตุ)", trimmed, re.IGNORECASE):
             break
         if re.match(r"^-{3,}\s*$", trimmed):
             continue
@@ -302,7 +306,7 @@ def _strip_screenplay_meta(body: str) -> tuple[str | None, list[str]]:
         trimmed = line.strip()
         if not trimmed:
             continue
-        if re.match(r"^#+\s*(?:Summary|สรุป|หมายเหตุ)", trimmed, re.IGNORECASE):
+        if re.match(r"^(?:#+|\*{1,2})?\s*(?:Summary|สรุป|สรุปเนื้อหา|หมายเหตุ)", trimmed, re.IGNORECASE):
             break
         if re.match(r"^-{3,}\s*$", trimmed):
             continue
@@ -1538,6 +1542,26 @@ def build_fragments_from_episode_body(
                 )
             )
 
+        # 补充本场正文中直接出现的项目角色（如剧本未在出场行声明）
+        bound_asset_ids = {int(b.get("assetId") or 0) for b in character_bindings}
+        for ca in character_assets:
+            ca_id = int(getattr(ca, "id", 0) or 0)
+            if ca_id in bound_asset_ids:
+                continue
+            cname = str(getattr(ca, "name", "") or "").strip()
+            if cname and len(cname) >= 2 and cname in scene["body"]:
+                character_bindings.append(
+                    build_character_binding(
+                        cname,
+                        ca,
+                        summary_lookup=summary_lookup,
+                        summary=summary,
+                        episode_bodies=script_bodies,
+                        intro_overrides=intro_overrides,
+                    )
+                )
+                bound_asset_ids.add(ca_id)
+
         # 一场可拆多条分镜（按时长软/硬上限）；介绍落在首次出场镜
         for planned, duration in plan_fragments_from_scene(
             scene["body"],
@@ -1567,10 +1591,26 @@ def build_fragments_from_episode_body(
             prop_bindings: list[dict[str, Any]] = []
             for asset in prop_material_assets:
                 name = str(getattr(asset, "name", "") or "").strip()
-                if not name or name not in planned:
+                if not name:
+                    continue
+                matched = False
+                matched_token = name
+                if name in planned:
+                    matched = True
+                elif len(name) >= 4:
+                    core_candidates = [
+                        re.sub(r"(?:อบขนม|ของ\S+|เวทมนตร์)", "", name).strip(),
+                        name[:6].strip(),
+                    ]
+                    for cand in core_candidates:
+                        if cand and len(cand) >= 3 and cand in planned:
+                            matched = True
+                            matched_token = cand
+                            break
+                if not matched:
                     continue
                 aid = int(asset.id)
-                prop_bindings.append({"name": name, "assetId": aid})
+                prop_bindings.append({"name": matched_token, "assetId": aid})
                 if aid not in fragment_ids:
                     fragment_ids.append(aid)
                 if len(prop_bindings) >= FRAGMENT_MAX_PROPS:

@@ -68,7 +68,7 @@ export default function TopupHistoryModal({ open, onClose }: Props) {
       {loading ? <p className="pf-muted">กำลังโหลด…</p> : null}
       {error ? <p className="pf-error">{error}</p> : null}
       {!loading && !error && orders.length === 0 ? (
-        <p className="pf-muted">暂无ประวัติการเติมเงิน</p>
+        <p className="pf-muted">ยังไม่มีประวัติการเติมเงิน</p>
       ) : null}
       {!loading && orders.length > 0 ? (
         <ul className="pf-topup-list">

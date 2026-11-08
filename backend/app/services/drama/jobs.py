@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import time
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -302,6 +303,28 @@ async def run_script_summary_job(project_id: int) -> dict[str, Any]:
         logger.exception("摘要后自动抽资产异常 project_id=%s", project_id)
         assets_result = {"ok": False, "error": "seed_assets_failed"}
 
+    if not assets_result.get("ok"):
+        async with AsyncSessionLocal() as db:
+            project = await db.get(
+                DramaProject,
+                project_id,
+                options=[selectinload(DramaProject.script)],
+            )
+            if project and project.script:
+                params = dict(project.script.params or {})
+                params["episode_content_status"] = "failed"
+                params["episode_content_error"] = str(
+                    assets_result.get("error") or "资产抽取失败"
+                )[:500]
+                project.script.params = params
+                await db.commit()
+        return {
+            "ok": False,
+            "project_id": project_id,
+            "assets": assets_result,
+            "error": str(assets_result.get("error") or "seed_assets_failed"),
+        }
+
     episodes_task_id: int | None = None
     try:
         async with AsyncSessionLocal() as db:
@@ -466,6 +489,12 @@ async def run_episode_scripts_job(
         )
         if not project or not project.script or not project.script.summary:
             logger.warning("分集剧本失败：缺少摘要 project_id=%s", project_id)
+            if project and project.script:
+                params = dict(project.script.params or {})
+                params["episode_content_status"] = "failed"
+                params["episode_content_error"] = "missing_summary"
+                project.script.params = params
+                await db.commit()
             return {"ok": False, "error": "missing_summary"}
 
         script = await locked_script(db, project_id) if project.team_id is not None else project.script
@@ -700,6 +729,12 @@ async def _run_single_episode_script_job(
         )
         if not project or not project.script or not project.script.summary:
             logger.warning("单集剧本失败：缺少摘要 project_id=%s", project_id)
+            if project and project.script:
+                params = dict(project.script.params or {})
+                params["episode_optimize_status"] = "failed"
+                params["episode_optimize_error"] = "missing_summary"
+                project.script.params = params
+                await db.commit()
             return {"ok": False, "error": "missing_summary"}
 
         team_id = project.team_id
@@ -849,6 +884,7 @@ async def _run_single_episode_script_job(
 
             assets_created = 0
             assets_reused = 0
+            asset_seed_error: str | None = None
             if mode in {"body", "full", "optimize"}:
                 try:
                     seed_result = await seed_assets_from_episode_body(
@@ -856,7 +892,8 @@ async def _run_single_episode_script_job(
                     )
                     assets_created = int(seed_result.created_count)
                     assets_reused = int(seed_result.reused_count)
-                except Exception:  # noqa: BLE001
+                except Exception as exc:  # noqa: BLE001
+                    asset_seed_error = str(exc)[:500]
                     logger.exception(
                         "单集正文后增量 seed 失败 project_id=%s episode=%s",
                         project_id,
@@ -867,6 +904,16 @@ async def _run_single_episode_script_job(
                 await db.flush()
                 script = await locked_script(db, project_id)
             params = dict(script.params or {})
+            if asset_seed_error:
+                params["episode_optimize_status"] = "failed"
+                params["episode_optimize_error"] = asset_seed_error
+                params["episode_optimize_assets_created"] = assets_created
+                params["episode_optimize_assets_reused"] = assets_reused
+                script.params = params
+                if team_id is not None:
+                    set_episode_job_state(script, episode_number, "failed", mode=mode, error=asset_seed_error)
+                await db.commit()
+                return {"ok": False, "error": asset_seed_error}
             params["episode_optimize_status"] = "completed"
             params["episode_optimize_number"] = int(episode_number)
             params["episode_optimize_mode"] = mode
@@ -940,6 +987,17 @@ async def _run_single_episode_script_job(
                         episode_number,
                     )
                     pipeline = {"ok": False, "error": "kickoff_failed"}
+            if pipeline is not None and not pipeline.get("ok", True):
+                await db.refresh(script)
+                params = dict(script.params or {})
+                pipeline_error = str(pipeline.get("error") or "post_pipeline_failed")[:500]
+                params["episode_optimize_status"] = "failed"
+                params["episode_optimize_error"] = pipeline_error
+                script.params = params
+                if team_id is not None:
+                    set_episode_job_state(script, episode_number, "failed", mode=mode, error=pipeline_error)
+                await db.commit()
+                return {"ok": False, "error": pipeline_error, "post_pipeline": pipeline}
             return {
                 "ok": True,
                 "project_id": project_id,
@@ -1604,6 +1662,79 @@ async def poll_fragment_video_task(task_id: int) -> None:
             # 旧 Kie 任务号不能拿去查 TokenFree，否则会一直轮询并占着冻结余额
             if str(payload.get("video_provider") or "") == "kie":
                 await _fail_task(db, task, RuntimeError("已改为 TokenFree 通道，请重新生成本镜视频"))
+                return
+
+            if str(task.provider_task_id or "").startswith("comfyui:"):
+                from app.services.colab_comfyui import poll_comfyui_job, download_comfyui_video
+                from app.services import storage as storage_svc
+                comfy_url = str(payload.get("comfyui_url") or "")
+                prompt_id = str(task.provider_task_id).removeprefix("comfyui:")
+                poll_res = await poll_comfyui_job(comfy_url, prompt_id)
+                if poll_res.get("status") == "running":
+                    task.provider_status = "running"
+                    next_payload = dict(payload)
+                    if poll_res.get("history_missing"):
+                        misses = int(next_payload.get("comfyui_history_misses") or 0) + 1
+                        next_payload["comfyui_history_misses"] = misses
+                        if misses >= 45:
+                            await _fail_task(
+                                db,
+                                task,
+                                RuntimeError(
+                                    "ไม่พบประวัติ prompt จาก ComfyUI หลังส่งงานแล้ว "
+                                    "อาจเป็น tunnel เปลี่ยนหรือ ComfyUI ถูกรีสตาร์ต"
+                                ),
+                            )
+                            return
+                    else:
+                        next_payload.pop("comfyui_history_misses", None)
+                    task.payload = next_payload
+                    task.next_action_at = now + timedelta(seconds=poll_interval)
+                    task.progress_percent = min(95, int(task.progress_percent or 35) + 3)
+                    task.current_step_status = "polling"
+                    await db.commit()
+                    return
+                if poll_res.get("status") != "succeeded":
+                    task.provider_status = "failed"
+                    err_msg = str(poll_res.get("error") or "ComfyUI บน Colab ประมวลผลล้มเหลว")
+                    frag = await db.get(DramaEpisodeFragment, fragment_id)
+                    if frag:
+                        params = dict(frag.params or {})
+                        prev_gen = params.get("generation") if isinstance(params.get("generation"), dict) else None
+                        params["generation"] = build_failed_generation_params(
+                            prev_gen if isinstance(prev_gen, dict) else None,
+                            err_msg,
+                            attempts=attempts,
+                            attempt_limit=attempt_limit,
+                        )
+                        frag.params = params
+                    await _fail_task(db, task, RuntimeError(err_msg))
+                    return
+
+                ep = await db.get(DramaEpisode, episode_id, options=[selectinload(DramaEpisode.project)])
+                user = await db.get(User, user_id)
+                frag = await db.get(DramaEpisodeFragment, fragment_id)
+                if not ep or not ep.project or not user or not frag:
+                    await _fail_task(db, task, RuntimeError("分镜已变更，请重新生成"))
+                    return
+
+                import time
+                stamp = int(time.time())
+                dest = storage_svc.project_dir(ep.project.id) / f"shot_{fragment_id}_{stamp}.mp4"
+                await download_comfyui_video(comfy_url, poll_res, dest)
+                local_video = storage_svc.publish_local(dest)
+                task.provider_status = "succeeded"
+                await apply_fragment_video_assets(
+                    db,
+                    user,
+                    ep.project,
+                    frag,
+                    local_video=local_video,
+                    model_id=str(payload.get("model_id") or "Wan 2.1 Lightning (Colab)"),
+                )
+                from app.services.tasks.executor import _complete_task
+                await _complete_task(db, task, result={"video_url": local_video, "provider": "comfyui"})
+                await db.commit()
                 return
 
             result = await get_ark().fetch_task_once(task.provider_task_id)
@@ -2286,6 +2417,12 @@ async def kickoff_fragment_plans(
     assets_created = 0
     if reseed_assets:
         assets_result = await seed_assets_for_project(project_id)
+        if not assets_result.get("ok"):
+            return {
+                "ok": False,
+                "error": str(assets_result.get("error") or "seed_assets_failed"),
+                "assets": assets_result,
+            }
         assets_created = int(assets_result.get("created_count") or 0)
 
     async with AsyncSessionLocal() as db:

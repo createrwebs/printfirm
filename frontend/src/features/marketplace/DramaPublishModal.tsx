@@ -8,7 +8,7 @@ import { internalReturn, withReturn } from './ui'
 import { publishSelection, sourceRelation, type DramaPublishContext, type DramaPublishResult } from './dramaPublishing'
 import './dramaPublishing.css'
 
-/** HTTP 页面没有 randomUUID，改用随机字节拼一个不少于 8 位的幂等键。 */
+/** หากไม่มี crypto.randomUUID ให้สร้าง idempotent key แบบสุ่ม */
 function publishKey() {
   if (typeof crypto?.randomUUID === 'function') return crypto.randomUUID()
   if (typeof crypto?.getRandomValues === 'function') return Array.from(crypto.getRandomValues(new Uint32Array(4)), part => part.toString(16).padStart(8, '0')).join('')
@@ -20,7 +20,7 @@ type Props = {
   onClose: () => void; onPublished?: (result: DramaPublishResult) => void
 }
 
-// ละครซีรีส์卡片、分集ดูตัวอย่าง和市场แก้ไข页共用同一发布流程，只ส่ง服务端校验过的编号与版本。
+// ซีรีส์, พรีวิวตอนย่อย และหน้าแก้ไขในตลาด ใช้กระบวนการเผยแพร่เดียวกัน โดยส่งเฉพาะตอนที่ผ่านการตรวจสอบ
 export default function DramaPublishModal({ projectId, initialEpisodeId, targetSeriesId, selectReady = false, onClose, onPublished }: Props) {
   const navigate = useNavigate()
   const location = useLocation()
@@ -60,11 +60,11 @@ export default function DramaPublishModal({ projectId, initialEpisodeId, targetS
     if (!context || !storageReady || submitting.current || !selected.length) return
     submitting.current = true; setBusy(true); setError('')
     try {
-      if (targetId !== 'new' && !target) throw new Error('目标系列已变化，请รีเฟรช后重新เลือก')
+      if (targetId !== 'new' && !target) throw new Error('ซีรีส์เป้าหมายมีการเปลี่ยนแปลง กรุณารีเฟรชแล้วเลือกใหม่อีกครั้ง')
       const episodes = publishSelection(context, selected, updates, target)
       const payload = { episodes, series_id: target?.id ?? null, ...(target ? { series_version: target.version } : { title: title.trim() || context.project.title }) }
       const signature = JSON.stringify(payload)
-      // 网络超时后保留同一个幂等键；只有用户改变发布内容才สร้าง新批次。
+      // เมื่อเกิดข้อผิดพลาด ให้ใช้ idempotent key เดิม เว้นแต่ผู้ใช้จะเปลี่ยนข้อมูลที่เลือก
       if (requestKey.current.signature !== signature) requestKey.current = { signature, key: publishKey() }
       const result = await request<DramaPublishResult>(`/printfilm/dramas/${projectId}/publish`, 'POST', { ...payload, idempotency_key: requestKey.current.key })
       if (onPublished) onPublished(result)
@@ -75,24 +75,24 @@ export default function DramaPublishModal({ projectId, initialEpisodeId, targetS
   }
   return <Modal open title="เผยแพร่สู่ตลาดดิจิทัลแอสเซท" size="lg" className="pf-drama-publish" onClose={onClose} dismissible={!busy} footer={<>
     <Button type="button" variant="ghost" disabled={busy} onClick={onClose}>ยกเลิก</Button>
-    <Button type="button" variant="lime" disabled={loading || busy || !storageReady || !selected.length || missingUpdates || (targetId !== 'new' && !target)} onClick={() => void publish()}>{busy ? <><Loader2 size={16} className="pf-drama-publish-spin" />正在สร้าง同步任务…</> : '同步并继续แก้ไข'}</Button>
+    <Button type="button" variant="lime" disabled={loading || busy || !storageReady || !selected.length || missingUpdates || (targetId !== 'new' && !target)} onClick={() => void publish()}>{busy ? <><Loader2 size={16} className="pf-drama-publish-spin" />กำลังสร้างงานซิงค์…</> : 'ซิงค์และดำเนินการแก้ไขต่อ'}</Button>
   </>}>
-    <p className="pf-drama-publish-intro">选中的完整分集会同步到市场独立บันทึก。随后补充封面和价格，确认版权信息后一并ส่ง审核；有效账号授权函会自动关联。</p>
-    {loading ? <p role="status">正在检查分集和市场สถานะ…</p> : context ? <>
-      {!storageReady && <p className="pf-drama-publish-warning" role="alert">文件服务暂未配置，暂时无法同步วิดีโอ。请联系ผู้ดูแลระบบ (Admin)เสร็จสิ้น文件服务配置后ลองใหม่。</p>}
-      <div className="pf-drama-publish-project"><Film size={20} /><div><strong>{context.project.title}</strong><span>{context.episodes.length} 集 · 仅完整生成的分集可发布</span></div></div>
-      <div className="pf-drama-publish-episodes" aria-label="เลือก发布分集">{context.episodes.map(episode => {
+    <p className="pf-drama-publish-intro">ตอนที่เลือกจะถูกซิงค์ไปยังรายการในตลาด จากนั้นสามารถเพิ่มภาพปกและกำหนดราคา พร้อมยืนยันข้อมูลลิขสิทธิ์เพื่อส่งตรวจสอบต่อไป</p>
+    {loading ? <p role="status">กำลังตรวจสอบตอนย่อยและสถานะตลาด…</p> : context ? <>
+      {!storageReady && <p className="pf-drama-publish-warning" role="alert">บริการจัดเก็บไฟล์ยังไม่ได้กำหนดค่า ไม่สามารถซิงค์วิดีโอได้ชั่วคราว กรุณาติดต่อผู้ดูแลระบบเพื่อตั้งค่าระบบไฟล์แล้วลองใหม่อีกครั้ง</p>}
+      <div className="pf-drama-publish-project"><Film size={20} /><div><strong>{context.project.title}</strong><span>{context.episodes.length} ตอน · เฉพาะตอนที่สร้างเสร็จสมบูรณ์แล้วเท่านั้นที่สามารถเผยแพร่ได้</span></div></div>
+      <div className="pf-drama-publish-episodes" aria-label="เลือกตอนที่จะเผยแพร่">{context.episodes.map(episode => {
         const relation = sourceRelation(episode, target)
         return <div key={episode.id} className={`pf-drama-publish-episode${!episode.ready ? ' is-disabled' : ''}`}>
-          <label><input type="checkbox" disabled={busy || !episode.ready || !storageReady} checked={selected.includes(episode.id)} onChange={event => { setSelected(value => event.target.checked ? [...value, episode.id] : value.filter(id => id !== episode.id)); setUpdates(value => value.filter(id => id !== episode.id)) }} /><span><strong>第 {episode.episode_number} 集 · {episode.name}</strong><small>{episode.completed_count}/{episode.fragment_count} 镜เสร็จสมบูรณ์{!episode.ready ? ` · ${episode.reason || '成片未就绪'}` : relation.existing ? relation.changed ? ' · 发现新版本' : ' · 已同步，此版本将直接复用' : ''}</small></span></label>
-          {relation.changed && selected.includes(episode.id) && <label className="pf-drama-publish-update"><input type="checkbox" disabled={busy} checked={updates.includes(episode.id)} onChange={event => setUpdates(value => event.target.checked ? [...value, episode.id] : value.filter(id => id !== episode.id))} />确认更新为新的完整分集</label>}
+          <label><input type="checkbox" disabled={busy || !episode.ready || !storageReady} checked={selected.includes(episode.id)} onChange={event => { setSelected(value => event.target.checked ? [...value, episode.id] : value.filter(id => id !== episode.id)); setUpdates(value => value.filter(id => id !== episode.id)) }} /><span><strong>ตอนที่ {episode.episode_number} · {episode.name}</strong><small>{episode.completed_count}/{episode.fragment_count} ช็อตเสร็จสมบูรณ์{!episode.ready ? ` · ${episode.reason || 'วิดีโอยังไม่พร้อม'}` : relation.existing ? relation.changed ? ' · พบเวอร์ชันใหม่' : ' · ซิงค์แล้ว เวอร์ชันนี้จะถูกนำมาใช้โดยตรง' : ''}</small></span></label>
+          {relation.changed && selected.includes(episode.id) && <label className="pf-drama-publish-update"><input type="checkbox" disabled={busy} checked={updates.includes(episode.id)} onChange={event => setUpdates(value => event.target.checked ? [...value, episode.id] : value.filter(id => id !== episode.id))} />ยืนยันการอัปเดตเป็นตอนใหม่ที่สมบูรณ์</label>}
         </div>
-      })}{context.episodes.length === 0 && <p>这个โปรเจกต์还没有分集。</p>}</div>
-      <label className="pf-drama-publish-field">发布到<select disabled={busy || Boolean(targetSeriesId)} value={targetId} onChange={event => { setTargetId(event.target.value); setUpdates([]) }}><option value="new">สร้างใหม่市场ละครสั้น</option>{context.series.map(item => <option key={item.id} value={item.id}>{item.title}{item.listed ? '（เผยแพร่แล้ว）' : ''}</option>)}</select></label>
-      {targetId === 'new' ? <label className="pf-drama-publish-field">市场ละครสั้น名称<input value={title} disabled={busy} maxLength={200} onChange={event => setTitle(event.target.value)} placeholder={context.project.title} /></label> : <p className="pf-drama-publish-hint">保留已有系列的介绍、封面和收益ตั้งค่า；新分集接续目标系列集号。</p>}
-      {(changed.length > 0 || (target && (target.listed || target.audit_status === 'approved' || target.audit_status === 'pending'))) && <p className="pf-drama-publish-warning">同步更新或追加分集后，系列将退回ฉบับร่าง并暂停公开销售，需要重新ส่ง审核。历史买家仍可播放已购买版本。</p>}
-      <p className="pf-drama-publish-hint"><CheckCircle2 size={15} />{context.authorization_ready ? '当前授权函有效，同步后自动关联，无需逐集签署。' : '可先同步并บันทึกแบบร่าง，ส่ง系列审核前统一签署一次 PrintFilm 授权函。'}</p>
+      })}{context.episodes.length === 0 && <p>โปรเจกต์นี้ยังไม่มีตอนย่อย</p>}</div>
+      <label className="pf-drama-publish-field">เผยแพร่ไปยัง<select disabled={busy || Boolean(targetSeriesId)} value={targetId} onChange={event => { setTargetId(event.target.value); setUpdates([]) }}><option value="new">สร้างซีรีส์ละครสั้นใหม่ในตลาด</option>{context.series.map(item => <option key={item.id} value={item.id}>{item.title}{item.listed ? ' (เผยแพร่แล้ว)' : ''}</option>)}</select></label>
+      {targetId === 'new' ? <label className="pf-drama-publish-field">ชื่อซีรีส์ในตลาด<input value={title} disabled={busy} maxLength={200} onChange={event => setTitle(event.target.value)} placeholder={context.project.title} /></label> : <p className="pf-drama-publish-hint">คงรายละเอียด ภาพปก และการตั้งค่ารายได้เดิมไว้ ตอนใหม่จะถูกต่อท้ายตามลำดับตอน</p>}
+      {(changed.length > 0 || (target && (target.listed || target.audit_status === 'approved' || target.audit_status === 'pending'))) && <p className="pf-drama-publish-warning">หลังจากซิงค์อัปเดตหรือเพิ่มตอนใหม่ ซีรีส์จะกลับสู่สถานะฉบับร่างและหยุดการวางจำหน่ายชั่วคราวเพื่อส่งตรวจสอบใหม่ ผู้ซื้อเดิมยังคงสามารถดูเวอร์ชันที่เคยซื้อได้</p>}
+      <p className="pf-drama-publish-hint"><CheckCircle2 size={15} />{context.authorization_ready ? 'หนังสือมอบอำนาจในปัจจุบันมีผลบังคับใช้ ระบบจะเชื่อมโยงให้อัตโนมัติหลังการซิงค์ ไม่จำเป็นต้องลงนามทีละตอน' : 'สามารถซิงค์และบันทึกฉบับร่างไว้ก่อนได้ โดยจะลงนามหนังสือมอบอำนาจ PrintFilm เพียงครั้งเดียวก่อนส่งซีรีส์ตรวจสอบ'}</p>
     </> : null}
-    {error && <div className="pf-drama-publish-error" role="alert"><p>{error}</p><button type="button" disabled={busy || loading} onClick={() => setReload(value => value + 1)}>รีเฟรช分集สถานะ</button></div>}
+    {error && <div className="pf-drama-publish-error" role="alert"><p>{error}</p><button type="button" disabled={busy || loading} onClick={() => setReload(value => value + 1)}>รีเฟรชสถานะตอนย่อย</button></div>}
   </Modal>
 }

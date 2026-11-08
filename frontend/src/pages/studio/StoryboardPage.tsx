@@ -58,7 +58,7 @@ function csvEscape(value: string | number | null | undefined) {
 }
 
 function downloadStoryboardCsv(project: Project) {
-  const header = ['หมายเลขช็อต', 'เสียงบรรยาย', 'คำบรรยายภาพ', 'ความยาววินาที', 'สถานะ', 'ช็อต标题']
+  const header = ['หมายเลขช็อต', 'เสียงบรรยาย', 'คำบรรยายภาพ', 'ความยาว (วินาที)', 'สถานะ', 'ชื่อช็อต']
   const rows = (project.shots || [])
     .slice()
     .sort((a, b) => a.shot_no - b.shot_no)
@@ -283,7 +283,7 @@ export default function StoryboardPage() {
     ]
     if (full) {
       items.push({
-        label: `ช็อตวิดีโอ与เสียง (${vids}/${list.length || 0})`,
+        label: `วิดีโอช็อตและเสียง (${vids}/${list.length || 0})`,
         done:
           list.length > 0 &&
           (vids === list.length ||
@@ -294,14 +294,14 @@ export default function StoryboardPage() {
     }
     if (!full || auds > 0 || stage === 'AUDIOING') {
       items.push({
-        label: `เสียงพากย์合成 (${auds}/${list.length || 0})`,
+        label: `ผสมเสียงพากย์ (${auds}/${list.length || 0})`,
         done: list.length > 0 && auds === list.length,
         run: stage === 'AUDIOING',
         pct: stage === 'AUDIOING' ? project.progress : undefined,
       })
     }
     items.push({
-      label: full ? 'ช็อต拼接' : '成片เรนเดอร์',
+      label: full ? 'ตัดต่อช็อต' : 'เรนเดอร์วิดีโอฉบับเต็ม',
       done: Boolean(project.final_video_url) || project.status === 'DONE',
       run: stage === 'COMPOSING',
       pct: stage === 'COMPOSING' ? project.progress : undefined,
@@ -332,7 +332,7 @@ export default function StoryboardPage() {
           setError('')
           setProject(await api.compose(project.id))
         } catch (e2) {
-          setError(e2 instanceof Error ? e2.message : '合成ล้มเหลว')
+          setError(e2 instanceof Error ? e2.message : 'รวมวิดีโอล้มเหลว')
         }
         return
       }
@@ -347,7 +347,7 @@ export default function StoryboardPage() {
     if (!project) return
     const ok = await dialog.confirm({
       title: '推倒重做',
-      message: '将ล้างข้อมูลปัจจุบัน分ช็อตที่ 与素材，แบ่งช็อตใหม่（生成后仍可先确认再ดำเนินต่อ）。',
+      message: 'จะล้างข้อมูลช็อตและสื่อปัจจุบันเพื่อแบ่งช็อตใหม่ (หลังสร้างแล้วยังสามารถตรวจสอบก่อนดำเนินการต่อได้)',
       confirmText: '确认重做',
       cancelText: '再想想',
       tone: 'danger',
@@ -358,7 +358,7 @@ export default function StoryboardPage() {
     try {
       setProject(await api.generate(project.id, { restart: true }))
     } catch (err) {
-      const msg = err instanceof Error ? err.message : '重做ล้มเหลว'
+      const msg = err instanceof Error ? err.message : 'ทำใหม่ล้มเหลว'
       setError(msg)
       await handleBillingError(err, nav)
     } finally {
@@ -370,7 +370,7 @@ export default function StoryboardPage() {
     if (!project) return
     const ok = await dialog.confirm({
       title: 'ลบโปรเจกต์',
-      message: 'ยืนยันการลบ该โปรเจกต์？素材与成片将一并清除，此การดำเนินการไม่สามารถกู้คืนได้。',
+      message: 'ยืนยันการลบโปรเจกต์นี้? สื่อและวิดีโอจะถูกลบทั้งหมด การดำเนินการนี้ไม่สามารถกู้คืนได้',
       confirmText: 'ลบ',
       cancelText: 'ยกเลิก',
       tone: 'danger',
@@ -394,7 +394,7 @@ export default function StoryboardPage() {
     try {
       setProject(await api.compose(project.id))
     } catch (err) {
-      setError(err instanceof Error ? err.message : '合成ล้มเหลว')
+      setError(err instanceof Error ? err.message : 'รวมวิดีโอล้มเหลว')
       await handleBillingError(err, nav)
     } finally {
       setBusy(false)
@@ -408,7 +408,7 @@ export default function StoryboardPage() {
     try {
       setProject(await api.cancelProject(project.id))
     } catch (err) {
-      setError(err instanceof Error ? err.message : '停止ล้มเหลว')
+      setError(err instanceof Error ? err.message : 'หยุดการทำงานล้มเหลว')
     } finally {
       setBusy(false)
     }
@@ -434,7 +434,7 @@ export default function StoryboardPage() {
     try {
       setProject(await api.uploadCover(project.id, file))
     } catch (err) {
-      setError(err instanceof Error ? err.message : '封面อัปโหลดไม่สำเร็จ')
+      setError(err instanceof Error ? err.message : 'อัปโหลดภาพหน้าปกไม่สำเร็จ')
     } finally {
       setBusy(false)
       if (coverInputRef.current) coverInputRef.current.value = ''
@@ -455,7 +455,7 @@ export default function StoryboardPage() {
     try {
       setProject(await api.updateProject(project.id, { cover_url: first.image_url }))
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'ตั้งค่า封面ล้มเหลว')
+      setError(err instanceof Error ? err.message : 'ตั้งค่าภาพหน้าปกล้มเหลว')
     } finally {
       setBusy(false)
     }
@@ -473,11 +473,11 @@ export default function StoryboardPage() {
     if (!project || batchSelected.length === 0) return
     const durationVal = batchDuration.trim() === '' ? null : Number(batchDuration)
     if (durationVal != null && (!Number.isFinite(durationVal) || durationVal <= 0)) {
-      setError('请输入有效ความยาว（วินาที）')
+      setError('กรุณากรอกความยาวที่ถูกต้อง (วินาที)')
       return
     }
     if (durationVal == null && !batchRegenAudio) {
-      setError('请ตั้งค่าความยาว，或勾选重เสียงพากย์')
+      setError('กรุณาตั้งค่าความยาว หรือเลือกสร้างเสียงพากย์ใหม่')
       return
     }
     setBusy(true)
@@ -494,7 +494,7 @@ export default function StoryboardPage() {
       setProject(await api.getProject(project.id))
       setBatchOpen(false)
     } catch (err) {
-      setError(err instanceof Error ? err.message : '批量调整ล้มเหลว')
+      setError(err instanceof Error ? err.message : 'ปรับปรุงพร้อมกันล้มเหลว')
       try {
         setProject(await api.getProject(project.id))
       } catch {
@@ -512,7 +512,7 @@ export default function StoryboardPage() {
       await api.publish(project.id)
       nav('/history')
     } catch (err) {
-      setError(err instanceof Error ? err.message : '发布ล้มเหลว')
+      setError(err instanceof Error ? err.message : 'เผยแพร่ล้มเหลว')
     } finally {
       setBusy(false)
     }
@@ -538,7 +538,7 @@ export default function StoryboardPage() {
     try {
       setProject(await api.regenImage(project.id, shot.id))
     } catch (err) {
-      setError(err instanceof Error ? err.message : '生成ภาพล้มเหลว')
+      setError(err instanceof Error ? err.message : 'สร้างภาพล้มเหลว')
     } finally {
       markShotIdle(shot.id)
     }
@@ -558,12 +558,12 @@ export default function StoryboardPage() {
 
   async function regenAudio(shot: Shot) {
     if (!project) return
-    // 重เสียงพากย์会重写整片口播，ล็อกตารางทั้งหมดเพื่อหลีกเลี่ยงการเขียนขัดแย้ง
+    // การพากย์เสียงใหม่จะเขียนเสียงบรรยายทั้งเรื่องใหม่ ล็อกตารางทั้งหมดเพื่อหลีกเลี่ยงการเขียนขัดแย้ง
     setBusy(true)
     try {
       setProject(await api.regenAudio(project.id, shot.id))
     } catch (err) {
-      setError(err instanceof Error ? err.message : '重เสียงพากย์ล้มเหลว')
+      setError(err instanceof Error ? err.message : 'สร้างเสียงพากย์ใหม่ล้มเหลว')
     } finally {
       setBusy(false)
     }
@@ -631,7 +631,7 @@ export default function StoryboardPage() {
     // durationCheck ความยาว校验结果
     const durationCheck = validateSegmentScriptDuration(scriptText)
     if (!durationCheck.valid) {
-      setError(durationCheck.message || '分ช็อตที่ ความยาว不合法')
+      setError(durationCheck.message || 'ความยาวของช็อตไม่ถูกต้อง')
       return
     }
     setBusy(true)
@@ -672,7 +672,7 @@ export default function StoryboardPage() {
       setProject(updated)
       setPromptEdit(null)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'บันทึกคำแนะนำ词ล้มเหลว')
+      setError(err instanceof Error ? err.message : 'บันทึกพรอมต์ล้มเหลว')
     } finally {
       setBusy(false)
     }
@@ -691,7 +691,7 @@ export default function StoryboardPage() {
       setProject(updated)
       setPromptEdit(null)
     } catch (err) {
-      setError(err instanceof Error ? err.message : '恢复模板ล้มเหลว')
+      setError(err instanceof Error ? err.message : 'กู้คืนเทมเพลตล้มเหลว')
     } finally {
       setBusy(false)
     }
@@ -714,7 +714,7 @@ export default function StoryboardPage() {
   }
 
   const structure = (project.shots || []).slice(0, 5).map((s, i) => {
-    const labels = ['开端', '发展', '转折', 'จุดไคลแม็กซ์', 'บทสรุปตอนจบ']
+    const labels = ['จุดเริ่มต้น', 'การดำเนินเรื่อง', 'จุดเปลี่ยน', 'จุดไคลแม็กซ์', 'บทสรุปตอนจบ']
     return { label: labels[i] || `ย่อหน้า ${i + 1}`, text: s.narration || s.overlay_title || '—' }
   })
 
@@ -751,7 +751,7 @@ export default function StoryboardPage() {
           <div>
             <button type="button" className="pf-back" onClick={() => nav(`/studio/${project.id}/style`)}>
               <IconChevronLeft size={18} />
-              AI 生成故事板 / 分ช็อตที่ เวิร์กสเตชัน
+              AI สร้างสตอรี่บอร์ด / เวิร์กสเตชันแบ่งช็อต
             </button>
             <h1 className="pf-page-title">{project.title}</h1>
           </div>
@@ -764,7 +764,7 @@ export default function StoryboardPage() {
                 onClick={openFinalPreview}
               >
                 <IconMonitor size={14} />
-                ดูตัวอย่าง成片
+                ดูตัวอย่างวิดีโอ
               </button>
             ) : primaryAction === 'compose' ? (
               <button
@@ -810,7 +810,7 @@ export default function StoryboardPage() {
             {primaryAction !== 'preview' && hasFinal ? (
               <button type="button" className="pf-btn-text" onClick={openFinalPreview}>
                 <IconMonitor size={15} />
-                ดูตัวอย่าง成片
+                ดูตัวอย่างวิดีโอ
               </button>
             ) : null}
             {primaryAction === 'preview' && readyToCompose ? (
@@ -840,7 +840,7 @@ title="สร้างใหม่โดยใช้ช็อตปัจจุ�
               onClick={() => nav(`/studio/${project.id}/editor`)}
             >
               <IconEdit size={14} />
-              打开แก้ไข器
+              เปิดตัวแก้ไข
             </button>
           </div>
         </div>
@@ -897,14 +897,14 @@ title="สร้างใหม่โดยใช้ช็อตปัจจุ�
               onClick={() => coverInputRef.current?.click()}
             >
               <IconImage size={14} />
-              เปลี่ยน封面
+              เปลี่ยนภาพหน้าปก
             </button>
             <button
               type="button"
               className="pf-btn pf-btn-ghost pf-btn-sm pf-btn-icon"
               disabled={busy || running || !shots.some((s) => s.image_url)}
               onClick={useFirstShotCover}
-              title="ใช้ตอนที่ 一个有ภาพ的ช็อต作为封面"
+              title="ใช้ช็อตแรกที่มีภาพเป็นภาพหน้าปก"
             >
               <IconImage size={14} />
               ใช้ปกช็อตแรก
@@ -950,7 +950,7 @@ title="สร้างใหม่โดยใช้ช็อตปัจจุ�
             </li>
             <li>
               <span>成片方式</span>
-              <span>{project.pipeline_mode === 'image_text' ? '静图成片' : 'AI วิดีโอ'}</span>
+              <span>{project.pipeline_mode === 'image_text' ? 'วิดีโอภาพนิ่ง' : 'AI วิดีโอ'}</span>
             </li>
             <li>
               <span>สไตล์</span>
@@ -966,9 +966,9 @@ title="สร้างใหม่โดยใช้ช็อตปัจจุ�
             แก้ไขการตั้งค่าโปรเจกต์
           </button>
           <div className="pf-prompt-panel">
-            <h4>内置คำแนะนำ词</h4>
+            <h4>พรอมต์ในตัวโปรเจกต์</h4>
             <p className="pf-muted" style={{ fontSize: '0.72rem', margin: '0 0 0.45rem' }}>
-              生图ใช้模板画风ภาพอ้างอิง，และอ้างอิงช็อตก่อนหน้าภาพ延续ตัวละคร、服装与色彩；每ช็อตที่ รูปภาพ再用于สร้างวิดีโอ。
+              สร้างภาพโดยใช้ภาพอ้างอิงสไตล์จากเทมเพลต และอ้างอิงภาพช็อตก่อนหน้าเพื่อรักษาตัวละคร เสื้อผ้า และโทนสี ภาพในแต่ละช็อตจะถูกนำไปสร้างวิดีโอต่อ
             </p>
             {(
               [
@@ -991,19 +991,19 @@ title="สร้างใหม่โดยใช้ช็อตปัจจุ�
                 }
               >
                 <strong>{label}</strong>
-                <span>{(value || '').trim() || '（空，点击แก้ไข）'}</span>
+                <span>{(value || '').trim() || '(ว่าง คลิกเพื่อแก้ไข)'}</span>
               </button>
             ))}
           </div>
           <p className="pf-muted" style={{ fontSize: '0.75rem', marginTop: '0.75rem' }}>
-            เนื้อหาโดย AI 生成，请注意核对准确性
+            เนื้อหาสร้างโดย AI กรุณาตรวจสอบความถูกต้อง
           </p>
         </aside>
 
         <div className="pf-board-main">
           <div className="pf-outline-grid">
             <article className="pf-create-col">
-              <h3>AI 生成โครงร่าง</h3>
+              <h3>โครงร่างที่สร้างโดย AI</h3>
               <p style={{ margin: 0, fontSize: '0.9rem', lineHeight: 1.65 }}>
                 {project.source_text}
               </p>
@@ -1013,7 +1013,7 @@ title="สร้างใหม่โดยใช้ช็อตปัจจุ�
               </div>
             </article>
             <article className="pf-create-col">
-              <h3>结构เรื่องย่อ</h3>
+              <h3>โครงสร้างเรื่องย่อ</h3>
               <ul className="pf-meta-list">
                 {structure.length ? (
                   structure.map((s) => (
@@ -1034,7 +1034,7 @@ title="สร้างใหม่โดยใช้ช็อตปัจจุ�
 
           <section className="pf-shot-card">
             <div className="pf-shot-card-head">
-              <h3>รายการสตอรี่บอร์ด（共 {project.shots.length} 个ฉาก）</h3>
+              <h3>รายการสตอรี่บอร์ด (ทั้งหมด {project.shots.length} ช็อต)</h3>
               <div className="pf-toolbar">
                 {project.status === 'DONE' && hasFinal ? (
                   <button type="button" className="pf-btn pf-btn-lime pf-btn-sm" disabled={busy} onClick={publish}>
@@ -1044,7 +1044,7 @@ title="สร้างใหม่โดยใช้ช็อตปัจจุ�
                 {hasFinal ? (
                   <>
                     <button type="button" className="pf-btn pf-btn-ghost pf-btn-sm" onClick={openFinalPreview}>
-                      ดูตัวอย่าง成片
+                      ดูตัวอย่างวิดีโอ
                     </button>
                     <button type="button" className="pf-btn pf-btn-ghost pf-btn-sm" onClick={() => nav(withReturn(`/marketplace/from-printfilm?project=${project.id}`, `${location.pathname}${location.search}`))}>
                       เผยแพร่สู่ตลาดดิจิทัลแอสเซท
@@ -1066,11 +1066,11 @@ title="สร้างใหม่โดยใช้ช็อตปัจจุ�
               <p className="pf-muted" style={{ margin: '1.5rem 0', textAlign: 'center' }}>
                 {running
                   ? 'กำลังแยกช็อต…'
-                  : '暂无分ช็อตที่ 。从สไตล์配置页เริ่มสร้าง后，สามารถยืนยันการแก้ไขได้ก่อน，再ด้วยตนเอง开始ภาพ生成。'}
+                  : 'ยังไม่มีช็อต หลังจากเริ่มสร้างจากหน้าตั้งค่าสไตล์ สามารถตรวจสอบและแก้ไขก่อน แล้วจึงเริ่มสร้างภาพ'}
               </p>
             ) : needsScriptConfirm ? (
               <p className="pf-muted" style={{ margin: '0 0 1rem' }}>
-                分ช็อตที่ 已就绪。点表格「เสียงบรรยาย」改口播（จะซิงค์บทและส่งผลต่อภาพยนตร์ทั้งเรื่องเสียงพากย์），点「แบ่งสตอรี่บอร์ดทีละส่วน」改ภาพจังหวะและ @duration。确认กดหลังจาก阶段预扣：ภาพ+เสียงพากย์ → ช็อตวิดีโอ → 合成。
+                ช็อตพร้อมแล้ว คลิกที่คอลัมน์ "เสียงบรรยาย" เพื่อแก้ไขเสียงพูด (จะซิงค์กับบทและส่งผลต่อเสียงพากย์ทั้งเรื่อง) คลิก "แบ่งสตอรี่บอร์ดทีละส่วน" เพื่อปรับจังหวะภาพและ @duration หลังจากยืนยันจะเริ่มสร้างตามลำดับ: ภาพ+เสียงพากย์ → วิดีโอช็อต → รวมวิดีโอ
               </p>
             ) : null}
             {project.shots.length === 0 ? null : (
@@ -1147,7 +1147,7 @@ title="สร้างใหม่โดยใช้ช็อตปัจจุ�
                               type="button"
                               className="pf-shot-narration pf-shot-editable"
                               disabled={rowBusy}
-                              title="点击แก้ไขเสียงบรรยาย与标题"
+                              title="คลิกเพื่อแก้ไขเสียงบรรยายและชื่อช็อต"
                               onClick={() => openShotEdit(shot, 'narration')}
                             >
                               <span className="title">{sceneTitle}</span>
@@ -1161,7 +1161,7 @@ title="สร้างใหม่โดยใช้ช็อตปัจจุ�
                               type="button"
                               className="pf-shot-desc pf-shot-editable"
                               disabled={rowBusy}
-                              title="点击แก้ไข逐段บทสตอรี่บอร์ด"
+                              title="คลิกเพื่อแก้ไขสตอรี่บอร์ดทีละส่วน"
                               onClick={() => openShotEdit(shot, 'segment_script')}
                               style={{ textAlign: 'left', width: '100%' }}
                             >
@@ -1203,7 +1203,7 @@ title="สร้างใหม่โดยใช้ช็อตปัจจุ�
                                   ) : null}
                                 </div>
                               ) : (
-                                desc || '（点击填写แบ่งสตอรี่บอร์ดทีละส่วน）'
+                                desc || '(คลิกเพื่อกรอกสตอรี่บอร์ดทีละส่วน)'
                               )}
                             </button>
                           </td>
@@ -1237,7 +1237,7 @@ title="สร้างใหม่โดยใช้ช็อตปัจจุ�
                                 disabled={rowBusy}
                                 onClick={() => regenImage(shot)}
                               >
-                                {shot.image_url ? '重绘ภาพ' : '生成ภาพ'}
+                                {shot.image_url ? 'วาดภาพใหม่' : 'สร้างภาพ'}
                               </button>
                               {isFullPipeline ? (
                                 <button
@@ -1247,7 +1247,7 @@ title="สร้างใหม่โดยใช้ช็อตปัจจุ�
                                   title={!shot.image_url ? 'โปรดสร้างช็อตนี้ก่อนภาพ' : undefined}
                                   onClick={() => regenVideo(shot)}
                                 >
-                                  {shot.video_url ? '重生วิดีโอ' : '出วิดีโอ'}
+                                  {shot.video_url ? 'สร้างวิดีโอใหม่' : 'สร้างวิดีโอ'}
                                 </button>
                               ) : null}
                               {shot.video_url ? (
@@ -1277,7 +1277,7 @@ title="สร้างใหม่โดยใช้ช็อตปัจจุ�
                                       regenAudio(shot)
                                     }}
                                   >
-                                    重เสียงพากย์
+                                    พากย์เสียงใหม่
                                   </button>
                                 </div>
                               ) : null}
@@ -1292,8 +1292,8 @@ title="สร้างใหม่โดยใช้ช็อตปัจจุ�
             )}
             <div className="pf-shot-footer">
               <span className="pf-muted" style={{ fontSize: '0.82rem' }}>
-                总ความยาว: {formatMmSs(totalDuration)} | ภาพ: {project.shots.filter((s) => s.image_url).length}/{project.shots.length} 个 | วิดีโอ:{' '}
-                {project.shots.filter((s) => s.video_url).length}/{project.shots.length} 段 | ความคมชัด: {project.video_resolution || 'ค่าเริ่มต้น'}
+                ความยาวรวม: {formatMmSs(totalDuration)} | ภาพ: {project.shots.filter((s) => s.image_url).length}/{project.shots.length} ช็อต | วิดีโอ:{' '}
+                {project.shots.filter((s) => s.video_url).length}/{project.shots.length} ส่วน | ความละเอียด: {project.video_resolution || 'ค่าเริ่มต้น'}
               </span>
               <div className="pf-toolbar">
                 <button
@@ -1353,7 +1353,7 @@ title="สร้างใหม่โดยใช้ช็อตปัจจุ�
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h3>ปรับสตอรี่บอร์ดเป็นชุด</h3>
             <p className="pf-muted" style={{ marginTop: 0 }}>
-              已选 {batchSelected.length} / {project.shots.length} 个ช็อต
+              เลือกแล้ว {batchSelected.length} / {project.shots.length} ช็อต
             </p>
             <div
               style={{
@@ -1397,7 +1397,7 @@ title="สร้างใหม่โดยใช้ช็อตปัจจุ�
                 ))}
             </div>
             <label>
-              统一ความยาว（วินาที，ปล่อยว่างแล้วไม่แก้ไข）
+              ปรับความยาวเท่ากัน (วินาที เว้นว่างไว้หากไม่ต้องการแก้ไข)
               <input
                 type="number"
                 min={1}
@@ -1413,7 +1413,7 @@ title="สร้างใหม่โดยใช้ช็อตปัจจุ�
                 checked={batchRegenAudio}
                 onChange={(e) => setBatchRegenAudio(e.target.checked)}
               />
-              对所选ช็อต重新เสียงพากย์
+              สร้างเสียงพากย์ใหม่สำหรับช็อตที่เลือก
             </label>
             <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
               <button
@@ -1452,23 +1452,23 @@ title="สร้างใหม่โดยใช้ช็อตปัจจุ�
           >
             <h3>
               {editMode === 'narration'
-                ? `แก้ไขช็อต ${editing.shot_no} · เสียงบรรยาย与标题`
+                ? `แก้ไขช็อต ${editing.shot_no} · เสียงบรรยายและชื่อช็อต`
                 : editMode === 'segment'
                   ? `แก้ไขช็อต ${editing.shot_no} · แบ่งสตอรี่บอร์ดทีละส่วน`
-                  : `แก้ไขช็อต ${editing.shot_no} · ${isFullPipeline ? 'ทั้งหมดคำแนะนำ词' : 'ภาพ与เสียงบรรยาย'}`}
+                  : `แก้ไขช็อต ${editing.shot_no} · ${isFullPipeline ? 'พรอมต์ทั้งหมด' : 'ภาพและเสียงบรรยาย'}`}
             </h3>
             <div className="pf-prompt-modal-scroll">
               {editMode === 'narration' || editMode === 'full' ? (
                 <>
                   <label>
-                    ช็อต标题
+                    ชื่อช็อต
                     <input
                       autoFocus={editFocus === 'title' || editMode === 'narration'}
                       value={editing.overlay_title || ''}
                       onChange={(e) => setEditing({ ...editing, overlay_title: e.target.value })}
                     />
                     <span className="pf-muted pf-prompt-hint">
-                      รายการสตอรี่บอร์ด名称；图文成片会叠到ภาพด้านบน
+                      ชื่อสตอรี่บอร์ด สำหรับวิดีโอภาพนิ่งจะแสดงซ้อนบนภาพ
                     </span>
                   </label>
                   <label>
@@ -1478,7 +1478,7 @@ title="สร้างใหม่โดยใช้ช็อตปัจจุ�
                       onChange={(e) => setEditing({ ...editing, overlay_subtitle: e.target.value })}
                     />
                     <span className="pf-muted pf-prompt-hint">
-                      {isFullPipeline ? '作为分ช็อตที่ 说明ใช้' : '可选，会和标题一起显示在成片中'}
+                      {isFullPipeline ? 'ใช้เป็นคำอธิบายช็อต' : 'ตัวเลือกเสริม จะแสดงร่วมกับชื่อในวิดีโอฉบับสมบูรณ์'}
                     </span>
                   </label>
                   <label>
@@ -1490,14 +1490,14 @@ title="สร้างใหม่โดยใช้ช็อตปัจจุ�
                       rows={editMode === 'narration' ? 6 : 3}
                     />
                     <span className="pf-muted pf-prompt-hint">
-                      จะซิงค์ไปยังบทละครเสียงบรรยาย段，และส่งผลต่อภาพรวมเสียงพากย์（หลังแก้ไขต้องสร้างใหม่เสียงพากย์/成片）
+                      จะซิงค์ไปยังท่อนเสียงบรรยายของบท และส่งผลต่อเสียงพากย์ทั้งเรื่อง (หลังแก้ไขต้องสร้างเสียงพากย์หรือวิดีโอใหม่)
                     </span>
                   </label>
                 </>
               ) : null}
               {editMode === 'full' ? (
                 <label>
-                    {isFullPipeline ? 'ภาพคำแนะนำ词（เฟรมแรก）' : 'คำบรรยายภาพ'}
+                    {isFullPipeline ? 'พรอมต์ภาพ (เฟรมแรก)' : 'คำบรรยายภาพ'}
                   <textarea
                     autoFocus={editFocus === 'img_prompt'}
                     value={editing.img_prompt}
@@ -1505,14 +1505,14 @@ title="สร้างใหม่โดยใช้ช็อตปัจจุ�
                     rows={3}
                   />
                   <span className="pf-muted pf-prompt-hint">
-                    {isFullPipeline ? 'จะซิงค์ไปยังบทละคร首段ภาพ，出图与วิดีโอ都用这一段' : 'คำอธิบายตัวละคร、ฉากและการกระทำ；หลังจากแก้ไขสามารถสร้างใหม่这一张รูปภาพ'}
+                    {isFullPipeline ? 'จะซิงค์ไปยังภาพช่วงแรกของบท การสร้างภาพและวิดีโอจะใช้ส่วนนี้' : 'คำอธิบายตัวละคร ฉาก และการกระทำ หลังจากแก้ไขสามารถสร้างภาพนี้ใหม่ได้'}
                   </span>
                 </label>
               ) : null}
               {isFullPipeline && (editMode === 'segment' || editMode === 'full') ? (
                 <>
                   <label>
-                    逐段บทสตอรี่บอร์ด（ภาพจังหวะและ @duration）
+                    สตอรี่บอร์ดทีละส่วน (จังหวะภาพและ @duration)
                     <textarea
                       className="pf-prompt-segment"
                       autoFocus={editFocus === 'segment_script' || editMode === 'segment'}
@@ -1531,7 +1531,7 @@ title="สร้างใหม่โดยใช้ช็อตปัจจุ�
                       ))
                     ) : (
                       <span className="pf-muted" style={{ fontSize: '0.8rem' }}>
-                        暂无 @duration แท็ก
+                        ยังไม่มีแท็ก @duration
                       </span>
                     )}
                     <span
@@ -1557,7 +1557,7 @@ title="สร้างใหม่โดยใช้ช็อตปัจจุ�
                   </label>
                   <div className="pf-prompt-modal-row">
                     <label>
-                      ความยาว（วินาที，บันทึกกดหลังจาก @duration 重算）
+                      ความยาว (วินาที จะคำนวณใหม่ตาม @duration หลังบันทึก)
                       <input
                         type="number"
                         value={editing.duration}
@@ -1590,7 +1590,7 @@ title="สร้างใหม่โดยใช้ช็อตปัจจุ�
                     setEditFocus('narration')
                   }}
                 >
-                  เสียงบรรยาย与标题…
+                  เสียงบรรยายและชื่อช็อต...
                 </button>
               ) : null}
               {isFullPipeline && editMode !== 'full' ? (
@@ -1602,7 +1602,7 @@ title="สร้างใหม่โดยใช้ช็อตปัจจุ�
                     setEditFocus('')
                   }}
                 >
-                  ทั้งหมด字段
+                  ทุกฟิลด์
                 </button>
               ) : null}
               <span className="pf-prompt-modal-foot-spacer" />
@@ -1625,12 +1625,12 @@ title="สร้างใหม่โดยใช้ช็อตปัจจุ�
       {promptEdit ? (
         <div className="modal-backdrop" onClick={() => setPromptEdit(null)}>
           <div className="modal pf-prompt-modal" onClick={(e) => e.stopPropagation()}>
-            <h3>โปรเจกต์内置คำแนะนำ词</h3>
+            <h3>พรอมต์เริ่มต้นของโปรเจกต์</h3>
             <p className="pf-muted" style={{ fontSize: '0.8rem', marginTop: 0 }}>
-              ค่าเริ่มต้นตามเทมเพลตแบ็กเอนด์。บันทึก为与模板相同เนื้อหา会自动清除覆盖；ช็อตที่สร้างแล้วต้อง点สร้างใหม่才会อัปเดต。
+              ค่าเริ่มต้นตามเทมเพลตของระบบ การบันทึกเนื้อหาเดียวกับเทมเพลตจะล้างการตั้งค่ากำหนดเองโดยอัตโนมัติ ช็อตที่สร้างแล้วต้องกดสร้างใหม่จึงจะอัปเดต
             </p>
             <label>
-              สไตล์คำแนะนำ词
+              พรอมต์สไตล์
               <textarea
                 value={promptEdit.style_prompt}
                 onChange={(e) => setPromptEdit({ ...promptEdit, style_prompt: e.target.value })}
@@ -1638,7 +1638,7 @@ title="สร้างใหม่โดยใช้ช็อตปัจจุ�
               />
             </label>
             <label>
-              ตัวละครคำแนะนำ词
+              พรอมต์ตัวละคร
               <textarea
                 autoFocus
                 value={promptEdit.character_prompt}
@@ -1703,7 +1703,7 @@ title="สร้างใหม่โดยใช้ช็อตปัจจุ�
             ) : preview.imageUrl ? (
               <img className="preview-media" src={api.assetUrl(preview.imageUrl)} alt="" />
             ) : (
-              <p className="pf-muted">暂无ดูตัวอย่าง</p>
+              <p className="pf-muted">ยังไม่มีตัวอย่าง</p>
             )}
             {preview.kind === 'shot' && preview.audioUrl ? (
               <audio src={api.assetUrl(preview.audioUrl)} controls style={{ width: '100%' }} />

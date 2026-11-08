@@ -230,7 +230,7 @@ export function CanvasPromptEditor({
         className={`fc-generate-input fc-generate-editor nodrag nopan nowheel${empty ? ' is-empty' : ''}`}
         role="textbox"
         aria-multiline="true"
-        aria-label="生成คำแนะนำ词"
+        aria-label="สร้างคำแนะนำ (Prompt)"
         aria-disabled={disabled}
         contentEditable={!disabled}
         suppressContentEditableWarning

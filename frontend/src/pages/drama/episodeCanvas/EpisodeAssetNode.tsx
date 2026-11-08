@@ -25,8 +25,8 @@ function EpisodeAssetNodeComponent({ data, selected, onUnlinkAsset }: Props) {
               key={link.fragmentId}
               type="button"
               className="ep-asset-node-unlink-chip"
-              aria-label={`ยกเลิก ${link.label} 的关联`}
-              title={`ยกเลิก ${link.label} 的关联`}
+              aria-label={`ยกเลิกการเชื่อมโยงของ ${link.label}`}
+              title={`ยกเลิกการเชื่อมโยงของ ${link.label}`}
               disabled={readOnly}
               onClick={() => onUnlinkAsset?.(link.fragmentId, data.assetId)}
             >

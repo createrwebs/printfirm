@@ -51,6 +51,7 @@ import {
 } from '../../lib/dramaProjectOutputSettings'
 import { DramaFragmentClipSpec } from '../../components/drama/DramaFragmentClipSpec'
 import { FragmentPlanSkillModal } from '../../components/drama/FragmentPlanSkillModal'
+import { ColabRenderModal, type ColabRenderSubmitParams } from '../../components/drama/ColabRenderModal'
 import { DramaGenTaskDetail } from '../../components/drama/DramaGenTaskDetail'
 import { CircleAlert } from 'lucide-react'
 import { useDramaImageGenQueue } from '../../hooks/useDramaImageGenQueue'
@@ -169,6 +170,11 @@ function EpisodeEditInner() {
   const [episodeParams, setEpisodeParams] = useState<Record<string, unknown>>({})
   // planModalOpen AI ยืนยันช็อตใหม่（含 Skill 勾选）
   const [planModalOpen, setPlanModalOpen] = useState(false)
+  const [colabModalOpen, setColabModalOpen] = useState(false)
+  const [colabTargetFragIds, setColabTargetFragIds] = useState<number[]>([])
+  const [colabSubmitting, setColabSubmitting] = useState(false)
+  const [uploadingMedia, setUploadingMedia] = useState(false)
+  const fragmentUploadInputRef = useRef<HTMLInputElement | null>(null)
   const [previewVersionId, setPreviewVersionId] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [planning, setPlanning] = useState(false)
@@ -257,8 +263,8 @@ function EpisodeEditInner() {
   const planFragmentsLocked =
     readOnly || busy || anyFragmentGenerating || readFragmentPlanStatus(episode) === 'generating'
   const selectedRefIds = useMemo(
-    () => new Set(collectFragmentAssetIds(selected)),
-    [selected],
+    () => new Set(collectFragmentAssetIds(selected, assets)),
+    [selected, assets],
   )
   const selectedRefItems = useMemo(
     () =>
@@ -268,6 +274,45 @@ function EpisodeEditInner() {
       }),
     [selected, assets],
   )
+  const shotCharacters = useMemo(() => {
+    const linkedIds = new Set(selected ? collectFragmentAssetIds(selected, assets) : [])
+    return assets
+      .filter((a) => normalizeAssetTab(a.type) === 'character')
+      .map((a) => ({
+        id: a.id,
+        name: a.name || `ตัวละคร ${a.id}`,
+        type: 'character',
+        cover: a.cover || a.url || null,
+        isLinked: linkedIds.has(a.id),
+      }))
+      .sort((a, b) => (b.isLinked ? 1 : 0) - (a.isLinked ? 1 : 0))
+  }, [selected, assets])
+  const shotScenes = useMemo(() => {
+    const linkedIds = new Set(selected ? collectFragmentAssetIds(selected) : [])
+    return assets
+      .filter((a) => normalizeAssetTab(a.type) === 'scene')
+      .map((a) => ({
+        id: a.id,
+        name: a.name || `ฉาก ${a.id}`,
+        type: 'scene',
+        cover: a.cover || a.url || null,
+        isLinked: linkedIds.has(a.id),
+      }))
+      .sort((a, b) => (b.isLinked ? 1 : 0) - (a.isLinked ? 1 : 0))
+  }, [selected, assets])
+  const shotProps = useMemo(() => {
+    const linkedIds = new Set(selected ? collectFragmentAssetIds(selected) : [])
+    return assets
+      .filter((a) => normalizeAssetTab(a.type) === 'prop')
+      .map((a) => ({
+        id: a.id,
+        name: a.name || `อุปกรณ์ ${a.id}`,
+        type: 'prop',
+        cover: a.cover || a.url || null,
+        isLinked: linkedIds.has(a.id),
+      }))
+      .sort((a, b) => (b.isLinked ? 1 : 0) - (a.isLinked ? 1 : 0))
+  }, [selected, assets])
   // selectedGateBlocking / selectedGateIssues ปัจจุบันช็อตที่ สคริปต์/แอสเซทระบบควบคุมการเข้าออก
   const selectedGateBlocking = useMemo(
     () => collectDramaGenerateGateIssues(selected, assets).blocking,
@@ -481,7 +526,7 @@ function EpisodeEditInner() {
               video: f.video,
               duration_sec: resolveFragmentDurationSec(f.content, f.duration_sec),
               params: { ...prevFragParams, user_edited: true },
-              asset_ids: f.asset_ids || [],
+              asset_ids: collectFragmentAssetIds(f, assets),
             }
           }),
         )
@@ -548,7 +593,7 @@ function EpisodeEditInner() {
               video: f.video,
               duration_sec: resolveFragmentDurationSec(f.content, f.duration_sec),
               params: { ...prevFragParams, user_edited: true },
-              asset_ids: f.asset_ids || [],
+              asset_ids: collectFragmentAssetIds(f, assets),
             }
           }),
         )
@@ -573,11 +618,10 @@ function EpisodeEditInner() {
   const referencedIds = useMemo(() => {
     const set = new Set<number>()
     for (const f of fragments) {
-      for (const id of extractAssetIds(f.content || '')) set.add(id)
-      for (const id of f.asset_ids || []) set.add(id)
+      for (const id of collectFragmentAssetIds(f, assets)) set.add(id)
     }
     return set
-  }, [fragments])
+  }, [fragments, assets])
 
   const filteredAssets = useMemo(
     () => filterEpisodeAssets(assets, assetScope, assetTab, referencedIds),
@@ -871,7 +915,7 @@ function EpisodeEditInner() {
             video: f.video,
             duration_sec: resolveFragmentDurationSec(f.content, f.duration_sec),
             params: { ...prevParams, user_edited: true },
-            asset_ids: f.asset_ids || [],
+            asset_ids: collectFragmentAssetIds(f, assets),
           }
         }),
       )
@@ -1170,7 +1214,132 @@ function EpisodeEditInner() {
     navigate(`/drama/projects/${pid}/episodes/${nextId}`)
   }
 
-  // 单 ตอน LLM แบ่งสตอรี่บอร์ดใหม่：确认并勾选 Skill หลังเข้าคิว
+  // Single shot or batch Colab render
+  function _openColabModal(fragIds?: number[]) {
+    if (readOnly) return
+    if (fragIds && fragIds.length > 0) {
+      setColabTargetFragIds(fragIds)
+    } else {
+      const validIds = fragments
+        .filter((f) => Boolean(f.id && (f.cover || collectFragmentAssetIds(f).length > 0)))
+        .map((f) => f.id!)
+      setColabTargetFragIds(validIds)
+    }
+    setColabModalOpen(true)
+  }
+  void _openColabModal
+
+  async function handleColabRenderConfirm(params: ColabRenderSubmitParams) {
+    if (!eid) return
+    setColabSubmitting(true)
+    setError('')
+    try {
+      await save()
+      const targetIds =
+        colabTargetFragIds.length > 0
+          ? colabTargetFragIds
+          : selected?.id
+            ? [selected.id]
+            : []
+
+      if (targetIds.length === 0) {
+        throw new Error('ไม่พบช็อตที่มีรูปตัวละครหรือรูป Cover สำหรับการเรนเดอร์')
+      }
+
+      const res = await dramaApi.renderColabEpisode(eid, {
+        fragment_ids: targetIds,
+        comfyui_url: params.comfyui_url,
+        engine: params.engine,
+        duration_sec: params.duration_sec,
+        prompt_override: params.prompt_override,
+        seed: params.seed,
+        reference_image_url: params.reference_image_url,
+        reference_image_urls: params.reference_image_urls,
+        first_frame_url: params.first_frame_url,
+        last_frame_url: params.last_frame_url,
+      })
+
+      const engineName = params.engine === 'h3' ? 'MiniMax H3' : 'Wan 2.2'
+      setFragments((prev) =>
+        prev.map((f) =>
+          f.id && targetIds.includes(f.id)
+            ? {
+                ...f,
+                params: {
+                  ...(f.params || {}),
+                  generation: {
+                    status: 'running',
+                    message: `กำลังประมวลผลด้วย Colab ComfyUI (${engineName})...`,
+                    provider: 'comfyui',
+                  },
+                },
+              }
+            : f,
+        ),
+      )
+
+      enqueueEpisodeVideoJobs({
+        projectId: pid,
+        episodeId: eid,
+        episodeName: episode?.name,
+        fragments: (episode?.fragments || fragments).map((f, i) => ({
+          id: f.id,
+          sort_order: f.sort_order ?? i,
+        })),
+        fragmentIds: targetIds,
+      })
+
+      setColabModalOpen(false)
+      setStatus(res.message || `ส่งงานไปยัง Colab เรียบร้อยแล้ว ${targetIds.length} ช็อต`)
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err)
+      setError(msg || 'ส่งคำสั่งไปยัง Colab ล้มเหลว')
+    } finally {
+      setColabSubmitting(false)
+    }
+  }
+
+  async function handleFragmentFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file || !selected || readOnly) return
+    setUploadingMedia(true)
+    setError('')
+    setStatus('กำลังอัปโหลดไฟล์สื่อสำหรับช็อตนี้…')
+    try {
+      let targetId = selected.id
+      if (!targetId || targetId <= 0) {
+        const savedEp = await save()
+        targetId = savedEp.fragments?.[selectedIndex]?.id || 0
+      }
+      if (!targetId || targetId <= 0) {
+        throw new Error('ไม่สามารถบันทึกรหัสช็อตก่อนอัปโหลดได้')
+      }
+      const updated = await dramaApi.uploadFragmentMedia(targetId, file)
+      setFragments((prev) =>
+        prev.map((f, i) => (f.id === updated.id || i === selectedIndex ? updated : f)),
+      )
+      setEpisode((prev) =>
+        prev
+          ? {
+              ...prev,
+              fragments: (prev.fragments || []).map((f) => (f.id === updated.id ? updated : f)),
+            }
+          : prev,
+      )
+      setPreviewVersionId(null)
+      setStatus(
+        file.type.startsWith('image/')
+          ? 'อัปโหลดรูปปกช็อตเรียบร้อยแล้ว'
+          : 'อัปโหลดวิดีโอช็อตเรียบร้อยแล้ว',
+      )
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'อัปโหลดไฟล์สื่อล้มเหลว')
+    } finally {
+      setUploadingMedia(false)
+    }
+  }
+
   function planFragmentsWithLlm() {
     if (readOnly) return
     if (planFragmentsLocked) {
@@ -1509,6 +1678,16 @@ function EpisodeEditInner() {
               ? 'AI ในสตอรี่บอร์ด…'
               : 'AI แบ่งสตอรี่บอร์ดใหม่'}
           </button>
+          {/* <button
+            type="button"
+            
+            className="drama-ep-btn-colab drama-ep-header-gen-all"
+            disabled={busy || fragments.length === 0}
+            title="Render ช็อตในตอนนี้ด้วย Colab ComfyUI (MiniMax H3)"
+            onClick={() => _openColabModal()}
+          >
+            ⚡ Render ด้วย Colab (H3)
+          </button> */}
           {/* MiniMax-H3 รองรับการส่งทุกช็อตที่เหลือในตอนนี้เข้าคิวในครั้งเดียว โมเดลวิดีโออื่นจะสร้างทีละช็อต */}
           {isMinimaxH3Model(modelId) ? (
             <button
@@ -1657,6 +1836,13 @@ function EpisodeEditInner() {
           ) : null}
 
           <div className="drama-ep-editor-actions">
+            <input
+              ref={fragmentUploadInputRef}
+              type="file"
+              accept="video/mp4,video/quicktime,video/webm,video/x-matroska,image/jpeg,image/png,image/webp,image/gif"
+              style={{ display: 'none' }}
+              onChange={(e) => void handleFragmentFileUpload(e)}
+            />
             {editing ? (
               <>
                 <button
@@ -1689,6 +1875,30 @@ function EpisodeEditInner() {
                 >
                   แก้ไข
                 </button>
+                <button
+                  type="button"
+                  className="drama-ep-btn-ghost"
+                  disabled={readOnly || !selected || busy || uploadingMedia}
+                  title="อัปโหลดวิดีโอ (MP4/MOV/WebM) หรือรูปปกฉาก (JPG/PNG/WebP) สำหรับช็อตนี้โดยไม่ต้องสั่งสร้างด้วย AI"
+                  onClick={() => fragmentUploadInputRef.current?.click()}
+                >
+                  {uploadingMedia ? '⏳ กำลังอัปโหลด…' : '📤 อัปโหลดวิดีโอ / รูป'}
+                </button>
+                {/* <button
+                  type="button"
+                  className="drama-ep-btn-colab"
+                  disabled={readOnly || !selected || selectedIsGenerating || busy}
+                  title={
+                    selectedIsGenerating
+                      ? 'กำลัง Render ใน Colab อยู่ กรุณารอสักครู่'
+                      : !selected?.cover
+                        ? 'ต้องมีภาพ Cover ก่อน (คลิกเพื่อดูรายละเอียด)'
+                        : 'Render วิดีโอนี้ด้วย Colab ComfyUI (MiniMax H3)'
+                  }
+                  onClick={() => selected?.id && _openColabModal([selected.id])}
+                >
+                  {selectedIsGenerating ? '⏳ กำลัง Render ใน Colab…' : '⚡ Render ด้วย Colab (H3)'}
+                </button> */}
                 <button
                   type="button"
                   className="drama-ep-btn-dark"
@@ -1918,6 +2128,27 @@ function EpisodeEditInner() {
         message="ระบบจะเรียกโมเดล AI เพื่อวางแผนสตอรี่บอร์ดใหม่ตามบทของตอนนี้ (จะเขียนทับสตอรี่บอร์ดเดิมและวิดีโอที่สร้างไว้) ปกติใช้เวลาประมาณ 10-30 วินาที สามารถเลือกทักษะ (Skill) ที่ต้องการใช้ได้ รูปแบบซับไตเติลจะใช้ตามการตั้งค่าแถบด้านบน"
         onCancel={() => setPlanModalOpen(false)}
         onConfirm={(skillIds) => void startPlanFragments(skillIds)}
+      />
+
+      <ColabRenderModal
+        open={colabModalOpen && !readOnly}
+        onCancel={() => setColabModalOpen(false)}
+        onConfirm={handleColabRenderConfirm}
+        fragmentCount={
+          colabTargetFragIds.length ||
+          fragments.filter((f) => Boolean(f.cover || collectFragmentAssetIds(f).length > 0)).length
+        }
+        currentFragment={
+          colabTargetFragIds.length === 1 && selected?.id === colabTargetFragIds[0]
+            ? selected
+            : null
+        }
+        characters={shotCharacters}
+        scenes={shotScenes}
+        items={shotProps}
+        prevLastFrameUrl={prevLastFrameUrl}
+        linkLastFrame={linkLastFrame}
+        isSubmitting={colabSubmitting}
       />
 
       {detailAsset && (detailAsset.type || '').toLowerCase() !== 'voice' ? (

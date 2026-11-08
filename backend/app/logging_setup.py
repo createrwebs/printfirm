@@ -12,6 +12,14 @@ def configure_logging(*, level: str = "INFO", sql_echo: bool = False) -> None:
     # 配置根日志；可重复调用以刷新级别（reload 后仍可生效）
     global _configured
 
+    for stream in (sys.stdout, sys.stderr):
+        reconf = getattr(stream, "reconfigure", None)
+        if callable(reconf):
+            try:
+                reconf(encoding="utf-8", errors="replace")
+            except Exception:  # noqa: BLE001
+                pass
+
     root = logging.getLogger()
     if not root.handlers:
         handler = logging.StreamHandler(sys.stdout)

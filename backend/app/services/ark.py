@@ -527,6 +527,11 @@ class ArkGateway:
 
     # 优先后台 TokenFree / 方舟渠道 Key，env 仅作空渠道时的兜底
     def _ark_api_key(self) -> str:
+        from app.services.tokenfree_gateway import current_user_toraapi_token
+
+        user_key = (current_user_toraapi_token.get() or "").strip()
+        if user_key:
+            return user_key
         try:
             from app.services.model_settings import get_routing_snapshot
             from app.services.tokenfree_gateway import TOKENFREE_CHANNEL_ID

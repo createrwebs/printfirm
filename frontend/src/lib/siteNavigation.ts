@@ -1,12 +1,13 @@
 /** 导航入口：公开产品位于顶栏，个人资源收进头像菜单。 */
 import { SHORT_VIDEO_LIST_PATH } from './shortVideoRoutes.ts'
 
-export type NavActive = 'home' | 'canvas' | 'drama' | 'kepu' | 'video' | 'image' | 'audio' | 'assets' | 'pricing' | 'templates' | 'studio' | 'history' | 'team' | 'tasks' | 'help' | 'settings'
+export type NavActive = 'home' | 'marketing' | 'canvas' | 'drama' | 'kepu' | 'video' | 'image' | 'audio' | 'assets' | 'pricing' | 'templates' | 'studio' | 'history' | 'team' | 'tasks' | 'help' | 'settings'
 
 /** 首页是全站总览入口，独立于具体创作产品分组。 */
 export const HOME_NAV = { key: 'home', path: '/', label: 'nav.home' } as const
 
 export const CREATION_NAV = [
+  { key: 'marketing', path: '/marketing-studio', label: 'nav.marketing' },
   { key: 'drama', path: '/drama', label: 'nav.drama' },
   { key: 'canvas', path: '/canvas', label: 'nav.canvas' },
   { key: 'kepu', path: SHORT_VIDEO_LIST_PATH, label: 'nav.kepu' },
@@ -26,6 +27,7 @@ export function resolveNavActive(pathname: string, active?: NavActive): NavActiv
   if (active === 'studio' || active === 'templates' || active === 'history') return 'kepu'
   if (active && active !== 'home') return active
   const within = (base: string) => pathname === base || pathname.startsWith(`${base}/`)
+  if (within('/marketing-studio') || within('/marketing')) return 'marketing'
   if (within('/canvas')) return 'canvas'
   if (within('/teams') || within('/team-invitations')) return 'team'
   if (within('/drama/assets') || within('/assets')) return 'assets'

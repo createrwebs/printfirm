@@ -272,6 +272,10 @@ async def _apply_schema_patches(engine_override: AsyncEngine | None = None) -> N
             await conn.execute(text("ALTER TABLE users ADD COLUMN avatar_url VARCHAR(512) DEFAULT ''"))
         if "phone" not in ucols:
             await conn.execute(text("ALTER TABLE users ADD COLUMN phone VARCHAR(32) DEFAULT ''"))
+        if "toraapi_token" not in ucols:
+            await conn.execute(text("ALTER TABLE users ADD COLUMN toraapi_token VARCHAR(512) DEFAULT ''"))
+        if "toraapi_quota_baseline_fen" not in ucols:
+            await conn.execute(text("ALTER TABLE users ADD COLUMN toraapi_quota_baseline_fen INTEGER DEFAULT 0"))
         if "billing_alert_last_milestone_fen" not in ucols:
             await conn.execute(
                 text("ALTER TABLE users ADD COLUMN billing_alert_last_milestone_fen INTEGER DEFAULT 0")

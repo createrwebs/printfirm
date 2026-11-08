@@ -60,5 +60,5 @@ export function dramaAssetImageGenButtonLabel(
   queueLabel: string | null,
 ): string {
   if (queueLabel) return queueLabel
-  return dramaAssetHasImage(asset) ? 'สร้างใหม่形象' : '生成形象'
+  return dramaAssetHasImage(asset) ? 'สร้างรูปลักษณ์ใหม่' : 'สร้างรูปลักษณ์'
 }

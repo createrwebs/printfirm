@@ -120,7 +120,7 @@ function GenerationWorkspace({ kind }: { kind: MediaKind }) {
   function pickFiles(incoming: File[]) {
     const limit = referenceImageLimit
     if (incoming.some(file => file.size > 40 * 1024 * 1024)) { setError(text('单个文件不能超过 40MB', 'Each file must be under 40 MB')); return }
-    if (files.length + incoming.length > limit) { setError(text(`最多เลือก ${limit} 个参考文件`, `Choose up to ${limit} reference files`)); return }
+    if (files.length + incoming.length > limit) { setError(text(`เลือกไฟล์อ้างอิงได้สูงสุด ${limit} ไฟล์`, `Choose up to ${limit} reference files`)); return }
     setFiles(previous => [...previous, ...incoming]); setError('')
   }
 
@@ -162,9 +162,9 @@ function GenerationWorkspace({ kind }: { kind: MediaKind }) {
   async function submit(event: React.FormEvent) {
     event.preventDefault()
     if (submitting || !prompt.trim()) return
-    if (invalidParameters) { setError(text('请先เลือก有效的生成模型和参数', 'Choose a valid model and settings first')); return }
+    if (invalidParameters) { setError(text('กรุณาเลือกโมเดลและพารามิเตอร์การสร้างที่ถูกต้องก่อน', 'Choose a valid model and settings first')); return }
     if (kind === 'video' && (referenceError || !quote || estimating || estimateError)) {
-      setError(referenceError || estimateError || text('请等待预计消耗计算เสร็จสิ้น', 'Wait for the cost estimate before generating'))
+      setError(referenceError || estimateError || text('กรุณารอการคำนวณการใช้เครดิตให้เสร็จสิ้นก่อน', 'Wait for the cost estimate before generating'))
       return
     }
     if (kind === 'image' && files.length > referenceImageLimit) {
@@ -176,7 +176,7 @@ function GenerationWorkspace({ kind }: { kind: MediaKind }) {
       const result = await runStudioTool({ toolId: kind === 'audio' ? 'audio' : kind === 'video' ? 't2v' : files.length ? 'i2i' : 't2i',
         prompt, files: kind === 'video' ? serializedReferences.files : files, ratio, duration, voice, modelId: model, resolution,
         ...(kind === 'video' ? { videoMode, references: serializedReferences.references, priceVersion: quote?.price_version ?? 0 } : {}) })
-      setNotice(text(`任务 ${result.task_id} 已ส่ง，离开页面后仍会继续生成。`, `Task ${result.task_id} queued. Generation continues after you leave.`))
+      setNotice(text(`ส่งงาน ${result.task_id} แล้ว การสร้างจะดำเนินต่อไปแม้จะออกจากหน้านี้`, `Task ${result.task_id} queued. Generation continues after you leave.`))
       setRevision(value => value + 1)
     } catch (err) { setError(err instanceof Error ? err.message : text('ส่งล้มเหลว', 'Submission failed')) }
     finally { setSubmitting(false) }
@@ -195,22 +195,22 @@ function GenerationWorkspace({ kind }: { kind: MediaKind }) {
     audio: [text('一段文字，', 'Your words.'), text('让故事开口', 'A voice to tell them.')],
   }
   const placeholder = kind === 'audio' ? text('输入你想朗读的文字…', 'Enter the text you want to read…') : kind === 'image'
-    ? text('คำอธิบาย你想生成的รูปภาพ，或说明如何修改ภาพอ้างอิง。试试：午后阳光穿过玻璃，桌上一枝白色郁金香，胶片质感。', 'Describe an image or the changes to your references…')
-    : text('คำอธิบาย你想生成的วิดีโอ：主体 + 动作 + 环境 + 运镜。输入 @ 可提及下方已加入的ภาพอ้างอิง、วิดีโอ或เสียง。', 'Describe your video: subject, action, setting, camera movement. Type @ to mention a reference you added below.')
+    ? text('อธิบายรูปภาพที่คุณต้องการสร้าง หรือระบุวิธีแก้ไขภาพอ้างอิง เช่น: แสงแดดยามบ่ายส่องผ่านกระจก ดอกทิวลิปสีขาวบนโต๊ะ โทนภาพฟิล์ม', 'Describe an image or the changes to your references…')
+    : text('อธิบายวิดีโอที่คุณต้องการสร้าง: ตัวแบบ + การกระทำ + สภาพแวดล้อม + การเคลื่อนกล้อง พิมพ์ @ เพื่ออ้างอิงภาพ วิดีโอ หรือเสียงด้านล่าง', 'Describe your video: subject, action, setting, camera movement. Type @ to mention a reference you added below.')
 
   return <GenerationLayout kind={kind}>
     <header className={`gen-hero gen-hero-${kind}`}>
       <div className="gen-eyebrow"><Icon size={22} />{text(kind === 'video' ? 'AI วิดีโอ' : kind === 'image' ? 'AI รูปภาพ' : 'AI เสียง', `AI ${kind.toUpperCase()}`)}</div>
       <h1>{titles[kind][0]}<span>{titles[kind][1]}</span></h1>
-      <p>{kind === 'audio' ? text('选一款น้ำเสียง，为你的文字注入อารมณ์与温度。', 'Choose a voice and give your words warmth.') : text('从一个想法开始，让灵感自然发生。', 'Start with an idea. Let inspiration happen.')}</p>
+      <p>{kind === 'audio' ? text('เลือกน้ำเสียงเพื่อเติมเต็มอารมณ์และความรู้สึกให้กับข้อความของคุณ', 'Choose a voice and give your words warmth.') : text('เริ่มต้นจากไอเดีย ให้แรงบันดาลใจเกิดขึ้นอย่างเป็นธรรมชาติ', 'Start with an idea. Let inspiration happen.')}</p>
       <div className="gen-hero-art" aria-hidden>{kind === 'audio' ? <><AudioLines className="gen-wave" /><Mic /></> : <Icon />}</div>
     </header>
     <form className="gen-composer" onSubmit={submit}>
       {kind === 'image' && catalog?.billing_mode === 'fixed_media' && <div className="gen-price-summary">
         <MediaCostNotice modelId={model} resolution={resolution} />
       </div>}
-      {catalog && invalidParameters && <p className="gen-inline-error" role="alert">{text('当前模型不支持所选参数，请重新เลือกความละเอียด、画幅或ความยาว。', 'These settings are not supported by the selected model. Please adjust them.')}</p>}
-      <div className="gen-composer-heading"><span><Sparkles size={15} />{text(kind === 'audio' ? '朗读内容' : '创作คำอธิบาย', kind === 'audio' ? 'Your script' : 'Your creative brief')}</span><small>{text('把想象，写成下一件作品', 'A little detail goes a long way')}</small></div>
+      {catalog && invalidParameters && <p className="gen-inline-error" role="alert">{text('โมเดลปัจจุบันไม่รองรับพารามิเตอร์ที่เลือก กรุณาเลือกความละเอียด อัตราส่วนภาพ หรือความยาวใหม่', 'These settings are not supported by the selected model. Please adjust them.')}</p>}
+      <div className="gen-composer-heading"><span><Sparkles size={15} />{text(kind === 'audio' ? 'เนื้อหาการอ่าน' : 'คำอธิบายสร้างสรรค์', kind === 'audio' ? 'Your script' : 'Your creative brief')}</span><small>{text('เปลี่ยนจินตนาการให้เป็นผลงานชิ้นถัดไป', 'A little detail goes a long way')}</small></div>
       <div className="gen-input-area">
         {kind === 'video' && <GenerationReferences mode={videoMode} limits={referenceLimits} value={currentReferences}
           onChange={value => { setVideoReferences(previous => ({ ...previous, [videoMode]: value })); setError(''); setNotice('') }} onError={setError} disabled={submitting} />}
@@ -232,25 +232,25 @@ function GenerationWorkspace({ kind }: { kind: MediaKind }) {
           <textarea ref={promptRef} aria-label={text('生成内容', 'Generation prompt')} placeholder={placeholder} maxLength={maxLength} value={prompt}
             onChange={event => { setPrompt(event.target.value); setNotice(''); syncMention() }}
             onKeyDown={onPromptKeyDown} onKeyUp={syncMention} onClick={syncMention} onBlur={() => window.setTimeout(() => setMention(null), 120)} />
-          <span className="gen-counter">{prompt.length.toLocaleString()} / {maxLength.toLocaleString()}{kind === 'audio' ? text(` · 约 ${Math.ceil(prompt.length / 4)} วินาที`, ` · ~${Math.ceil(prompt.length / 4)} sec`) : ''}</span>
+          <span className="gen-counter">{prompt.length.toLocaleString()} / {maxLength.toLocaleString()}{kind === 'audio' ? text(` · ประมาณ ${Math.ceil(prompt.length / 4)} วินาที`, ` · ~${Math.ceil(prompt.length / 4)} sec`) : ''}</span>
         </div>
       </div>
       <div className="gen-toolbar">
         {kind === 'video' && <GenerationSelect label={text('生成方式', 'Generation mode')} icon={<Sparkles size={18} />} value={videoMode} disabled={submitting}
           onChange={value => { setVideoMode(value as VideoGenerationMode); setError(''); setNotice(''); setMention(null) }} options={[
-            { value: 'text_to_video', label: text('文生วิดีโอ', 'Text to video'), description: text('只写一句话，ภาพ由模型生成', 'Describe your idea without reference media') },
+            { value: 'text_to_video', label: text('ข้อความเป็นวิดีโอ', 'Text to video'), description: text('เพียงพิมพ์ข้อความ โมเดลจะสร้างภาพให้', 'Describe your idea without reference media') },
             { value: 'first_last_frame', label: text('首尾帧', 'First / last frame'), description: text('指定首帧，可选尾帧，补全中间运动', 'Choose the first frame and an optional final frame') },
-            { value: 'omni_reference', label: text('全能参考', 'Omni reference'), description: text(`รูปภาพ ${referenceLimits.images} 张 / วิดีโอ ${referenceLimits.videos} 段 / เสียง ${referenceLimits.audios} 段 · 最多 12 份`, `${referenceLimits.images} images / ${referenceLimits.videos} videos / ${referenceLimits.audios} audio clips · 12 total`) },
+            { value: 'omni_reference', label: text('การอ้างอิงรอบด้าน', 'Omni reference'), description: text(`รูปภาพ ${referenceLimits.images} ภาพ / วิดีโอ ${referenceLimits.videos} คลิป / เสียง ${referenceLimits.audios} ไฟล์ · รวมสูงสุด 12 ไฟล์`, `${referenceLimits.images} images / ${referenceLimits.videos} videos / ${referenceLimits.audios} audio clips · 12 total`) },
           ]} />}
-        {kind === 'audio' ? <span className="gen-control gen-model">{model || text('站点ค่าเริ่มต้น模型', 'Default model')}</span> : <GenerationSelect label={text('生成模型', 'Model')} icon={<Icon size={19} />} value={model} onChange={setModel} options={models.filter(item => item.available !== false).map(item => ({ value: item.id, label: item.label, description: item.pricing_hint }))} />}
+        {kind === 'audio' ? <span className="gen-control gen-model">{model || text('โมเดลเริ่มต้นของระบบ', 'Default model')}</span> : <GenerationSelect label={text('โมเดลที่ใช้สร้าง', 'Model')} icon={<Icon size={19} />} value={model} onChange={setModel} options={models.filter(item => item.available !== false).map(item => ({ value: item.id, label: item.label, description: item.pricing_hint }))} />}
         {kind === 'audio' ? <GenerationSelect label={text('น้ำเสียง', 'Voice')} icon={<Mic size={18} />} value={voice} onChange={setVoice} options={[
-          { value: 'narrator_calm', label: text('沉静เสียงบรรยาย', 'Calm narrator'), description: text('นุ่มนวลมั่นคง自然，适合故事เสียงบรรยาย', 'Steady and natural, for narration') },
+          { value: 'narrator_calm', label: text('เสียงบรรยายสุขุม', 'Calm narrator'), description: text('นุ่มนวล มั่นคง เป็นธรรมชาติ เหมาะสำหรับการเล่าเรื่อง', 'Steady and natural, for narration') },
           { value: 'warm_storyteller', label: text('温暖讲述', 'Warm storyteller'), description: text('柔和亲切，适合温馨叙事', 'Warm and gentle, for storytelling') },
-          { value: 'teacher_clear', label: text('清晰เสียงผู้ชาย', 'Clear male voice'), description: text('清楚明快，适合知识讲解', 'Clear and bright, for explainers') },
+          { value: 'teacher_clear', label: text('เสียงผู้ชายคมชัด', 'Clear male voice'), description: text('คมชัด กระชับ เหมาะสำหรับการอธิบายความรู้', 'Clear and bright, for explainers') },
         ]} /> : <>
-          <GenerationSelect label={text('ความละเอียด', 'Resolution')} value={resolution} onChange={setResolution} options={allowedResolutions.map(value => ({ value, label: value, description: selectedModel?.prices?.[value] ? `¥${selectedModel.prices[value]}/${kind === 'video' ? 'วินาที' : '张'}` : '' }))} />
+          <GenerationSelect label={text('ความละเอียด', 'Resolution')} value={resolution} onChange={setResolution} options={allowedResolutions.map(value => ({ value, label: value, description: selectedModel?.prices?.[value] ? `¥${selectedModel.prices[value]}/${kind === 'video' ? 'วินาที' : 'ภาพ'}` : '' }))} />
           <GenerationSelect label={text('画幅', 'Aspect ratio')} value={ratio} onChange={setRatio} options={(selectedModel?.allowed_aspect_ratios ?? []).map(value => ({ value, label: value, icon: value === '1:1' ? <Square size={19} /> : value === '9:16' || value === '3:4' ? <RectangleVertical size={19} /> : <RectangleHorizontal size={21} /> }))} />
-          {kind === 'video' && <GenerationSelect label={text('วิดีโอความยาว', 'Duration')} icon={<Clock3 size={18} />} value={duration} onChange={setDuration} options={Array.from({ length: (selectedModel?.duration_max ?? 30) - (selectedModel?.duration_min ?? 4) + 1 }, (_, index) => (selectedModel?.duration_min ?? 4) + index).map(value => ({ value: `${value}s`, label: text(`${value} วินาที`, `${value} sec`), description: text(`${resolution} · 单次生成一个片段`, `${resolution} · One video per request`) }))} />}
+          {kind === 'video' && <GenerationSelect label={text('ความยาววิดีโอ', 'Duration')} icon={<Clock3 size={18} />} value={duration} onChange={setDuration} options={Array.from({ length: (selectedModel?.duration_max ?? 30) - (selectedModel?.duration_min ?? 4) + 1 }, (_, index) => (selectedModel?.duration_min ?? 4) + index).map(value => ({ value: `${value}s`, label: text(`${value} วินาที`, `${value} sec`), description: text(`${resolution} · สร้างครั้งละ 1 คลิป`, `${resolution} · One video per request`) }))} />}
           <span className="gen-control gen-output-count"><Layers size={17} /><span><small>{text('生成数量', 'Output')}</small><strong>× 1</strong></span></span>
         </>}
         {kind === 'video' && <PromptMentionPopover open={Boolean(mention)} items={mentionItems} anchorRect={mention?.rect ?? null}
@@ -259,35 +259,35 @@ function GenerationWorkspace({ kind }: { kind: MediaKind }) {
           {kind === 'video' ? <div className="gen-estimate" aria-live="polite">
             {estimateError ? <><strong>{text('预计消耗暂不可用', 'Estimate unavailable')}</strong><button type="button" onClick={retryEstimate}>{text('重新计算', 'Retry estimate')}</button></> : quote ? <>
               <span>{text('预计消耗', 'Estimated cost')} <strong>{quote.billing_enabled ? `¥${(quote.estimate_fen / 100).toFixed(2)}` : text('本次不扣费', 'No charge')}</strong></span>
-              <small>{text(quote.billing_enabled ? quote.billing_mode === 'fixed_media' ? `${duration.replace('s', '')} วินาที × 1 条 · 按当前价格结算` : '按当前配置估算，最终按实际用量结算' : '当前站点未开启计费', quote.billing_enabled ? quote.billing_mode === 'fixed_media' ? `${duration.replace('s', '')} sec × 1 video · Current pricing` : 'Estimated; settled on actual usage' : 'Billing is disabled on this site')}</small>
-            </> : <span>{text(estimating ? '正在计算预计消耗…' : referenceError || 'เลือก模型和参数后显示预计消耗', estimating ? 'Estimating cost…' : referenceError ? 'Add valid reference media to estimate cost' : 'Choose a model and settings to estimate cost')}</span>}
-          </div> : <span>{text('生成记录自动บันทึก', 'Creations saved automatically')}</span>}
-          <button className="gen-primary" disabled={submitting || !prompt.trim() || invalidParameters || (kind === 'video' && Boolean(referenceError || !quote || estimating || estimateError))} type="submit">{submitting ? <Loader2 className="gen-spin" size={18} /> : <Icon size={18} />}{text(submitting ? 'ส่ง中' : kind === 'audio' ? 'สร้างเสียงพูด' : '创作', submitting ? 'Submitting' : 'Generate')}</button>
+              <small>{text(quote.billing_enabled ? quote.billing_mode === 'fixed_media' ? `${duration.replace('s', '')} วินาที × 1 คลิป · คิดตามราคาปัจจุบัน` : 'ประเมินตามการตั้งค่าปัจจุบัน คิดตามการใช้งานจริงเมื่อเสร็จสิ้น' : 'เว็บไซต์นี้ยังไม่ได้เปิดระบบชำระเงิน', quote.billing_enabled ? quote.billing_mode === 'fixed_media' ? `${duration.replace('s', '')} sec × 1 video · Current pricing` : 'Estimated; settled on actual usage' : 'Billing is disabled on this site')}</small>
+            </> : <span>{text(estimating ? 'กำลังคำนวณการใช้เครดิตโดยประมาณ…' : referenceError || 'เลือกโมเดลและพารามิเตอร์เพื่อแสดงค่าใช้จ่ายโดยประมาณ', estimating ? 'Estimating cost…' : referenceError ? 'Add valid reference media to estimate cost' : 'Choose a model and settings to estimate cost')}</span>}
+          </div> : <span>{text('บันทึกประวัติการสร้างอัตโนมัติ', 'Creations saved automatically')}</span>}
+          <button className="gen-primary" disabled={submitting || !prompt.trim() || invalidParameters || (kind === 'video' && Boolean(referenceError || !quote || estimating || estimateError))} type="submit">{submitting ? <Loader2 className="gen-spin" size={18} /> : <Icon size={18} />}{text(submitting ? 'กำลังส่ง...' : kind === 'audio' ? 'สร้างเสียงพูด' : 'สร้างสรรค์', submitting ? 'Submitting' : 'Generate')}</button>
         </div>
       </div>
     </form>
     {referenceError && <p className="gen-inline-error" role="alert">{referenceError}</p>}
     {estimateError && <p className="gen-inline-error" role="alert">{estimateError}</p>}
     {error && <BillingErrorNotice message={error} />}
-    {notice && <div className="gen-notice" role="status"><Check size={18} />{notice}<Link to={`/tasks?kind=${kind}`}>{text('ดู任务', 'View task')}<ArrowRight size={15} /></Link></div>}
+    {notice && <div className="gen-notice" role="status"><Check size={18} />{notice}<Link to={`/tasks?kind=${kind}`}>{text('ดูงาน', 'View task')}<ArrowRight size={15} /></Link></div>}
     <section className="gen-recent">
-      <header><h2>{text('最近生成', 'Recent creations')}</h2><Link to={`/tasks?kind=${kind}`}>{text(`ดู全部 ${recentTotal} 个`, `View all ${recentTotal}`)}<ArrowRight size={17} /></Link></header>
+      <header><h2>{text('ผลงานล่าสุด', 'Recent creations')}</h2><Link to={`/tasks?kind=${kind}`}>{text(`ดูทั้งหมด ${recentTotal} รายการ`, `View all ${recentTotal}`)}<ArrowRight size={17} /></Link></header>
       {historyError && <p className="gen-inline-error" role="alert">{historyError}</p>}
-      {!recent.length && !historyError ? <div className="gen-empty"><Icon size={34} /><strong>{text('你的灵感，从这里开始', 'Your next idea starts here')}</strong><p>{text('ส่งตอนที่ 一个生成任务，作品会自动出现在这里。', 'Submit your first generation. Your creations will appear here.')}</p></div> : <div className="gen-gallery">
+      {!recent.length && !historyError ? <div className="gen-empty"><Icon size={34} /><strong>{text('แรงบันดาลใจของคุณเริ่มต้นที่นี่', 'Your next idea starts here')}</strong><p>{text('ส่งงานสร้างชิ้นแรก ผลงานจะปรากฏที่นี่โดยอัตโนมัติ', 'Submit your first generation. Your creations will appear here.')}</p></div> : <div className="gen-gallery">
         {recent.map(item => <article key={item.id} className="gen-gallery-item">
-          <button type="button" className="gen-gallery-preview" onClick={() => openDetail(item)} aria-label={text(`ดู生成รายละเอียด：${item.prompt || '未命名创作'}`, `View generation details: ${item.prompt || 'Untitled creation'}`)}>
+          <button type="button" className="gen-gallery-preview" onClick={() => openDetail(item)} aria-label={text(`ดูรายละเอียดการสร้าง: ${item.prompt || 'ผลงานไม่มีชื่อ'}`, `View generation details: ${item.prompt || 'Untitled creation'}`)}>
             {kind === 'image' && (item.preview_url || item.urls[0]) ? <img src={resolveToolMediaUrl(item.preview_url || item.urls[0])} alt={item.prompt} /> : kind === 'video' && item.urls[0] ? <video src={resolveToolMediaUrl(item.urls[0])} poster={resolveToolMediaUrl(item.preview_url)} muted preload="metadata" /> : kind === 'video' && item.preview_url ? <img src={resolveToolMediaUrl(item.preview_url)} alt={item.prompt} /> : <Icon size={38} />}
             <span className={`gen-result-status is-${item.status}`}>{text(item.status === 'succeeded' ? 'เสร็จสมบูรณ์' : item.status === 'failed' ? 'ล้มเหลว' : item.status === 'cancelled' ? 'ยกเลิกแล้ว' : 'กำลังประมวลผล', item.status)}</span>
             <span className="gen-cover-overlay" aria-hidden><Eye size={20} /><span>{text('ดูรายละเอียด', 'View details')}</span></span>
           </button>
           {kind === 'audio' && item.urls[0] && <audio controls src={resolveToolMediaUrl(item.urls[0])} preload="metadata" />}
-          <div className="gen-gallery-caption"><button type="button" className="gen-gallery-title" title={item.prompt} onClick={() => openDetail(item)}>{item.prompt || text('未命名创作', 'Untitled creation')}</button>{item.status === 'succeeded' && item.urls[0] && <button type="button" className="gen-icon-button" disabled={downloading === item.id} onClick={() => void download(item)} aria-label={text('ดาวน์โหลด', 'Download')}><Download size={16} /></button>}</div>
+          <div className="gen-gallery-caption"><button type="button" className="gen-gallery-title" title={item.prompt} onClick={() => openDetail(item)}>{item.prompt || text('ผลงานไม่มีชื่อ', 'Untitled creation')}</button>{item.status === 'succeeded' && item.urls[0] && <button type="button" className="gen-icon-button" disabled={downloading === item.id} onClick={() => void download(item)} aria-label={text('ดาวน์โหลด', 'Download')}><Download size={16} /></button>}</div>
         </article>)}
       </div>}
     </section>
     {detail && detailAsset && <AssetDetailDialog asset={detailAsset} onClose={closeDetail}
       notice={<section className="pf-asset-detail-prompt"><div className="pf-asset-detail-text">
-        <p role="status">{text(detail.status === 'succeeded' ? 'เสร็จสมบูรณ์' : detail.status === 'failed' ? 'สร้างไม่สำเร็จ' : detail.status === 'cancelled' ? 'ยกเลิกแล้ว' : '正在生成，结果会自动อัปเดต。', detail.status === 'succeeded' ? 'Completed' : detail.status === 'failed' ? 'Generation failed' : detail.status === 'cancelled' ? 'Cancelled' : 'Generating. Results will update automatically.')}</p>
+        <p role="status">{text(detail.status === 'succeeded' ? 'เสร็จสมบูรณ์' : detail.status === 'failed' ? 'สร้างไม่สำเร็จ' : detail.status === 'cancelled' ? 'ยกเลิกแล้ว' : 'กำลังสร้าง ผลลัพธ์จะอัปเดตอัตโนมัติ', detail.status === 'succeeded' ? 'Completed' : detail.status === 'failed' ? 'Generation failed' : detail.status === 'cancelled' ? 'Cancelled' : 'Generating. Results will update automatically.')}</p>
         {(detail.error || detailError) && <p role="alert">{formatGenerationErrorMessage(detail.error || detailError)}</p>}
       </div></section>}
       actions={detail.urls.length > 1 && <div className="pf-asset-detail-utilities" role="group" aria-label={text('生成结果', 'Generation results')}>

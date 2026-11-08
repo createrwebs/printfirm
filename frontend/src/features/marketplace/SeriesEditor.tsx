@@ -27,17 +27,17 @@ function EpisodePanel({ episode, count, free, open, saleType, seriesId, busy, vi
       <em>{free ? '免费' : '收费'} · {videoLabel}</em>
     </button>
     {open && <div className="pf-episode-fold-body">
-      <p role="status">试看：{previewStatusLabel(episode.preview_status, free)}</p>
+      <p role="status">ตัวอย่างทดลองชม: {previewStatusLabel(episode.preview_status, free)}</p>
       {!free && episode.preview_error && <p role="alert">{explainMarketplaceError(episode.preview_error)}</p>}
-      <label>集标题<span className="pf-req-mark">จำเป็นต้องระบุ</span><input required value={episode.title} onChange={event => update({ title: event.target.value })} /></label>
-      <label>分集简介<textarea value={episode.description || ''} maxLength={5000} onChange={event => update({ description: event.target.value })} placeholder="介绍这一集的内容" /></label>
-      <label>内容来源<select disabled={videoLocked} value={episode.source || 'external'} onChange={event => update({ source: event.target.value as EpisodeDraft['source'] })}><option value="printfilm">PrintFilm 生成</option><option value="external">其他平台生成</option></select></label>
-      <AssetPicker kind="video" value={episode.asset_id} onChange={asset_id => update({ asset_id })} title="分集วิดีโอ" required locked={videoLocked} lockUntilPreview={lockVideoUntilPreview} />
-      <AssetPicker kind="image" required value={episode.cover_asset_id} onChange={cover_asset_id => update({ cover_asset_id })} title="分集封面（可使用系列封面）" />
-      {saleType !== 'free' && <label>本集参考价（元）<input type="number" min="0" step="0.01" value={(episode.copyright_price_fen / 100) || ''} onChange={event => update({ copyright_price_fen: Math.round(Number(event.target.value || 0) * 100) })} /></label>}
-      {episode.source === 'printfilm' ? <p className="pf-market-notice">PrintFilm 生成：本系列统一引用账号授权函，无需逐集签署或อัปโหลด证书。</p> : episode.asset_id && (seriesId ? <button type="button" disabled={busy} onClick={goRights}>填写第 {episode.episode_no} 集权属材料</button> : <p>请先บันทึกแบบร่าง，再填写这一集的权属材料。บันทึก后会回到这个页面。</p>)}
-      {saleType === 'platform_unlock' && <><label>本集观众解锁价（元）<input type="number" min="0.01" step="0.01" value={(episode.unlock_price_fen / 100) || ''} onChange={event => update({ unlock_price_fen: Math.round(Number(event.target.value || 0) * 100) })} /></label><label>本集平台抽成比例（万分比，可留空使用平台ค่าเริ่มต้น）<input type="number" min="0" max="10000" step="1" value={episode.share_bps ?? ''} onChange={event => update({ share_bps: event.target.value === '' ? null : Number(event.target.value) })} placeholder="例如 2000，表示平台20%、ผู้สร้างสรรค์ (Creator)80%" /><small>10000 表示 100%；本集未ตั้งค่า时使用平台ค่าเริ่มต้น比例。</small></label></>}
-      {count > 1 && <button type="button" disabled={busy} onClick={remove}>ลบ本集</button>}
+      <label>ชื่อตอน<span className="pf-req-mark">จำเป็นต้องระบุ</span><input required value={episode.title} onChange={event => update({ title: event.target.value })} /></label>
+      <label>คำแนะนำประจำตอน<textarea value={episode.description || ''} maxLength={5000} onChange={event => update({ description: event.target.value })} placeholder="แนะนำเนื้อหาของตอนนี้" /></label>
+      <label>แหล่งที่มาของเนื้อหา<select disabled={videoLocked} value={episode.source || 'external'} onChange={event => update({ source: event.target.value as EpisodeDraft['source'] })}><option value="printfilm">สร้างจาก PrintFilm</option><option value="external">สร้างจากแพลตฟอร์มอื่น</option></select></label>
+      <AssetPicker kind="video" value={episode.asset_id} onChange={asset_id => update({ asset_id })} title="วิดีโอประจำตอน" required locked={videoLocked} lockUntilPreview={lockVideoUntilPreview} />
+      <AssetPicker kind="image" required value={episode.cover_asset_id} onChange={cover_asset_id => update({ cover_asset_id })} title="ภาพหน้าปกประจำตอน (สามารถใช้ภาพหน้าปกของซีรีส์ได้)" />
+      {saleType !== 'free' && <label>ราคาอ้างอิงประจำตอนนี้ (บาท)<input type="number" min="0" step="0.01" value={(episode.copyright_price_fen / 100) || ''} onChange={event => update({ copyright_price_fen: Math.round(Number(event.target.value || 0) * 100) })} /></label>}
+      {episode.source === 'printfilm' ? <p className="pf-market-notice">สร้างจาก PrintFilm: ซีรีส์นี้ใช้หนังสือมอบอำนาจของบัญชีร่วมกัน ไม่จำเป็นต้องลงนามหรืออัปโหลดใบรับรองทีละตอน</p> : episode.asset_id && (seriesId ? <button type="button" disabled={busy} onClick={goRights}>กรอกเอกสารสิทธิ์ตอนที่ {episode.episode_no}</button> : <p>โปรดบันทึกแบบร่างก่อน แล้วจึงกรอกเอกสารสิทธิ์ของตอนนี้ หลังจากบันทึกแล้วจะกลับมาที่หน้านี้</p>)}
+      {saleType === 'platform_unlock' && <><label>ราคาปลดล็อกสำหรับผู้ชมในตอนนี้ (บาท)<input type="number" min="0.01" step="0.01" value={(episode.unlock_price_fen / 100) || ''} onChange={event => update({ unlock_price_fen: Math.round(Number(event.target.value || 0) * 100) })} /></label><label>อัตราส่วนแบ่งของแพลตฟอร์มสำหรับตอนนี้ (เว้นว่างไว้เพื่อใช้ค่าเริ่มต้นของแพลตฟอร์ม)<input type="number" min="0" max="10000" step="1" value={episode.share_bps ?? ''} onChange={event => update({ share_bps: event.target.value === '' ? null : Number(event.target.value) })} placeholder="ตัวอย่างเช่น 2000 หมายถึง แพลตฟอร์ม 20%, ครีเอเตอร์ 80%" /><small>10000 หมายถึง 100%; หากไม่ได้ตั้งค่าในตอนนี้จะใช้สัดส่วนเริ่มต้นของแพลตฟอร์ม</small></label></>}
+      {count > 1 && <button type="button" disabled={busy} onClick={remove}>ลบตอนนี้</button>}
     </div>}
   </article>
 }
@@ -105,7 +105,7 @@ export default function SeriesEditor() {
           const remote = fresh.episodes.find(item => item.id === episode.id && item.version === episode.version && item.asset_id === episode.asset_id)
           return remote ? { ...episode, preview_status: remote.preview_status, preview_error: remote.preview_error } : episode
         }))
-      }).catch(() => { if (active) setPreviewPollError('短试看进度暂时无法读取，正在ลองใหม่。当前填写内容会保留。') })
+      }).catch(() => { if (active) setPreviewPollError('ยังไม่สามารถอ่านความคืบหน้าตัวอย่างสั้นได้ กำลังลองใหม่ เนื้อหาที่กรอกไว้จะยังคงอยู่') })
     }, 5000)
     return () => { active = false; window.clearInterval(timer) }
   }, [id, series?.audit_status, previewActive])
@@ -134,7 +134,7 @@ export default function SeriesEditor() {
           setSeries(current => current ? { ...current, cover_asset_id: fresh.cover_asset_id, version: fresh.version, audit_status: fresh.audit_status, listed: fresh.listed, authorization_ready: fresh.authorization_ready, sync_in_progress: fresh.sync_in_progress } : fresh)
         }
         if (activeSync) timer = window.setTimeout(() => setPoll(value => value + 1), 3000)
-      } catch { if (!stop) { setHandoffError('同步进度暂时无法读取，正在ลองใหม่。当前填写的内容已保留。'); timer = window.setTimeout(() => setPoll(value => value + 1), 5000) } }
+      } catch { if (!stop) { setHandoffError('ยังไม่สามารถอ่านความคืบหน้าการซิงค์ได้ กำลังลองใหม่ เนื้อหาที่กรอกไว้จะยังคงอยู่'); timer = window.setTimeout(() => setPoll(value => value + 1), 5000) } }
     }
     void tick()
     return () => { stop = true; window.clearTimeout(timer) }
@@ -153,7 +153,7 @@ export default function SeriesEditor() {
     return { episode_no: episode.episode_no, title: episode.title, description: episode.description || '', asset_id: episode.asset_id, cover_asset_id: episode.cover_asset_id, copyright_price_fen: episode.copyright_price_fen || 0, unlock_price_fen: episode.unlock_price_fen || 0, share_bps: episode.share_bps ?? null, source: episode.source || 'external' }
   }
   async function save(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); setBusy(true); setError(''); setMessage(''); if (syncBlocked || hasSyncFailure) { setBusy(false); setError('请等待同步เสร็จสิ้น或ลองใหม่งานที่ล้มเหลว后再บันทึก，当前输入会保留'); return } const missing = episodes.findIndex(item => !item.title.trim()); if (missing >= 0) { setExpanded(new Set([missing])); setBusy(false); setError(`第 ${missing + 1} 集标题未填写`); return } const form = new FormData(event.currentTarget)
+    event.preventDefault(); setBusy(true); setError(''); setMessage(''); if (syncBlocked || hasSyncFailure) { setBusy(false); setError('กรุณารอให้การซิงค์เสร็จสิ้นหรือลองใหม่งานที่ล้มเหลวก่อนบันทึก ข้อมูลที่ป้อนไว้จะยังคงอยู่'); return } const missing = episodes.findIndex(item => !item.title.trim()); if (missing >= 0) { setExpanded(new Set([missing])); setBusy(false); setError(`ยังไม่ได้กรอกชื่อตอนที่ ${missing + 1}`); return } const form = new FormData(event.currentTarget)
     try {
       const payload = { title: form.get('title'), description: form.get('description'), category: category || '其他', tags: String(form.get('tags') || '').split(/[,，]/).map(value => value.trim()).filter(Boolean), sale_type: saleType, copyright_price_fen: Math.round(Number(form.get('copyright_price') || 0) * 100), free_episode_count: freeEpisodeCount, cover_asset_id: coverId, ...(id ? { version: series?.version } : {}) }
       const saved = await request<SeriesDraft>(id ? `/series/${id}` : '/series', id ? 'PATCH' : 'POST', payload)
@@ -167,7 +167,7 @@ export default function SeriesEditor() {
         }
       }
       if (!id) navigate(`/marketplace/series/${saved.id}/edit`)
-      else { acceptSaved(await request<SeriesDraft>(`/series/${saved.id}`)); setMessage('系列ฉบับร่าง已บันทึก。') }
+      else { acceptSaved(await request<SeriesDraft>(`/series/${saved.id}`)); setMessage('บันทึกฉบับร่างซีรีส์แล้ว') }
     } catch (err) {
       setError((err as Error).message)
       // 分集逐条บันทึกไม่สำเร็จ时，รีเฟรช已推进的版本，但保留未บันทึก输入供用户ลองใหม่。
@@ -187,14 +187,14 @@ export default function SeriesEditor() {
   }
   async function submit() {
     if (!id || !series) return
-    if (syncBlocked || dirty || episodeHandoffs.some(item => item.status === 'failed')) { setError('请等待同步เสร็จสิ้น、处理งานที่ล้มเหลว并บันทึกการเปลี่ยนแปลง后，再ส่ง审核'); return }
+    if (syncBlocked || dirty || episodeHandoffs.some(item => item.status === 'failed')) { setError('กรุณารอให้การซิงค์เสร็จสิ้น จัดการงานที่ล้มเหลว และบันทึกการเปลี่ยนแปลงก่อนส่งตรวจทาน'); return }
     setBusy(true); setError('')
-    try { const updated = await request<SeriesDraft>(`/series/${id}/submit`, 'POST', { version: series.version }); acceptSaved(updated); setMessage(updated.audit_status === 'processing' ? '正在准备短试看，เสร็จสิ้น后自动进入待审核。' : 'ละครสั้น与版权材料已ส่ง，等待ผู้ดูแลระบบ (Admin)统一审核。') }
+    try { const updated = await request<SeriesDraft>(`/series/${id}/submit`, 'POST', { version: series.version }); acceptSaved(updated); setMessage(updated.audit_status === 'processing' ? 'กำลังเตรียมตัวอย่างสั้น เมื่อเสร็จแล้วจะเข้าสู่สถานะรอตรวจทานโดยอัตโนมัติ' : 'ซีรีส์สั้นและเอกสารลิขสิทธิ์ถูกส่งแล้ว รอผู้ดูแลระบบตรวจทาน') }
     catch (err) { setError((err as Error).message) } finally { setBusy(false) }
   }
   async function removeSeries() {
     if (!id) return
-    const ok = await dialog.confirm({ title: 'ลบละครสั้น', message: 'ลบ后整部ละครสั้น会从我的作品和作品广场撤下。分集和审核记录会保留，但不能再展示。', confirmText: 'ลบ', tone: 'danger' })
+    const ok = await dialog.confirm({ title: 'ลบละครสั้น', message: 'หลังจากลบ ซีรีส์สั้นทั้งเรื่องจะถูกนำออกจากผลงานของฉันและตลาดผลงาน ข้อมูลตอนและประวัติตรวจทานจะยังคงอยู่ แต่จะไม่แสดงอีกต่อไป', confirmText: 'ลบ', tone: 'danger' })
     if (!ok) return
     setBusy(true); setError('')
     try { await request(`/series/${id}`, 'DELETE'); navigate('/marketplace/mine') } catch (err) { setError((err as Error).message) } finally { setBusy(false) }
@@ -204,7 +204,7 @@ export default function SeriesEditor() {
     setBusy(true); setError(''); setMessage('')
     try {
       acceptSaved(await request<SeriesDraft>(`/series/${id}/preview/retry`, 'POST', { version: series.version }))
-      setMessage('已重新排队生成短试看，可在各分集ดู处理进度。')
+      setMessage('จัดคิวสร้างตัวอย่างสั้นใหม่แล้ว สามารถดูความคืบหน้าในแต่ละตอนได้')
     } catch (err) { setError((err as Error).message) } finally { setBusy(false) }
   }
   async function toggleListing() {
@@ -212,55 +212,55 @@ export default function SeriesEditor() {
     setBusy(true); setError('')
     try {
       const updated = await request<SeriesDraft>(`/series/${id}/listing?listed=${!series.listed}`, 'POST', { version: series.version })
-      setSeries(updated); setEpisodes(updated.episodes); setMessage(updated.listed ? '系列เผยแพร่แล้ว到作品广场。' : '系列นำลงแล้ว，历史审核记录仍保留。')
+      setSeries(updated); setEpisodes(updated.episodes); setMessage(updated.listed ? 'เผยแพร่ซีรีส์ไปยังตลาดผลงานแล้ว' : 'นำซีรีส์ลงแล้ว ประวัติตรวจทานยังคงอยู่')
     } catch (err) { setError((err as Error).message) } finally { setBusy(false) }
   }
   const current = series
-  if (id && !series && !error) return <p role="status">正在加载系列…</p>
-  return <><PageHeading title={id ? 'แก้ไขละครสั้น' : '发布ละครสั้น'} description="ละครสั้น和单条วิดีโอ一样出现在作品广场。在这一页เพิ่ม分集，版权规则与单วิดีโอ相同。" back="/marketplace" /><div className="pf-market-editor-layout"><form className="pf-market-editor-main pf-market-form" onSubmit={save} onChangeCapture={event => { if (!(event.target as HTMLElement).closest('.pf-market-authorization, [data-market-transient]')) setDirty(true) }}>
-    <FormSection step="01" title="系列信息" description="先建立系列，再逐集อัปโหลด或导入成片。"><label>系列标题<span className="pf-req-mark">จำเป็นต้องระบุ</span><input name="title" required maxLength={200} placeholder="例如：城市里的光" defaultValue={current?.title} /></label><label>简介<textarea name="description" maxLength={5000} defaultValue={current?.description} placeholder="介绍整部ละครสั้น的主题和内容" /></label><div className="pf-market-field-row"><label>分类<span className="pf-req-mark">จำเป็นต้องระบุ</span><select name="category" required value={category || current?.category || ''} onChange={event => setCategory(event.target.value)} disabled={!categories.length}><option value="" disabled>请เลือก系列分类</option>{current?.category && !categories.includes(current.category) && <option value={current.category}>{current.category}（历史分类）</option>}{categories.map(name => <option key={name} value={name}>{name}</option>)}</select>{categoryError && <span role="alert">{categoryError}</span>}</label><label>标签<input name="tags" defaultValue={current?.tags?.join('，')} placeholder="都市，ละครสั้น" /></label></div><AssetPicker kind="image" value={coverId} onChange={value => { coverEdited.current = true; setCoverId(value); setDirty(true) }} title="系列封面（与分集封面至少อัปโหลด一处）" /></FormSection>
-    <FormSection step="02" title="收益方式" description="免费公开供完整观看；版权出售通过客服洽谈；平台投放按集解锁并分成。"><select value={saleType} onChange={event => setSaleType(event.target.value as typeof saleType)}><option value="free">免费公开</option><option value="copyright_contact">版权出售收益</option><option value="platform_unlock">平台投放收益</option></select><label>参考价（元）<input name="copyright_price" type="number" min="0" step="0.01" defaultValue={current?.copyright_price_fen ? current.copyright_price_fen / 100 : ''} /></label><label>免费集数<span className="pf-req-mark">前几集免费</span><input type="number" min="0" max="10000" step="1" value={freeEpisodeCount} onChange={event => setFreeEpisodeCount(Math.max(0, Number(event.target.value) || 0))} /></label><p className="pf-market-notice">เลือก“免费公开”时ทุกตอน播放原片，无需试看；其他收益方式可将前几集设为免费，其余分集提供最长15วินาที且不超过原片30%的无水印短试看。版权合作参考价不代表已包含版权转让手续等额外费用，具体事项请与客服确认。平台投放按集定价，观众解锁仅获得永久在线播放权益，不包含版权转让；需在平台启用分成后才能ส่ง审核。修改收益方式或免费集数后，将重新检查播放准备สถานะ。</p></FormSection>
-    <FormSection step="03" title="分集内容" description="每集一个完整วิดีโอ和封面。同步期间可以填写信息，เสร็จสิ้น后再บันทึก。">
-      <div className="pf-episode-tools"><button type="button" onClick={() => setExpanded(new Set(episodes.map((_, index) => index)))}>ขยาย全部</button><button type="button" onClick={() => setExpanded(new Set())}>ย่อเก็บ全部</button><span>共 {episodes.length} 集</span></div>
-      {syncBlocked && <p className="pf-market-notice" role="status">{syncing ? '成片正在后台同步，可先填写标题与价格。同步เสร็จสิ้น后即可บันทึก和ส่ง；ปิด页面不影响任务。' : '正在确认同步สถานะ…'}</p>}
-      {hasSyncFailure && <p className="pf-market-notice" role="alert">部分成片同步ล้มเหลว。当前输入已保留，请先ลองใหม่同步或重新เลือก源版本，เสร็จสิ้น后再บันทึก。</p>}
+  if (id && !series && !error) return <p role="status">กำลังโหลดซีรีส์…</p>
+  return <><PageHeading title={id ? 'แก้ไขซีรีส์สั้น' : 'เผยแพร่ซีรีส์สั้น'} description="ซีรีส์สั้นจะแสดงในตลาดผลงานเช่นเดียวกับวิดีโอเดี่ยว สามารถเพิ่มตอนในหน้านี้ได้ กฎลิขสิทธิ์เหมือนกับวิดีโอเดี่ยว" back="/marketplace" /><div className="pf-market-editor-layout"><form className="pf-market-editor-main pf-market-form" onSubmit={save} onChangeCapture={event => { if (!(event.target as HTMLElement).closest('.pf-market-authorization, [data-market-transient]')) setDirty(true) }}>
+    <FormSection step="01" title="ข้อมูลซีรีส์" description="สร้างซีรีส์ก่อน แล้วจึงอัปโหลดหรือนำเข้าวิดีโอทีละตอน"><label>ชื่อซีรีส์<span className="pf-req-mark">จำเป็นต้องระบุ</span><input name="title" required maxLength={200} placeholder="ตัวอย่างเช่น: แสงไฟในเมืองใหญ่" defaultValue={current?.title} /></label><label>เรื่องย่อ<textarea name="description" maxLength={5000} defaultValue={current?.description} placeholder="แนะนำธีมและเนื้อหาของซีรีส์สั้นทั้งเรื่อง" /></label><div className="pf-market-field-row"><label>หมวดหมู่<span className="pf-req-mark">จำเป็นต้องระบุ</span><select name="category" required value={category || current?.category || ''} onChange={event => setCategory(event.target.value)} disabled={!categories.length}><option value="" disabled>โปรดเลือกหมวดหมู่ซีรีส์</option>{current?.category && !categories.includes(current.category) && <option value={current.category}>{current.category} (หมวดหมู่เดิม)</option>}{categories.map(name => <option key={name} value={name}>{name}</option>)}</select>{categoryError && <span role="alert">{categoryError}</span>}</label><label>แท็ก<input name="tags" defaultValue={current?.tags?.join(', ')} placeholder="ชีวิตในเมือง, ซีรีส์สั้น" /></label></div><AssetPicker kind="image" value={coverId} onChange={value => { coverEdited.current = true; setCoverId(value); setDirty(true) }} title="ภาพหน้าปกซีรีส์ (ต้องอัปโหลดที่หน้าปกซีรีส์หรือหน้าปกประจำตอนอย่างน้อยหนึ่งแห่ง)" /></FormSection>
+    <FormSection step="02" title="รูปแบบรายได้" description="เผยแพร่ฟรีเพื่อรับชมเต็มเรื่อง; ขายลิขสิทธิ์ผ่านการเจรจากับฝ่ายบริการลูกค้า; วางจำหน่ายบนแพลตฟอร์มโดยปลดล็อกทีละตอนและแบ่งรายได้"><select value={saleType} onChange={event => setSaleType(event.target.value as typeof saleType)}><option value="free">เผยแพร่ฟรี</option><option value="copyright_contact">รายได้จากการขายลิขสิทธิ์</option><option value="platform_unlock">รายได้จากการปลดล็อกบนแพลตฟอร์ม</option></select><label>ราคาอ้างอิง (บาท)<input name="copyright_price" type="number" min="0" step="0.01" defaultValue={current?.copyright_price_fen ? current.copyright_price_fen / 100 : ''} /></label><label>จำนวนตอนที่เปิดให้ชมฟรี<span className="pf-req-mark">ตอนแรกๆ ชมฟรี</span><input type="number" min="0" max="10000" step="1" value={freeEpisodeCount} onChange={event => setFreeEpisodeCount(Math.max(0, Number(event.target.value) || 0))} /></label><p className="pf-market-notice">เมื่อเลือก "เผยแพร่ฟรี" ทุกตอนจะเล่นฉบับเต็มโดยไม่ต้องมีตัวอย่างทดลองชม สำหรับรูปแบบรายได้อื่น สามารถตั้งค่าให้ตอนแรกๆ รับชมฟรีได้ ส่วนตอนที่เหลือจะมีตัวอย่างสั้นแบบไม่มีลายน้ำความยาวไม่เกิน 15 วินาที (และไม่เกิน 30% ของความยาวเรื่อง) ราคาอ้างอิงความร่วมมือด้านลิขสิทธิ์ไม่ได้หมายความว่ารวมค่าธรรมเนียมการโอนสิทธิ์ โปรดยืนยันรายละเอียดกับฝ่ายบริการลูกค้า การวางจำหน่ายบนแพลตฟอร์มจะกำหนดราคาเป็นรายตอน ผู้ชมที่ปลดล็อกจะได้รับสิทธิ์ในการรับชมออนไลน์ตลอดไปโดยไม่รวมการโอนลิขสิทธิ์ และต้องเปิดใช้งานระบบส่วนแบ่งรายได้บนแพลตฟอร์มก่อนจึงจะส่งตรวจทานได้ หากแก้ไขรูปแบบรายได้หรือจำนวนตอนฟรี ระบบจะตรวจสอบสถานะความพร้อมในการเล่นใหม่อีกครั้ง</p></FormSection>
+    <FormSection step="03" title="เนื้อหาแต่ละตอน" description="แต่ละตอนมีวิดีโอฉบับเต็มและภาพหน้าปก สามารถกรอกข้อมูลระหว่างซิงค์และบันทึกหลังเสร็จสิ้น">
+      <div className="pf-episode-tools"><button type="button" onClick={() => setExpanded(new Set(episodes.map((_, index) => index)))}>ขยายทั้งหมด</button><button type="button" onClick={() => setExpanded(new Set())}>ย่อทั้งหมด</button><span>ทั้งหมด {episodes.length} ตอน</span></div>
+      {syncBlocked && <p className="pf-market-notice" role="status">{syncing ? 'วิดีโอกำลังซิงค์ในเบื้องหลัง สามารถกรอกชื่อและราคาไว้ก่อนได้ เมื่อซิงค์เสร็จสิ้นแล้วจึงบันทึกและส่ง การปิดหน้านี้ไม่มีผลต่องาน' : 'กำลังตรวจสอบสถานะการซิงค์...'}</p>}
+      {hasSyncFailure && <p className="pf-market-notice" role="alert">การซิงค์วิดีโอบางส่วนล้มเหลว ข้อมูลที่ป้อนไว้ยังคงอยู่ กรุณาลองซิงค์ใหม่หรือเลือกเวอร์ชันต้นทางใหม่ แล้วจึงบันทึก</p>}
       {handoffError && <p role="alert">{handoffError}</p>}
       <div className="pf-market-episodes">{episodes.map((episode, index) => {
         const handoff = episodeHandoffs.find(item => item.episode_id === episode.id)
         const syncingVideo = Boolean(handoff && isHandoffActive(handoff))
         const fromPrintfilm = episode.source === 'printfilm'
-        const videoLabel = handoff ? handoffLabel(handoff) : episode.asset_id ? 'วิดีโอ已就绪' : '缺วิดีโอ'
+        const videoLabel = handoff ? handoffLabel(handoff) : episode.asset_id ? 'วิดีโอพร้อมแล้ว' : 'ยังไม่มีวิดีโอ'
         return <div key={episode.id ?? `new-${index}`}>
           <EpisodePanel episode={episode} count={episodes.length} free={isFreeEpisode({ sale_type: saleType, free_episode_count: freeEpisodeCount }, episode.episode_no)} open={expanded.has(index)} saleType={saleType} seriesId={id} busy={busy || syncBlocked || hasSyncFailure} videoLabel={videoLabel} videoLocked={syncingVideo || (fromPrintfilm && !episode.asset_id)} lockVideoUntilPreview={fromPrintfilm}
             toggle={() => setExpanded(value => { const next = new Set(value); if (next.has(index)) next.delete(index); else next.add(index); return next })}
             update={patch => update(index, patch)}
             remove={() => { setDirty(true); if (episode.id) setRemovedEpisodeIds(value => [...value, episode.id as number]); setEpisodes(value => value.filter((_, itemIndex) => itemIndex !== index).map((item, itemIndex) => ({ ...item, episode_no: itemIndex + 1 }))); setExpanded(new Set([Math.max(0, index - 1)])) }}
-            goRights={() => { if (dirty) { setError('请先บันทึกแบบร่าง，再填写外部作品的权属材料'); return } navigate(`/marketplace/assets/${episode.asset_id}/rights?source=${episode.source || 'external'}&return=${encodeURIComponent(`/marketplace/series/${id}/edit`)}`) }} />
-          {handoff && handoff.status !== 'ready' && <p className="pf-market-notice" role={handoff.status === 'failed' ? 'alert' : 'status'}>第 {episode.episode_no} 集 · {handoffLabel(handoff)}{handoff.error ? `：${explainMarketplaceError(handoff.error)}` : ''}
-            {handoff.status === 'failed' && handoff.retryable !== false && <button type="button" disabled={busy} onClick={() => void retryHandoff(handoff)}>重新同步</button>}
-            {handoff.status === 'failed' && handoff.retryable === false && <span>请在下方重新เลือกละครซีรีส์分集，确认最新源版本后同步。</span>}
+            goRights={() => { if (dirty) { setError('กรุณาบันทึกแบบร่างก่อน แล้วจึงกรอกเอกสารสิทธิ์ของผลงานภายนอก'); return } navigate(`/marketplace/assets/${episode.asset_id}/rights?source=${episode.source || 'external'}&return=${encodeURIComponent(`/marketplace/series/${id}/edit`)}`) }} />
+          {handoff && handoff.status !== 'ready' && <p className="pf-market-notice" role={handoff.status === 'failed' ? 'alert' : 'status'}>ตอนที่ {episode.episode_no} · {handoffLabel(handoff)}{handoff.error ? `：${explainMarketplaceError(handoff.error)}` : ''}
+            {handoff.status === 'failed' && handoff.retryable !== false && <button type="button" disabled={busy} onClick={() => void retryHandoff(handoff)}>ซิงค์ใหม่</button>}
+            {handoff.status === 'failed' && handoff.retryable === false && <span>กรุณาเลือกตอนของซีรีส์ใหม่ด้านล่าง และยืนยันเวอร์ชันต้นทางล่าสุดก่อนซิงค์</span>}
           </p>}
         </div>
       })}</div>
-      <button type="button" disabled={busy || syncBlocked || hasSyncFailure} onClick={() => { setDirty(true); setEpisodes(value => [...value, { episode_no: value.length + 1, title: `第${value.length + 1}集`, asset_id: null, cover_asset_id: null, copyright_price_fen: 0, unlock_price_fen: 0, source: 'external' }]); setExpanded(new Set([episodes.length])) }}>+ เพิ่ม下一集</button>
+      <button type="button" disabled={busy || syncBlocked || hasSyncFailure} onClick={() => { setDirty(true); setEpisodes(value => [...value, { episode_no: value.length + 1, title: `ตอนที่ ${value.length + 1}`, asset_id: null, cover_asset_id: null, copyright_price_fen: 0, unlock_price_fen: 0, source: 'external' }]); setExpanded(new Set([episodes.length])) }}>+ เพิ่มตอนถัดไป</button>
     </FormSection>
-    {id && <FormSection step="04" title="从我的 PrintFilm ละครซีรีส์导入" description="เลือกโปรเจกต์后，在同一个发布弹窗里เลือก完整分集；新源版本必须明确确认后才能更新。">
+    {id && <FormSection step="04" title="นำเข้าจากซีรีส์ PrintFilm ของฉัน" description="หลังเลือกโปรเจกต์ สามารถเลือกตอนฉบับเต็มในหน้าต่างเดียวกัน เวอร์ชันต้นทางใหม่ต้องได้รับการยืนยันก่อนอัปเดต">
       <select data-market-transient value={sourceId} disabled={busy || syncBlocked} onChange={event => setSourceId(event.target.value)}><option value="">เลือกโปรเจกต์ละครซีรีส์</option>{sources.map(source => <option key={source.id} value={source.id}>{source.title}</option>)}</select>
-      <button type="button" disabled={busy || syncBlocked || !sourceId || (dirty && !hasSyncFailure)} onClick={() => setImportOpen(true)}>เลือก分集并同步到此系列</button>
-      {dirty && !hasSyncFailure && <p className="pf-market-notice">请先บันทึก当前修改，再导入分集。</p>}
+      <button type="button" disabled={busy || syncBlocked || !sourceId || (dirty && !hasSyncFailure)} onClick={() => setImportOpen(true)}>เลือกตอนและซิงค์มายังซีรีส์นี้</button>
+      {dirty && !hasSyncFailure && <p className="pf-market-notice">กรุณาบันทึกการแก้ไขปัจจุบันก่อนนำเข้าตอน</p>}
     </FormSection>}
-    {episodes.some(item => item.source === 'printfilm') && <FormSection step="05" title="PrintFilm 授权确认" description="同一账号按当前条款签署一次，ส่ง系列审核时自动关联全部 PrintFilm 分集。">
-      <AuthorizationPanel onSigned={() => { setSeries(value => value ? { ...value, authorization_ready: true } : value); setMessage('授权函已签署，ส่ง审核时将自动关联本系列的 PrintFilm 分集。') }} />
+    {episodes.some(item => item.source === 'printfilm') && <FormSection step="05" title="การยืนยันสิทธิ์ PrintFilm" description="บัญชีเดียวกันลงนามเพียงครั้งเดียวตามข้อกำหนดปัจจุบัน เมื่อส่งตรวจทานจะเชื่อมโยงทุกตอนของ PrintFilm โดยอัตโนมัติ">
+      <AuthorizationPanel onSigned={() => { setSeries(value => value ? { ...value, authorization_ready: true } : value); setMessage('ลงนามหนังสือมอบอำนาจแล้ว เมื่อส่งตรวจทานจะเชื่อมโยงตอนของ PrintFilm ในซีรีส์นี้โดยอัตโนมัติ') }} />
     </FormSection>}
     {error && <p role="alert">{error}</p>}{message && <p role="status">{message}</p>}
     {previewPollError && (series?.audit_status === 'processing' || previewActive) && <p role="status">{previewPollError}</p>}
     <div className="pf-market-form-actions">
-      <Button variant="lime" type="submit" disabled={busy || syncBlocked || hasSyncFailure || !categories.length || !category}>{busy ? 'กำลังประมวลผล…' : 'บันทึก系列ฉบับร่าง'}</Button>
-      {id && (series?.audit_status === 'draft' || series?.audit_status === 'rejected' || series?.audit_status === 'preview_failed') && <button type="button" disabled={busy || syncBlocked || dirty || episodeHandoffs.some(item => item.status === 'failed') || (episodes.some(item => item.source === 'printfilm') && series.authorization_ready === false)} onClick={() => void submit()}>{series?.audit_status === 'preview_failed' ? 'ลองใหม่生成短试看并ส่ง' : 'ส่ง系列审核'}</button>}
-      {id && dirty && <p role="status">有未บันทึกการเปลี่ยนแปลง，请先บันทึกแบบร่าง再ส่ง审核。</p>}
-      {id && series?.audit_status === 'processing' && <p role="status">正在生成短试看，เสร็จสิ้น后自动进入待审核。</p>}
-      {id && series?.audit_status === 'approved' && <button type="button" disabled={busy || syncBlocked || dirty} onClick={() => void toggleListing()}>{series.listed ? '下架系列' : '上架到作品广场'}</button>}
-      {id && series?.audit_status === 'approved' && (previewFailed || previewActive) && <button type="button" disabled={busy || syncBlocked || dirty || previewActive} onClick={() => void retryPreviews()}>{previewActive ? '正在生成短试看…' : 'ลองใหม่生成短试看'}</button>}
+      <Button variant="lime" type="submit" disabled={busy || syncBlocked || hasSyncFailure || !categories.length || !category}>{busy ? 'กำลังประมวลผล…' : 'บันทึกฉบับร่างซีรีส์'}</Button>
+      {id && (series?.audit_status === 'draft' || series?.audit_status === 'rejected' || series?.audit_status === 'preview_failed') && <button type="button" disabled={busy || syncBlocked || dirty || episodeHandoffs.some(item => item.status === 'failed') || (episodes.some(item => item.source === 'printfilm') && series.authorization_ready === false)} onClick={() => void submit()}>{series?.audit_status === 'preview_failed' ? 'ลองสร้างตัวอย่างสั้นใหม่และส่ง' : 'ส่งตรวจทานซีรีส์'}</button>}
+      {id && dirty && <p role="status">มีการเปลี่ยนแปลงที่ยังไม่ได้บันทึก กรุณาบันทึกแบบร่างก่อนส่งตรวจทาน</p>}
+      {id && series?.audit_status === 'processing' && <p role="status">กำลังสร้างตัวอย่างสั้น เมื่อเสร็จแล้วจะเข้าสู่สถานะรอตรวจทานโดยอัตโนมัติ</p>}
+      {id && series?.audit_status === 'approved' && <button type="button" disabled={busy || syncBlocked || dirty} onClick={() => void toggleListing()}>{series.listed ? 'นำซีรีส์ลง' : 'วางจำหน่ายในตลาดผลงาน'}</button>}
+      {id && series?.audit_status === 'approved' && (previewFailed || previewActive) && <button type="button" disabled={busy || syncBlocked || dirty || previewActive} onClick={() => void retryPreviews()}>{previewActive ? 'กำลังสร้างตัวอย่างสั้น...' : 'ลองสร้างตัวอย่างสั้นใหม่'}</button>}
       {id && <button type="button" disabled={busy || syncBlocked} onClick={() => void removeSeries()}>ลบละครสั้น</button>}
     </div>
   </form><PublishGuide saleType={saleType} /></div>
@@ -272,7 +272,7 @@ export default function SeriesEditor() {
       savedEpisodes.current = fresh.episodes
       acceptSyncedCover(fresh)
       setSeries(current => current ? { ...current, cover_asset_id: fresh.cover_asset_id, version: fresh.version, audit_status: fresh.audit_status, listed: fresh.listed, authorization_ready: fresh.authorization_ready, sync_in_progress: fresh.sync_in_progress } : fresh)
-      setPoll(value => value + 1); setExpanded(new Set(fresh.episodes.map((_, index) => index))); setMessage('同步任务已สร้าง，เสร็จสิ้น后会自动填入完整วิดีโอ。当前填写的内容已保留。')
+      setPoll(value => value + 1); setExpanded(new Set(fresh.episodes.map((_, index) => index))); setMessage('สร้างงานซิงค์แล้ว เมื่อเสร็จสิ้นจะใส่วิดีโอฉบับเต็มโดยอัตโนมัติ ข้อมูลที่กรอกไว้ยังคงอยู่')
     }).catch(err => setError((err as Error).message)).finally(() => setBusy(false))
   }} />}
   </>

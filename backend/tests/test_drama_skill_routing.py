@@ -23,4 +23,4 @@ async def test_prop_extraction_routes_through_extractor_skill(monkeypatch):
     )
     assert result["props"][0]["name"] == "ตราประทับ"
     assert captured["task"] == "extract_assets"
-    assert captured["user"].startswith("【强制语言】")
+    assert captured["user"].startswith("ข้อกำหนดภาษา")

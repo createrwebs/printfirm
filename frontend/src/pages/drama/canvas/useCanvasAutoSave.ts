@@ -79,7 +79,7 @@ export function useCanvasAutoSave({
         }
       } catch (err) {
         onStatus?.('error')
-        onError(err instanceof Error ? err.message : '自动บันทึกไม่สำเร็จ')
+        onError(err instanceof Error ? err.message : 'บันทึกอัตโนมัติไม่สำเร็จ')
         // 网络闪断时保持 dirty，便于稍后自动ลองใหม่ / Ctrl+S
         throw err
       } finally {

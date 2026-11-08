@@ -51,7 +51,7 @@ export async function zipVideosClient(
   onProgress?: (done: number, total: number) => void,
 ): Promise<{ blob: Blob; filename: string }> {
   if (!items.length) {
-    throw new Error('请เลือกเสร็จสมบูรณ์的โปรเจกต์')
+    throw new Error('โปรดเลือกโปรเจกต์ที่เสร็จสมบูรณ์แล้ว')
   }
   const zip = new JSZip()
   const used = new Set<string>()

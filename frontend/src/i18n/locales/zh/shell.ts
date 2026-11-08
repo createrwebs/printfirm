@@ -23,6 +23,7 @@ export const zhShell = {
     copy: '复制',
     search: '搜索',
     home: '首页',
+    marketing: '营销工作台',
     creator: '创作者',
     dialog: '对话框',
     pagination: '分页',

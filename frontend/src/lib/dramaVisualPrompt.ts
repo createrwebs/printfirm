@@ -6,8 +6,8 @@ const WEAK_PROMPT = /^(character|scene|prop|material|none|image|audio|video)\s+\
 const GENERIC_MARKERS = [
   '影视级写实环境空间',
   '构图层次分明、光影有戏剧张力',
-  '适合ละครสั้น横屏拍摄',
-  '影视级写实ฉาก，构图清晰，适合ละครสั้น拍摄',
+  'เหมาะสำหรับการถ่ายทำซีรีส์สั้นแนวนอน',
+  'ฉากสมจริงระดับภาพยนตร์ องค์ประกอบภาพชัดเจน เหมาะสำหรับถ่ายทำซีรีส์สั้น',
   '影视级写实人物',
   '白底全身定妆照',
 ]
@@ -99,7 +99,7 @@ export function readVisualPrompt(asset: DramaAsset): string {
   }
 
   if (kind === 'scene' && name) {
-    return `ฉาก：${name}，影视级写实ฉาก，构图清晰，适合ละครสั้น拍摄`
+    return `ฉาก: ${name}, ฉากสมจริงระดับภาพยนตร์ องค์ประกอบภาพชัดเจน เหมาะสำหรับถ่ายทำซีรีส์สั้น`
   }
 
   if (stored) return stored

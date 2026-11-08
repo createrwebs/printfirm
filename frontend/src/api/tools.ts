@@ -139,7 +139,7 @@ export function listToolReferenceAssets({ kind, q = '', page = 1, pageSize = 24 
   const qs = new URLSearchParams({ page: String(page), page_size: String(pageSize) })
   if (kind) qs.set('kind', kind)
   if (q) qs.set('q', q)
-  return requestToolJson(`/api/tools/reference-assets?${qs}`, '加载แอสเซท库ล้มเหลว', { signal })
+  return requestToolJson(`/api/tools/reference-assets?${qs}`, 'โหลดคลังแอสเซทล้มเหลว', { signal })
 }
 
 // ส่ง工具生成（multipart）
@@ -168,7 +168,7 @@ export async function runStudioTool(payload: ToolRunPayload): Promise<ToolRunRes
 
 // 查询วิดีโอ任务สถานะ
 export async function pollStudioToolTask(taskId: string): Promise<ToolTaskResult> {
-  return requestToolJson(`/api/tools/tasks/${encodeURIComponent(taskId)}`, '查询ล้มเหลว')
+  return requestToolJson(`/api/tools/tasks/${encodeURIComponent(taskId)}`, 'ค้นหาข้อมูลล้มเหลว')
 }
 
 // 个人中心：分页拉取工具创作记录
@@ -181,7 +181,7 @@ export async function listToolRuns(page = 1, pageSize = 8, filters: ToolRunFilte
 }
 
 export async function getGenerationConfig(): Promise<{ models: Record<string, string> }> {
-  return requestToolJson('/api/tools/config', '加载模型配置ล้มเหลว')
+  return requestToolJson('/api/tools/config', 'โหลดการตั้งค่าโมเดลล้มเหลว')
 }
 
 // 个人中心：单条创作รายละเอียด（含 OSS 结果地址）

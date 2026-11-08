@@ -24,6 +24,7 @@ export const enShell = {
     copy: 'Copy',
     search: 'Search',
     home: 'Home',
+    marketing: 'Marketing Studio',
     creator: 'Creator',
     dialog: 'Dialog',
     pagination: 'Pagination',

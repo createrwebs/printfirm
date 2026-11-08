@@ -44,9 +44,9 @@ export default function SeriesDetail() {
     sessionStorage.setItem(rememberKey(id), String(episodeNo))
   }
   if (error) return <p role="alert">{error}</p>
-  if (!item) return <p role="status">正在加载ละครสั้น…</p>
+  if (!item) return <p role="status">กำลังโหลดซีรีส์สั้น…</p>
   const episode = item.episodes.find(entry => entry.episode_no === current) || item.episodes[0]
-  if (!episode) return <p>这部ละครสั้น还没有可播放的分集。</p>
+  if (!episode) return <p>ซีรีส์สั้นเรื่องนี้ยังไม่มีตอนที่สามารถรับชมได้</p>
   const free = isFreeEpisode(item, episode.episode_no)
   const index = item.episodes.findIndex(entry => entry.id === episode.id)
   const previous = item.episodes[index - 1]
@@ -55,7 +55,7 @@ export default function SeriesDetail() {
   const visible = item.episodes.filter(entry => Math.floor((entry.episode_no - 1) / pageSize) === range)
   const price = item.sale_type === 'platform_unlock' ? '按集解锁' : `版权合作参考价 ${money(item.copyright_price_fen)}`
   return <>
-    <PageHeading title={item.title} description={`${item.category || '其他'} · ละครสั้น · ${item.episodes.length} 集`} back="/marketplace" />
+    <PageHeading title={item.title} description={`${item.category || 'ทั่วไป'} · ซีรีส์สั้น · ทั้งหมด ${item.episodes.length} ตอน`} back="/marketplace" />
     <div className="pf-series-layout">
       <section className="pf-series-stage">
         <Media key={episode.id} kind="series_episode" id={episode.id} purpose="preview" video autoPlay={autoPlay} onEnded={() => { if (next) select(next.episode_no) }} />
@@ -65,7 +65,7 @@ export default function SeriesDetail() {
           <p>{item.sale_type === 'free' || (item.free_episode_count || 0) >= item.episodes.length ? '全部免费，播放原片' : (item.free_episode_count || 0) > 0 ? `前 ${item.free_episode_count} 集免费播放原片，之后 ${price}` : `${item.sale_type === 'platform_unlock' ? '平台投放收益' : '版权出售收益'} · ${price}`}</p>
           <p className="pf-market-text">{item.description || '暂无系列简介'}</p>
           <p>{free ? '本集免费观看，直接播放原片。使用仍须遵守作者授权范围。' : item.sale_type === 'platform_unlock' ? '未购买时可看短试看，购买后可永久在线播放所购版本，不包含版权转让。' : '当前提供短试看。版权合作请联系客服，确认价格、授权或转让范围及完整成片交付。'}</p>
-          {!free && <small>短试看不加水印，最长15วินาที且不超过原片ความยาว的30%。</small>}
+          {!free && <small>ตัวอย่างทดลองชมไม่มีลายน้ำ ความยาวสูงสุด 15 วินาที และไม่เกิน 30% ของความยาวเรื่อง</small>}
           {!free && item.sale_type === 'copyright_contact' && <NeedLogin><Contact kind="series_episode" id={episode.id} /></NeedLogin>}
           {!free && item.sale_type === 'platform_unlock' && <small>当前网页仅提供短试看，暂不支持购买和完整播放。</small>}
         </section>
@@ -87,6 +87,6 @@ export default function SeriesDetail() {
         </section>
       </aside>
     </div>
-    <Link to="/marketplace">กลับ作品广场</Link>
+    <Link to="/marketplace">กลับไปตลาดผลงาน</Link>
   </>
 }

@@ -34,7 +34,7 @@ export function useToolRunDetail() {
         if (record.status === 'queued' || record.status === 'running') timer = setTimeout(refresh, 5000)
       } catch (cause) {
         if (disposed || epoch !== workspaceScope.epoch) return
-        setError(cause instanceof Error ? cause.message : text('รายละเอียด更新ล้มเหลว，正在ลองใหม่', 'Could not update details. Retrying.'))
+        setError(cause instanceof Error ? cause.message : text('อัปเดตรายละเอียดไม่สำเร็จ กำลังลองใหม่', 'Could not update details. Retrying.'))
         timer = setTimeout(refresh, 10000)
       }
     }

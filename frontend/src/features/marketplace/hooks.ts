@@ -7,7 +7,7 @@ export function useMarketplace() {
   const [error, setError] = useState('')
   useEffect(() => {
     let active = true
-    request<Capabilities>('/capabilities').then(value => { if (active) setCapabilities(value) }).catch(() => { if (active) setError('无法读取下游业务สถานะ，请稍后ลองใหม่') })
+    request<Capabilities>('/capabilities').then(value => { if (active) setCapabilities(value) }).catch(() => { if (active) setError('ไม่สามารถอ่านสถานะบริการปลายทางได้ โปรดลองใหม่อีกครั้งในภายหลัง') })
     return () => { active = false }
   }, [])
   return { capabilities, error }

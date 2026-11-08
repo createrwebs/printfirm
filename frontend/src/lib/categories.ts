@@ -19,9 +19,9 @@ export const CATEGORY_ORDER = [
 
 export const HOME_CATEGORY_LABELS: Record<string, string> = {
   全部: '全部',
-  开源: '开源โปรเจกต์',
+  开源: 'โปรเจกต์โอเพนซอร์ส',
   科普: '知识科普',
-  获客: '获客วิดีโอสั้น',
+  获客: 'วิดีโอสั้นการตลาด',
   纪录片: '纪录片',
   写实感: '写实感',
   真人感: '人物故事',

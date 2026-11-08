@@ -45,7 +45,7 @@ export default function PromptMentionPopover({ open, items, anchorRect, activeIn
     <div ref={panelRef} className="gen-mention-pop" style={{ top, left }} role="listbox" aria-label={text('@ 引用参考资料', 'Mention a reference')}>
       <p className="gen-mention-pop-heading"><Search size={13} aria-hidden />{text('提及已加入的参考资料', 'Mention a reference you added')}</p>
       {items.length === 0 ? (
-        <p className="gen-mention-pop-empty">{text('没有匹配的参考资料，请先อัปโหลด或从แอสเซท库เลือกรูปภาพ、วิดีโอ或เสียง。', 'No matching references. Add an image, video or audio first.')}</p>
+        <p className="gen-mention-pop-empty">{text('ไม่พบข้อมูลอ้างอิงที่ตรงกัน โปรดอัปโหลดหรือเลือกรูปภาพ วิดีโอ หรือเสียงจากคลังแอสเซทก่อน', 'No matching references. Add an image, video or audio first.')}</p>
       ) : (
         <div className="gen-mention-pop-list">
           {items.map((reference, index) => {

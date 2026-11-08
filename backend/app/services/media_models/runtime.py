@@ -50,6 +50,11 @@ def pin_route(capability: str, model_id: str) -> dict:
 
 
 def restore_route(saved: dict) -> ResolvedModelRoute:
+    from app.services.tokenfree_gateway import TOKENFREE_CHANNEL_ID, current_user_toraapi_token
+
+    user_key = (current_user_toraapi_token.get() or "").strip()
+    if user_key and (saved.get("channel_id") in {TOKENFREE_CHANNEL_ID, "__runtime__"}):
+        return ResolvedModelRoute(**saved, api_key=user_key)
     settings = get_settings()
     if saved["channel_id"] == "__runtime__":
         key = settings.ark_api_key

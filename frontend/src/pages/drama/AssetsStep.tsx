@@ -586,6 +586,14 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
           )
           if (seedStatus === 'done' || seedStatus === 'failed') break
         }
+        if (seedStatus !== 'done' && seedStatus !== 'failed') {
+          await dialog.alert({
+            title: 'สกัดแอสเซทยังไม่เสร็จ',
+            message: 'หมดเวลารอ worker กรุณาตรวจสอบสถานะแล้วลองใหม่อีกครั้ง',
+            tone: 'danger',
+          })
+          return
+        }
         const list = normalizeAssetList(
           await dramaApi.listAssets(projectId, { libraryOnly: true }),
         )

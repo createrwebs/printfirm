@@ -5,7 +5,7 @@ import { generationDetailPath, generationTaskListPath } from '../lib/generationT
 
 const request = createJsonRequester((response, detail) => {
   if (response.status === 401) throw new Error('未登录')
-  throw new Error(apiErrorMessage(detail, '加载任务ล้มเหลว'))
+  throw new Error(apiErrorMessage(detail, 'โหลดงานล้มเหลว'))
 })
 
 /** 当前创作空间的รูปภาพ、เสียง和วิดีโอ记录；旧文字ตัวกรอง兼容为全部媒体。 */

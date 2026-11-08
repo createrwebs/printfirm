@@ -41,7 +41,7 @@ export default function MediaLibraryFilters({ value, onChange }: {
     </div>
     {value.kind === 'image' && <div className="pf-library-image-categories">
       <span>หมวดหมู่รูปภาพ</span>
-      <AssetTypeFilter options={IMAGE_TYPES} value={value.imageType} ariaLabel="按รูปภาพ分类ตัวกรอง"
+      <AssetTypeFilter options={IMAGE_TYPES} value={value.imageType} ariaLabel="กรองตามหมวดหมู่รูปภาพ"
         onChange={imageType => onChange({ ...value, kind: 'image', imageType })} />
     </div>}
     <div className="pf-library-generation-status">

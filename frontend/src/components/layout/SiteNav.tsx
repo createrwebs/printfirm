@@ -26,6 +26,7 @@ type NavItem = typeof HOME_NAV | (typeof CREATION_NAV)[number] | (typeof RESOURC
 
 const NAV_ICONS = {
   home: House,
+  marketing: Store,
   drama: Clapperboard,
   canvas: Workflow,
   kepu: Video,
@@ -212,7 +213,7 @@ export default function SiteNav({ active }: Props) {
         {renderLink(HOME_NAV)}
         {CREATION_NAV.map((item) => renderLink(item))}
         {renderMarketplace()}
-        {renderCodeVideo()}
+      
         {RESOURCE_NAV.map((item) => renderLink(item))}
       </nav>
       <div className="pf-topbar-actions">

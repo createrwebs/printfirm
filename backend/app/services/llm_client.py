@@ -29,11 +29,15 @@ class LlmUnavailableError(RuntimeError):
 
 # 解析 LLM API Key（对齐 manju resolveOpenaiApiKey）
 def resolve_llm_api_key() -> str:
+    from app.services.tokenfree_gateway import current_user_toraapi_token
+
+    user_key = (current_user_toraapi_token.get() or "").strip()
+    if user_key:
+        return user_key
     key = (get_settings().openai_api_key or "").strip()
     if not key:
         raise LlmUnavailableError(
-            "未配置 OPENAI_API_KEY，无法调用文字模型。"
-            "请在管理后台「系统设置 → 模型」填写 TokenFree API Key 并选择文本模型。"
+            "ไม่พบ ToraAPI Token กรุณาเข้าสู่ระบบด้วย ToraAPI Token จาก https://www.toraapi.com ก่อนใช้งาน"
         )
     return key
 

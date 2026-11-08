@@ -73,7 +73,16 @@ class CreateOrderBody(BaseModel):
     description="需要登录，返回个人可用余额、冻结金额、套餐和计费开关。金额同时提供分和元两种单位。",
     response_description="个人钱包与计费配置",
 )
-async def wallet(user: User = Depends(get_current_user)) -> dict:
+async def wallet(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    if (getattr(user, "toraapi_token", "") or "").strip():
+        from app.services.tokenfree_usage import sync_user_toraapi_balance
+
+        await sync_user_toraapi_balance(db, user)
+        await db.commit()
+        await db.refresh(user)
     return {
         "balance_fen": int(user.balance_fen or 0),
         "frozen_fen": int(user.frozen_fen or 0),
@@ -82,6 +91,35 @@ async def wallet(user: User = Depends(get_current_user)) -> dict:
         "plan": user.plan or "free",
         "billing_enabled": settings.billing_enabled,
         "markup": settings.billing_markup,
+        "toraapi_linked": bool((getattr(user, "toraapi_token", "") or "").strip()),
+        "topup_url": "https://www.toraapi.com",
+    }
+
+
+@router.post(
+    "/toraapi/sync",
+    summary="ซิงค์เครดิตจาก ToraAPI",
+    description="ดึงยอดเครดิตคงเหลือล่าสุดจาก ToraAPI สำหรับผู้ใช้ที่ล็อกอินด้วย ToraAPI Token",
+)
+async def sync_toraapi_wallet(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    from app.services.tokenfree_usage import sync_user_toraapi_balance
+
+    if not (getattr(user, "toraapi_token", "") or "").strip():
+        raise HTTPException(status_code=400, detail="บัญชีนี้ยังไม่ได้ผูก ToraAPI Token กรุณาเข้าสู่ระบบด้วย ToraAPI Token")
+    account = await sync_user_toraapi_balance(db, user, force_refresh=True)
+    await db.commit()
+    await db.refresh(user)
+    return {
+        "ok": True,
+        "balance_fen": int(user.balance_fen or 0),
+        "balance_yuan": round(int(user.balance_fen or 0) / 100, 2),
+        "frozen_fen": int(user.frozen_fen or 0),
+        "frozen_yuan": round(int(user.frozen_fen or 0) / 100, 2),
+        "toraapi_account": account or {},
+        "topup_url": "https://www.toraapi.com",
     }
 
 

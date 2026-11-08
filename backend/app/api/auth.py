@@ -21,6 +21,7 @@ from app.schemas import (
     RegisterRequest,
     ResetPasswordRequest,
     TokenResponse,
+    ToraApiLoginRequest,
     UserOut,
 )
 from app.services import storage
@@ -278,6 +279,71 @@ async def login(body: LoginRequest, db: AsyncSession = Depends(get_db)) -> Token
     return TokenResponse(access_token=create_access_token(str(user.id)))
 
 
+@router.post(
+    "/toraapi",
+    response_model=TokenResponse,
+    summary="เข้าสู่ระบบด้วย ToraAPI Token หรือบัญชี ToraAPI",
+    description="ตรวจสอบ ToraAPI API Key / Access Token / JSON หรือ Username/Password ดึงเครดิตคงเหลือจาก ToraAPI และออก access_token สำหรับใช้งานระบบ",
+    response_description="โทเค็นสำหรับเข้าใช้งานระบบพร้อมข้อมูลผู้ใช้",
+)
+async def login_with_toraapi(
+    body: ToraApiLoginRequest | None = None,
+    creds: HTTPAuthorizationCredentials | None = Depends(security),
+    db: AsyncSession = Depends(get_db),
+) -> TokenResponse:
+    from app.services.auth import decode_token
+    from app.services.tokenfree_usage import (
+        clean_toraapi_token,
+        login_or_sync_toraapi_user,
+        login_with_toraapi_credentials,
+    )
+
+    raw_token = ""
+    nickname = ""
+    username = ""
+    password = ""
+    turnstile = ""
+    if body is not None:
+        raw_token = (body.token or "").strip()
+        nickname = (body.nickname or "").strip()
+        username = (body.username or "").strip()
+        password = body.password or ""
+        turnstile = (body.turnstile or "").strip()
+
+    # Only fall back to Authorization header if body has neither token nor username/password,
+    # AND the Authorization header is not our own local Printfilm JWT.
+    if not raw_token and not (username and password) and creds is not None and (creds.credentials or "").strip():
+        cand = creds.credentials.strip()
+        if decode_token(cand) is None:
+            raw_token = cand
+
+    try:
+        if not raw_token and username and password:
+            user, _account = await login_with_toraapi_credentials(
+                db,
+                username,
+                password,
+                turnstile=turnstile,
+                nickname=nickname,
+            )
+        else:
+            if not clean_toraapi_token(raw_token):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="กรุณากรอก ToraAPI API Key (เช่น sk-...) หรือวางข้อมูลเข้าสู่ระบบจาก toraapi.com",
+                )
+            user, _account = await login_or_sync_toraapi_user(db, raw_token, nickname=nickname)
+    except RuntimeError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(exc),
+        ) from exc
+    return TokenResponse(
+        access_token=create_access_token(str(user.id)),
+        user=UserOut.model_validate(user),
+    )
+
+
 @router.get(
     "/me",
     response_model=UserOut,
@@ -285,7 +351,16 @@ async def login(body: LoginRequest, db: AsyncSession = Depends(get_db)) -> Token
     description="需要登录，返回当前用户的账号资料、套餐、额度及余额信息。",
     response_description="当前用户资料",
 )
-async def me(user: User = Depends(get_current_user)) -> User:
+async def me(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> User:
+    if (getattr(user, "toraapi_token", "") or "").strip():
+        from app.services.tokenfree_usage import sync_user_toraapi_balance
+
+        await sync_user_toraapi_balance(db, user)
+        await db.commit()
+        await db.refresh(user)
     return user
 
 

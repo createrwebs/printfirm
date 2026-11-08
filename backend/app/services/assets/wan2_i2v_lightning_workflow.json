@@ -1,0 +1,152 @@
+{
+  "1": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "wan2.1_i2v_720p_14B_fp8_e4m3fn.safetensors",
+      "weight_dtype": "default"
+    },
+    "_meta": {
+      "title": "Load Wan2.1 Diffusion Model (FP8)"
+    }
+  },
+  "2": {
+    "class_type": "LoraLoaderModelOnly",
+    "inputs": {
+      "model": ["1", 0],
+      "lora_name": "wan2.1_i2v_lora_rank64_lightx2v_4step.safetensors",
+      "strength_model": 1.0
+    },
+    "_meta": {
+      "title": "Load 4-Step Lightning LoRA"
+    }
+  },
+  "3": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "umt5_xxl_fp8_e4m3fn_scaled.safetensors",
+      "type": "wan",
+      "device": "default"
+    },
+    "_meta": {
+      "title": "Load Text Encoder (UMT5 FP8)"
+    }
+  },
+  "4": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "wan_2.1_vae.safetensors"
+    },
+    "_meta": {
+      "title": "Load Wan VAE"
+    }
+  },
+  "5": {
+    "class_type": "CLIPVisionLoader",
+    "inputs": {
+      "clip_name": "clip_vision_h.safetensors"
+    },
+    "_meta": {
+      "title": "Load CLIP Vision"
+    }
+  },
+  "6": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "input_cover.jpg"
+    },
+    "_meta": {
+      "title": "Cover Shot (First Frame)"
+    }
+  },
+  "7": {
+    "class_type": "CLIPVisionEncode",
+    "inputs": {
+      "clip_vision": ["5", 0],
+      "image": ["6", 0],
+      "crop": "none"
+    },
+    "_meta": {
+      "title": "CLIP Vision Encode"
+    }
+  },
+  "8": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "clip": ["3", 0],
+      "text": "A cinematic shot, high quality motion"
+    },
+    "_meta": {
+      "title": "Positive Prompt (Action & Motion)"
+    }
+  },
+  "9": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "clip": ["3", 0],
+      "text": "Overexposure, static, blurred details, subtitles, paintings, pictures, worst quality, low quality, deformed, talking head, mouth opening"
+    },
+    "_meta": {
+      "title": "Negative Prompt"
+    }
+  },
+  "10": {
+    "class_type": "WanImageToVideo",
+    "inputs": {
+      "positive": ["8", 0],
+      "negative": ["9", 0],
+      "vae": ["4", 0],
+      "clip_vision_output": ["7", 0],
+      "start_image": ["6", 0],
+      "width": 1280,
+      "height": 720,
+      "length": 81,
+      "batch_size": 1
+    },
+    "_meta": {
+      "title": "Wan Image To Video Conditioning"
+    }
+  },
+  "11": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": ["2", 0],
+      "positive": ["10", 0],
+      "negative": ["10", 1],
+      "latent_image": ["10", 2],
+      "seed": 42,
+      "steps": 4,
+      "cfg": 1.0,
+      "sampler_name": "uni_pc",
+      "scheduler": "simple",
+      "denoise": 1.0
+    },
+    "_meta": {
+      "title": "4-Step Lightning Sampler"
+    }
+  },
+  "12": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": ["11", 0],
+      "vae": ["4", 0]
+    },
+    "_meta": {
+      "title": "VAE Decode"
+    }
+  },
+  "13": {
+    "class_type": "VHS_VideoCombine",
+    "inputs": {
+      "images": ["12", 0],
+      "frame_rate": 16,
+      "loop_count": 0,
+      "filename_prefix": "Wan2_Lightning_I2V",
+      "format": "video/h264-mp4",
+      "pingpong": false,
+      "save_output": true
+    },
+    "_meta": {
+      "title": "Video Combine MP4"
+    }
+  }
+}

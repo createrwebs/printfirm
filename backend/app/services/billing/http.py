@@ -11,5 +11,5 @@ def http_exception_for_value_error(exc: ValueError) -> HTTPException:
     from app.services.media_models import MediaValidationError
     if isinstance(exc, MediaValidationError):
         return HTTPException(status_code=422, detail=[{"loc": ["body", exc.field], "msg": detail, "type": "media_parameter"}])
-    status = 402 if detail.startswith(("余额不足", "团队余额不足")) else 400
+    status = 402 if any(k in detail for k in ("余额不足", "团队余额不足", "เครดิตไม่เพียงพอ", "กรุณาเติมเครดิต", "toraapi", "ToraAPI", "insufficient_balance")) else 400
     return HTTPException(status_code=status, detail=detail)

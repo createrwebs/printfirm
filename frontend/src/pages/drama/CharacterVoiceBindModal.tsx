@@ -1,4 +1,4 @@
-/** ตัวละครน้ำเสียง绑定：เลือก / อัปโหลด / AI 合成试听，写入 params.voiceAudio */
+/** ผูกเสียงตัวละคร: เลือก / อัปโหลด / สังเคราะห์ด้วย AI บันทึกลงใน params.voiceAudio */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { dramaApi, resolveDramaMediaUrl, type DramaAsset } from '../../api/drama'
 import Modal from '../../components/ui/Modal'
@@ -8,7 +8,7 @@ import { VOICE_GENERATION_DISABLED_MESSAGE } from '../../lib/publicCapabilities'
 
 const AUDIO_ACCEPT = 'audio/mpeg,audio/mp3,audio/wav,audio/x-wav,audio/mp4,audio/m4a,.mp3,.wav,.m4a'
 
-/** 是否可作为ตัวละครน้ำเสียงแอสเซท */
+/** ตรวจสอบว่าเป็นแอสเซทเสียงหรือไม่ */
 function isVoiceLikeAsset(asset: DramaAsset): boolean {
   const t = (asset.type || '').toLowerCase()
   return t === 'voice' || t === 'audio'
@@ -30,19 +30,19 @@ type Props = {
   onError: (message: string) => void
 }
 
-// 读取 voice แอสเซท已บันทึก的 speaker
+// อ่าน speaker ที่บันทึกไว้ในแอสเซท voice
 function readVoiceSpeaker(asset: DramaAsset): string {
   const params = (asset.params || {}) as Record<string, unknown>
   return typeof params.speaker === 'string' ? params.speaker.trim() : ''
 }
 
-// 读取 voice แอสเซท的น้ำเสียงคำอธิบาย
+// อ่านคำอธิบายน้ำเสียงจากแอสเซท voice
 export function readVoicePrompt(asset: DramaAsset): string {
   const params = (asset.params || {}) as Record<string, unknown>
   return typeof params.voicePrompt === 'string' ? params.voicePrompt.trim() : ''
 }
 
-// 从แอสเซทตัวละคร params 读取已ผูกน้ำเสียง
+// อ่านการผูกเสียงจาก params ของตัวละคร
 export function readAssetVoiceBinding(asset: Pick<DramaAsset, 'params'>): VoiceBinding | null {
   const params = (asset.params || {}) as Record<string, unknown>
   const raw = params.voiceAudio
@@ -64,7 +64,7 @@ export function readAssetVoiceBinding(asset: Pick<DramaAsset, 'params'>): VoiceB
       return {
         sourceAssetId,
         url,
-        label: typeof data.label === 'string' ? data.label : 'น้ำเสียง',
+        label: typeof data.label === 'string' ? data.label : 'เสียงพากย์',
         voicePrompt: typeof data.voicePrompt === 'string' ? data.voicePrompt : undefined,
       }
     }
@@ -77,20 +77,20 @@ export function readAssetVoiceBinding(asset: Pick<DramaAsset, 'params'>): VoiceB
       const sourceAssetId = typeof data.sourceAssetId === 'number' ? data.sourceAssetId : null
       const url = typeof data.url === 'string' ? data.url : ''
       if (sourceAssetId && url) {
-        return { sourceAssetId, url, label: 'น้ำเสียง' }
+        return { sourceAssetId, url, label: 'เสียงพากย์' }
       }
     }
   }
   return null
 }
 
-// 构建绑定后的 params（同时写 voiceAudio 与 canvas.voiceAudio）
+// สร้าง params หลังจากผูกเสียง (เขียนลงทั้ง voiceAudio และ canvas.voiceAudio)
 export function buildBoundParams(asset: DramaAsset, voice: DramaAsset): Record<string, unknown> {
   const url = voice.url || ''
   const binding: VoiceBinding = {
     sourceAssetId: voice.id,
     url,
-    label: voice.name || 'น้ำเสียง',
+    label: voice.name || 'เสียงพากย์',
     voicePrompt: readVoicePrompt(voice) || undefined,
   }
   const prev = (asset.params || {}) as Record<string, unknown>
@@ -108,7 +108,7 @@ export function buildBoundParams(asset: DramaAsset, voice: DramaAsset): Record<s
   }
 }
 
-// เรนเดอร์ตัวละครน้ำเสียง绑定弹窗
+// ป๊อปอัปผูกเสียงตัวละคร
 export function CharacterVoiceBindModal({
   asset,
   projectId,
@@ -118,13 +118,6 @@ export function CharacterVoiceBindModal({
   onError,
 }: Props) {
   const voiceGenerationEnabled = useCharacterVoiceGenerationEnabled()
-  /*
-   * voiceAssets โปรเจกต์内 voice/audio แอสเซท
-   * selectedId 选中น้ำเสียง
-   * newPrompt / newName สร้างใหม่合成表单
-   * busy / synthBusy / promptBusy / uploadBusy 各การดำเนินการ中
-   * mode pick | upload | create
-   */
   const [voiceAssets, setVoiceAssets] = useState<DramaAsset[]>([])
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [newPrompt, setNewPrompt] = useState('')
@@ -142,7 +135,7 @@ export function CharacterVoiceBindModal({
   const selectedVoice = voiceAssets.find((v) => v.id === selectedId) || null
   const previewUrl = selectedVoice?.url ? resolveDramaMediaUrl(selectedVoice.url) : ''
 
-  // 根据การตั้งค่าบทบาทตัวละคร AI 生成น้ำเสียงคำอธิบาย
+  // สร้างคำอธิบายเสียงตามลักษณะตัวละครโดย AI
   const fetchVoicePrompt = useCallback(
     async (force = false) => {
       if (!voiceGenerationEnabled) return
@@ -173,7 +166,7 @@ export function CharacterVoiceBindModal({
     setSelectedId(bound?.sourceAssetId ?? null)
     setNewPrompt('')
     setSuggestedSpeaker('')
-    setNewName(`${asset.name || 'ตัวละคร'}น้ำเสียง`)
+    setNewName(`${asset.name || 'ตัวละคร'}_เสียงพากย์`)
     setMode('pick')
     promptRequestedRef.current = false
 
@@ -192,7 +185,7 @@ export function CharacterVoiceBindModal({
       .catch((err) => onError(err instanceof Error ? err.message : 'โหลดเสียงไม่สำเร็จ'))
   }, [open, asset, projectId, bound?.sourceAssetId, onError])
 
-  // เข้าสู่「AI 合成」时自动生成น้ำเสียงคำอธิบาย
+  // สังเคราะห์คำอธิบายเสียงอัตโนมัติเมื่อเข้าสู่โหมดสร้าง
   useEffect(() => {
     if (!open || !voiceGenerationEnabled || mode !== 'create' || promptRequestedRef.current) return
     promptRequestedRef.current = true
@@ -207,7 +200,7 @@ export function CharacterVoiceBindModal({
 
   const anyBusy = busy || synthBusy || promptBusy || uploadBusy
 
-  // 本地อัปโหลดเสียง并记为น้ำเสียงแอสเซท
+  // อัปโหลดไฟล์เสียงและบันทึกเป็นแอสเซทเสียง
   async function handleUploadAudio(file: File) {
     if (uploadBusy) return
     if (!file.type.startsWith('audio/') && !/\.(mp3|wav|m4a)$/i.test(file.name)) {
@@ -221,7 +214,7 @@ export function CharacterVoiceBindModal({
         project_id: projectId,
         type: 'voice',
         asset_type: 'audio',
-        name: baseName || `${asset.name || 'ตัวละคร'}น้ำเสียง`,
+        name: baseName || `${asset.name || 'ตัวละคร'}_เสียงพากย์`,
         params: {
           source: 'upload',
           originalFilename: file.name,
@@ -240,7 +233,7 @@ export function CharacterVoiceBindModal({
     }
   }
 
-  // 按คำแนะนำ词สร้างใหม่并合成 voice แอสเซท
+  // สร้างและสังเคราะห์เสียงใหม่ด้วย AI
   async function handleCreateAndSynth() {
     if (!voiceGenerationEnabled) { onError(VOICE_GENERATION_DISABLED_MESSAGE); return }
     const prompt = newPrompt.trim()
@@ -266,7 +259,7 @@ export function CharacterVoiceBindModal({
     }
   }
 
-  // 对已有 voice แอสเซท重新合成
+  // สังเคราะห์เสียงซ้ำสำหรับแอสเซทที่มีอยู่
   async function handleResynth(voice: DramaAsset) {
     if (!voiceGenerationEnabled) { onError(VOICE_GENERATION_DISABLED_MESSAGE); return }
     const prompt = readVoicePrompt(voice)
@@ -290,7 +283,7 @@ export function CharacterVoiceBindModal({
     }
   }
 
-  // 确认绑定到ตัวละคร
+  // ยืนยันการผูกเสียงกับตัวละคร
   async function handleConfirm() {
     if (!selectedVoice?.url || busy) {
       onError('กรุณาเลือกหรืออัปโหลดไฟล์เสียงตัวอย่างก่อน')
@@ -337,7 +330,7 @@ export function CharacterVoiceBindModal({
     <Modal
       open={open}
       onClose={onClose}
-      title="ผูกน้ำเสียง"
+      title="ผูกเสียงตัวละคร"
       size="lg"
       dismissible={!anyBusy}
       className="drama-voice-bind-modal"
@@ -380,7 +373,7 @@ export function CharacterVoiceBindModal({
           options={[{ value: 'pick', label: 'เลือกเสียงที่มี' }, { value: 'upload', label: 'อัปโหลดเสียง' }, ...(voiceGenerationEnabled ? [{ value: 'create' as const, label: 'AI สังเคราะห์' }] : [])] as const}
           value={mode}
           disabled={anyBusy}
-          ariaLabel="น้ำเสียงที่มา"
+          ariaLabel="แหล่งที่มาของเสียง"
           onChange={(value) => { setMode(value); if (value === 'create' && !newPrompt.trim() && !promptBusy) promptRequestedRef.current = false }}
         />
       </div>
@@ -404,7 +397,7 @@ export function CharacterVoiceBindModal({
                   asset={voice}
                   selected={selectedId === voice.id}
                   subtitle={statusLabel}
-                  footer="โปรเจกต์น้ำเสียง"
+                  footer="เสียงในโปรเจกต์"
                   onOpen={() => setSelectedId(voice.id)}
                   actions={voiceGenerationEnabled && hasAudio && canResynth ? <>
                     <button

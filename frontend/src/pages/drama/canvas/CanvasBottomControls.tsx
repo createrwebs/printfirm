@@ -80,8 +80,8 @@ export function CanvasBottomControls() {
         <button
           type="button"
           className={`fc-icon-btn is-sm${snapToGrid ? ' is-active' : ''}`}
-          aria-label={snapToGrid ? 'ปิด网格吸附' : '开启网格吸附'}
-          title={snapToGrid ? 'ปิด网格吸附' : '开启网格吸附'}
+          aria-label={snapToGrid ? 'ปิดการดูดเข้ากริด' : 'เปิดการดูดเข้ากริด'}
+          title={snapToGrid ? 'ปิดการดูดเข้ากริด' : 'เปิดการดูดเข้ากริด'}
           aria-pressed={snapToGrid}
           onClick={toggleSnapToGrid}
         >
@@ -90,8 +90,8 @@ export function CanvasBottomControls() {
         <button
           type="button"
           className={`fc-icon-btn is-sm${showMinimap ? ' is-active' : ''}`}
-          aria-label={showMinimap ? 'ปิด小地图' : '开启小地图'}
-          title={showMinimap ? 'ปิด小地图' : '开启小地图'}
+          aria-label={showMinimap ? 'ปิดแผนที่ย่อ' : 'เปิดแผนที่ย่อ'}
+          title={showMinimap ? 'ปิดแผนที่ย่อ' : 'เปิดแผนที่ย่อ'}
           aria-pressed={showMinimap}
           onClick={toggleMinimap}
         >
@@ -112,8 +112,8 @@ export function CanvasBottomControls() {
         <button
           type="button"
           className="fc-zoom-label"
-          aria-label="รีเซ็ต缩放"
-          title="รีเซ็ต缩放"
+          aria-label="รีเซ็ตการซูม"
+          title="รีเซ็ตการซูม"
           onClick={handleResetZoom}
         >
           {zoomPercent}%

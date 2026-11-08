@@ -1,33 +1,32 @@
-/** 用户คำแนะนำ与接口错误码分开处理，不改变服务端สถานะ和错误契约。 */
 const businessMessages: Record<string, string> = {
-  MARKETPLACE_STORAGE_UNAVAILABLE: '文件服务暂未配置或暂时不可用，请稍后ลองใหม่或联系客服。',
-  MARKETPLACE_PAYMENT_UNAVAILABLE: '支付服务暂不可用，请稍后ลองใหม่。',
-  MARKETPLACE_REVENUE_CONFIG_REQUIRED: '平台投放收益暂未开放，请联系客服确认。',
-  MARKETPLACE_RIGHTS_REQUIRED: '请先确认版权信息：PrintFilm 作品签署授权函，其他平台作品ส่ง版权证明。',
-  MARKETPLACE_EPISODE_NOT_READY: 'วิดีโอ尚未准备好，请稍后รีเฟรชดู。',
-  MARKETPLACE_ENTITLEMENT_REQUIRED: '请先购买该发布版本的在线播放权益。',
-  MARKETPLACE_SOURCE_NOT_READY: '源成片尚未就绪，请เสร็จสิ้นวิดีโอ生成后再同步。',
-  MARKETPLACE_SOURCE_CHANGED: '源成片已更新，请รีเฟรช并重新เลือก后同步。',
-  MARKETPLACE_TARGET_CHANGED: '市场作品已更新，请รีเฟรช后重新确认同步内容。',
-  MARKETPLACE_SOURCE_INCOMPATIBLE: '分镜วิดีโอ规格不一致，请统一画幅和ความละเอียด后重新同步。',
-  MARKETPLACE_SYNC_IN_PROGRESS: '成片正在同步，请等待同步เสร็จสิ้น后再บันทึก或ส่ง。',
-  MARKETPLACE_SUBMISSIONS_DISABLED: '招募通过平台客服接单，请在招募รายละเอียด中联系客服。',
+  MARKETPLACE_STORAGE_UNAVAILABLE: 'บริการจัดเก็บไฟล์ยังไม่ได้กำหนดค่าหรือไม่พร้อมใช้งานชั่วคราว กรุณาลองใหม่อีกครั้งในภายหลังหรือติดต่อฝ่ายบริการลูกค้า',
+  MARKETPLACE_PAYMENT_UNAVAILABLE: 'ระบบชำระเงินไม่พร้อมใช้งานชั่วคราว กรุณาลองใหม่อีกครั้ง',
+  MARKETPLACE_REVENUE_CONFIG_REQUIRED: 'ยังไม่เปิดบริการสร้างรายได้บนแพลตฟอร์ม กรุณาติดต่อฝ่ายบริการลูกค้า',
+  MARKETPLACE_RIGHTS_REQUIRED: 'กรุณายืนยันข้อมูลลิขสิทธิ์ก่อน: ผลงาน PrintFilm ให้ลงนามหนังสือมอบอำนาจ ผลงานจากแพลตฟอร์มอื่นให้แนบหลักฐานลิขสิทธิ์',
+  MARKETPLACE_EPISODE_NOT_READY: 'วิดีโอยังไม่พร้อมใช้งาน กรุณารีเฟรชเพื่อตรวจสอบอีกครั้ง',
+  MARKETPLACE_ENTITLEMENT_REQUIRED: 'กรุณาซื้อสิทธิ์การรับชมออนไลน์สำหรับเวอร์ชันนี้ก่อน',
+  MARKETPLACE_SOURCE_NOT_READY: 'ผลงานต้นทางยังไม่พร้อมใช้งาน กรุณารอสร้างวิดีโอให้เสร็จสิ้นก่อนซิงค์',
+  MARKETPLACE_SOURCE_CHANGED: 'ผลงานต้นทางมีการอัปเดต กรุณารีเฟรชและเลือกใหม่ก่อนซิงค์',
+  MARKETPLACE_TARGET_CHANGED: 'ผลงานในตลาดมีการอัปเดต กรุณารีเฟรชและยืนยันเนื้อหาที่จะซิงค์อีกครั้ง',
+  MARKETPLACE_SOURCE_INCOMPATIBLE: 'สเปกของวิดีโอสตอรี่บอร์ดไม่ตรงกัน กรุณาปรับอัตราส่วนภาพและความละเอียดให้ตรงกันก่อนซิงค์ใหม่',
+  MARKETPLACE_SYNC_IN_PROGRESS: 'กำลังซิงค์ผลงาน กรุณารอให้การซิงค์เสร็จสิ้นก่อนบันทึกหรือส่ง',
+  MARKETPLACE_SUBMISSIONS_DISABLED: 'การรับงานทำผ่านฝ่ายบริการลูกค้า กรุณาติดต่อฝ่ายบริการลูกค้าในหน้ารายละเอียดการรับสมัคร',
 }
 
 const fieldNames: Record<string, string> = {
-  title: '标题', description: '简介', category: '分类', tags: '标签', price_fen: '参考价',
-  copyright_price_fen: '参考价', unlock_price_fen: '观众解锁价', share_bps: '平台抽成比例',
-  license_scope: '拟授权用途及限制', scope: '授权范围', asset_id: 'วิดีโอ', cover_asset_id: '封面', source: '内容来源',
-  certificate_number: '版权证书编号', certificate_asset_id: '版权证明รูปภาพ', dispute_ack: 'คำประกาศลิขสิทธิ์',
-  episode_no: '集号', episodes: '分集', episode_ids: '所选分集', episode_id: '分集', free_episode_count: '免费集数',
-  budget_fen: '单条预算', wanted_count: '征集数量', requirements: '交付要求', deadline_at: '截止เวลา',
-  image_ids: 'ภาพอ้างอิง片', evidence_ids: '证明材料', valid_until: '授权有效期', details: '版权信息',
-  signer_name: '签署人姓名', strokes: '手写签名', accepted_terms: '授权条款', adult: '成年确认',
-  read_all: '阅读确认', accept_key: '重点条款确认', template_version: '授权条款版本',
-  sale_type: '收益方式', filename: '文件名', size_bytes: '文件大小', kind: '文件ประเภท',
-  statement: '举报说明', contact: '联系方式', version: '内容版本', series_version: 'ละครสั้น版本',
-  drama_project_id: 'โปรเจกต์ละครซีรีส์', project_id: '成片โปรเจกต์', series_id: '市场ละครสั้น', source_version: '源成片版本',
-  idempotency_key: '本次การดำเนินการ编号', target_type: '咨询ประเภท', target_id: '咨询内容',
+  title: 'ชื่อเรื่อง', description: 'คำแนะนำย่อ', category: 'หมวดหมู่', tags: 'แท็ก', price_fen: 'ราคาอ้างอิง',
+  copyright_price_fen: 'ราคาอ้างอิง', unlock_price_fen: 'ราคาปลดล็อก', share_bps: 'สัดส่วนส่วนแบ่งแพลตฟอร์ม',
+  license_scope: 'ขอบเขตการอนุญาตและข้อจำกัด', scope: 'ขอบเขตสิทธิ์', asset_id: 'วิดีโอ', cover_asset_id: 'ภาพหน้าปก', source: 'แหล่งที่มาของเนื้อหา',
+  certificate_number: 'เลขที่ใบรับรองลิขสิทธิ์', certificate_asset_id: 'ภาพหลักฐานลิขสิทธิ์', dispute_ack: 'คำประกาศลิขสิทธิ์',
+  episode_no: 'ลำดับตอน', episodes: 'ตอนย่อย', episode_ids: 'ตอนที่เลือก', episode_id: 'ตอนย่อย', free_episode_count: 'จำนวนตอนฟรี',
+  budget_fen: 'งบประมาณต่อรายการ', wanted_count: 'จำนวนที่ต้องการ', requirements: 'ข้อกำหนดการส่งมอบ', deadline_at: 'กำหนดเวลาสิ้นสุด',
+  image_ids: 'ภาพอ้างอิง', evidence_ids: 'เอกสารหลักฐาน', valid_until: 'ระยะเวลาการอนุญาต', details: 'ข้อมูลลิขสิทธิ์',
+  signer_name: 'ชื่อผู้ลงนาม', strokes: 'ลายเซ็น', accepted_terms: 'เงื่อนไขการอนุญาต', adult: 'ยืนยันบรรลุนิติภาวะ',
+  read_all: 'ยืนยันการอ่าน', accept_key: 'ยืนยันข้อกำหนดสำคัญ', template_version: 'เวอร์ชันเงื่อนไขการอนุญาต',
+  sale_type: 'รูปแบบรายได้', filename: 'ชื่อไฟล์', size_bytes: 'ขนาดไฟล์', kind: 'ประเภทไฟล์',
+  statement: 'รายละเอียดการรายงาน', contact: 'ช่องทางติดต่อ', version: 'เวอร์ชันเนื้อหา', series_version: 'เวอร์ชันซีรีส์สั้น',
+  drama_project_id: 'โปรเจกต์ซีรีส์', project_id: 'โปรเจกต์วิดีโอ', series_id: 'ตลาดซีรีส์สั้น', source_version: 'เวอร์ชันวิดีโอต้นทาง',
+  idempotency_key: 'รหัสการดำเนินการ', target_type: 'ประเภทการสอบถาม', target_id: 'เนื้อหาการสอบถาม',
 }
 
 function record(value: unknown): Record<string, unknown> | null {
@@ -43,12 +42,11 @@ export function marketplaceErrorCode(detail: unknown): string | undefined {
 
 function readableText(text: string): string | undefined {
   const cleaned = text.trim().replace(/^Value error,\s*/i, '')
-  // 有中文的业务说明可以保留；纯错误码或底层英文交给统一回退คำแนะนำ。
-  return /[\u3400-\u9fff]/u.test(cleaned) ? cleaned : undefined
+  return /[\u0e00-\u0e7f]/u.test(cleaned) ? cleaned : undefined
 }
 
 function limitText(value: unknown, field: string): string {
-  if (typeof value !== 'number' && typeof value !== 'string') return '允许的范围'
+  if (typeof value !== 'number' && typeof value !== 'string') return 'ขอบเขตที่อนุญาต'
   if (field.endsWith('_fen') && Number.isFinite(Number(value))) return `¥${(Number(value) / 100).toFixed(2)}`
   return String(value)
 }
@@ -60,27 +58,27 @@ function validationMessage(row: Record<string, unknown>, field: string): string 
   const ownMessage = readableText(raw)
   if (ownMessage) return ownMessage
   switch (type) {
-    case 'missing': return '这是จำเป็นต้องระบุ项'
-    case 'string_too_short': return `至少填写 ${ctx.min_length} 个字`
-    case 'string_too_long': return `不能超过 ${ctx.max_length} 个字`
-    case 'too_short': return `至少需要 ${ctx.min_length} 项`
-    case 'too_long': return `最多允许 ${ctx.max_length} 项`
-    case 'greater_than': return `须大于 ${limitText(ctx.gt, field)}`
-    case 'greater_than_equal': return `不能小于 ${limitText(ctx.ge, field)}`
-    case 'less_than': return `须小于 ${limitText(ctx.lt, field)}`
-    case 'less_than_equal': return `不能超过 ${limitText(ctx.le, field)}`
-    case 'int_parsing': case 'int_type': case 'int_from_float': return '请填写整数'
-    case 'float_parsing': case 'float_type': case 'finite_number': return '请填写有效数字'
-    case 'literal_error': return ctx.expected === 'True' ? '请勾选确认' : '请เลือก有效选项'
-    case 'bool_parsing': case 'bool_type': return '请确认此选项'
-    case 'datetime_parsing': case 'datetime_from_date_parsing': case 'timezone_aware': return '请填写有效的日期和เวลา'
-    case 'extra_forbidden': return '此项不支持ส่ง，请รีเฟรช页面后ลองใหม่'
+    case 'missing': return 'จำเป็นต้องระบุช่องนี้'
+    case 'string_too_short': return `กรอกอย่างน้อย ${ctx.min_length} ตัวอักษร`
+    case 'string_too_long': return `ไม่เกิน ${ctx.max_length} ตัวอักษร`
+    case 'too_short': return `ต้องการอย่างน้อย ${ctx.min_length} รายการ`
+    case 'too_long': return `อนุญาตได้สูงสุด ${ctx.max_length} รายการ`
+    case 'greater_than': return `ต้องมากกว่า ${limitText(ctx.gt, field)}`
+    case 'greater_than_equal': return `ต้องไม่น้อยกว่า ${limitText(ctx.ge, field)}`
+    case 'less_than': return `ต้องน้อยกว่า ${limitText(ctx.lt, field)}`
+    case 'less_than_equal': return `ต้องไม่เกิน ${limitText(ctx.le, field)}`
+    case 'int_parsing': case 'int_type': case 'int_from_float': return 'กรุณากรอกจำนวนเต็ม'
+    case 'float_parsing': case 'float_type': case 'finite_number': return 'กรุณากรอกตัวเลขที่ถูกต้อง'
+    case 'literal_error': return ctx.expected === 'True' ? 'กรุณาทำเครื่องหมายเพื่อยืนยัน' : 'กรุณาเลือกตัวเลือกที่ถูกต้อง'
+    case 'bool_parsing': case 'bool_type': return 'กรุณายืนยันตัวเลือกนี้'
+    case 'datetime_parsing': case 'datetime_from_date_parsing': case 'timezone_aware': return 'กรุณาระบุวันที่และเวลาที่ถูกต้อง'
+    case 'extra_forbidden': return 'ไม่รองรับการส่งฟิลด์นี้ กรุณารีเฟรชหน้าเว็บแล้วลองใหม่อีกครั้ง'
   }
-  if (/field required/i.test(raw)) return '这是จำเป็นต้องระบุ项'
-  if (/at least 1 character/i.test(raw)) return '不能为空'
-  if (/valid integer/i.test(raw)) return '请填写整数'
-  if (/valid number/i.test(raw)) return '请填写有效数字'
-  return '请检查填写内容'
+  if (/field required/i.test(raw)) return 'จำเป็นต้องระบุช่องนี้'
+  if (/at least 1 character/i.test(raw)) return 'ต้องไม่เป็นค่าว่าง'
+  if (/valid integer/i.test(raw)) return 'กรุณากรอกจำนวนเต็ม'
+  if (/valid number/i.test(raw)) return 'กรุณากรอกตัวเลขที่ถูกต้อง'
+  return 'กรุณาตรวจสอบข้อมูลที่กรอก'
 }
 
 function explainValidation(detail: unknown[]): string {
@@ -89,11 +87,11 @@ function explainValidation(detail: unknown[]): string {
     if (!row) return []
     const parts = (Array.isArray(row.loc) ? row.loc : []).filter(part => !['body', 'query', 'path'].includes(String(part)))
     const field = String(parts.at(-1) ?? '')
-    const location = parts.map(part => typeof part === 'number' ? `第 ${part + 1} 项` : fieldNames[String(part)] || '填写内容').join('的')
+    const location = parts.map(part => typeof part === 'number' ? `รายการที่ ${part + 1}` : fieldNames[String(part)] || 'ข้อมูลที่กรอก').join(' ของ ')
     const message = validationMessage(row, field)
     return [location ? `${location}：${message}` : message]
   })
-  return [...new Set(lines)].join('；') || '请检查表单内容和จำเป็นต้องระบุ字段'
+  return [...new Set(lines)].join('; ') || 'กรุณาตรวจสอบข้อมูลในแบบฟอร์มและฟิลด์ที่จำเป็นต้องระบุ'
 }
 
 export function explainMarketplaceError(detail: unknown, status?: number): string {
@@ -101,16 +99,15 @@ export function explainMarketplaceError(detail: unknown, status?: number): strin
   const value = record(detail)
   const raw = typeof detail === 'string' ? detail : typeof value?.message === 'string' ? value.message : ''
   const code = marketplaceErrorCode(detail)
-  // 带具体原因的中文说明优先于通用错误码说明。
   const message = readableText(raw.replace(/^MARKETPLACE_[A-Z_]+\s*[:：]?\s*/, ''))
   if (message) return message
   if (code && businessMessages[code]) return businessMessages[code]
-  if (status === 401) return '登录已过期，请重新登录后继续。'
-  if (status === 403) return '当前账号没有执行此การดำเนินการ的สิทธิ์。'
-  if (status === 404) return '内容不存在或暂不可访问，请รีเฟรช后ลองใหม่。'
-  if (status === 409) return '内容สถานะ已变化，请รีเฟรช后重新การดำเนินการ。'
-  if (status === 413) return '文件超过允许大小，请เลือก较小的文件。'
-  if (status === 422) return '请检查表单内容和จำเป็นต้องระบุ字段。'
-  if (status === 429) return 'การดำเนินการ过于频繁，请稍后再试。'
-  return '暂时无法เสร็จสิ้นการดำเนินการ，请稍后ลองใหม่。'
+  if (status === 401) return 'การเข้าสู่ระบบหมดอายุแล้ว กรุณาเข้าสู่ระบบใหม่อีกครั้ง'
+  if (status === 403) return 'บัญชีปัจจุบันไม่มีสิทธิ์ในการดำเนินการนี้'
+  if (status === 404) return 'ไม่พบเนื้อหาหรือยังไม่สามารถเข้าถึงได้ กรุณารีเฟรชแล้วลองใหม่อีกครั้ง'
+  if (status === 409) return 'สถานะเนื้อหามีการเปลี่ยนแปลง กรุณารีเฟรชแล้วดำเนินการใหม่อีกครั้ง'
+  if (status === 413) return 'ขนาดไฟล์เกินขีดจำกัดที่อนุญาต กรุณาเลือกไฟล์ที่มีขนาดเล็กลง'
+  if (status === 422) return 'กรุณาตรวจสอบข้อมูลในแบบฟอร์มและฟิลด์ที่จำเป็นต้องระบุ'
+  if (status === 429) return 'ดำเนินการถี่เกินไป กรุณารอครู่หนึ่งแล้วลองใหม่อีกครั้ง'
+  return 'ไม่สามารถดำเนินการให้เสร็จสิ้นได้ในขณะนี้ กรุณาลองใหม่อีกครั้งในภายหลัง'
 }

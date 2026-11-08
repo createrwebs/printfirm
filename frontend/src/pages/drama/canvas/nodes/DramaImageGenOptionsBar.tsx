@@ -92,7 +92,7 @@ export function DramaImageGenOptionsBar({
       imageModels,
     )
     if (nextRatio !== value.aspect_ratio || nextRes !== value.resolution) {
-      setAdjustment('所选模型不支持原参数，已调整画幅或ความละเอียด，请核对报价后生成。')
+      setAdjustment('โมเดลที่เลือกไม่รองรับพารามิเตอร์เดิม ระบบได้ปรับอัตราส่วนภาพหรือความละเอียดแล้ว โปรดตรวจสอบราคาประเมินก่อนสร้าง')
       onChange({ ...value, aspect_ratio: nextRatio, resolution: nextRes })
     }
   }, [value.model_id, catalog])
@@ -118,7 +118,7 @@ export function DramaImageGenOptionsBar({
   }
 
   const styleLabel = getImageStyleLabel(value.image_style_id) || 'สไตล์'
-  const modelLabel = catalogModelLabel(value.model_id, imageModels, 'รูปภาพ模型')
+  const modelLabel = catalogModelLabel(value.model_id, imageModels, 'โมเดลรูปภาพ')
   const outputLabel = formatOutputSettingsLabel(value.aspect_ratio, value.resolution)
 
   return (
@@ -206,7 +206,7 @@ export function DramaImageGenOptionsBar({
       ) : null}
 
       {open === 'output' ? (
-        <div className="fc-gen-opt-panel" role="dialog" aria-label="输出ตั้งค่า">
+        <div className="fc-gen-opt-panel" role="dialog" aria-label="ตั้งค่าเอาต์พุต">
           <div className="fc-gen-opt-panel-title">อัตราส่วน</div>
           <div className="fc-gen-chip-row">
             {GENERATION_ASPECT_RATIO_OPTIONS.filter((opt) => aspectOptions.includes(opt.id)).map((opt) => (

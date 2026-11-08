@@ -32,7 +32,7 @@ export function DramaImageStyleModal({
 }: Props) {
   const [open, setOpen] = useState(false)
   const styleLabel = getImageStyleLabel(value)
-  const triggerLabel = styleLabel || emptyLabel || (variant === 'field' ? 'เลือกสไตล์' : 'สไตล์库')
+  const triggerLabel = styleLabel || emptyLabel || (variant === 'field' ? 'เลือกสไตล์' : 'คลังสไตล์')
   const active = Boolean(value) || open
 
   // 选中สไตล์并ปิด
@@ -81,9 +81,9 @@ export function DramaImageStyleModal({
       <Modal open={open} onClose={() => setOpen(false)} title={title} size="md" className="drama-style-modal">
         {/* 封面即画风ภาพอ้างอิง，避免用户以为只是缩略ดูตัวอย่าง */}
         <p className="drama-style-modal-hint">
-          封面图会作为画风参考一并ส่ง。模型只借色调、笔触和光影，不会照抄封面里的人物或构图。
+          ภาพหน้าปกจะถูกส่งไปเป็นภาพอ้างอิงสไตล์ภาพ โมเดลจะหยิบยืมเฉพาะโทนสี ลายเส้น และแสงเงาเท่านั้น จะไม่คัดลอกตัวละครหรือการจัดองค์ประกอบภาพในหน้าปก
         </p>
-        <DramaImageStyleCardGrid value={value} onChange={select} noneLabel="无สไตล์" />
+        <DramaImageStyleCardGrid value={value} onChange={select} noneLabel="ไม่มีสไตล์" />
       </Modal>
     </>
   )

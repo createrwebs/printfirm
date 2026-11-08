@@ -28,9 +28,12 @@ class LoginRequest(BaseModel):
     password: str
 
 
-class TokenResponse(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
+class ToraApiLoginRequest(BaseModel):
+    token: str = Field(default="", max_length=32768)
+    nickname: str = Field(default="", max_length=64)
+    username: str = Field(default="", max_length=128)
+    password: str = Field(default="", max_length=256)
+    turnstile: str = Field(default="", max_length=4096)
 
 
 class UserOut(BaseModel):
@@ -51,6 +54,12 @@ class UserOut(BaseModel):
     @classmethod
     def normalize_phone(cls, value: Any) -> str:
         return str(value or "")
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: UserOut | None = None
 
 
 class ProfileUpdateRequest(BaseModel):

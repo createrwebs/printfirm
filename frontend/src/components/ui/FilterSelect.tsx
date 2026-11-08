@@ -59,7 +59,7 @@ export default function FilterSelect({
         disabled={disabled}
         onClick={() => setOpen((v) => !v)}
       >
-        <span className="pf-filter-trigger-label">{current?.label || '请เลือก'}</span>
+        <span className="pf-filter-trigger-label">{current?.label || 'โปรดเลือก'}</span>
         <ChevronDown size={15} strokeWidth={2} className="pf-filter-chevron" aria-hidden />
       </button>
       {open ? (

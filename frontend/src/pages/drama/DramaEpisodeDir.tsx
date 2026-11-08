@@ -31,8 +31,8 @@ export function buildEpisodeDirItems(episodes: DramaEpisode[]): DramaEpisodeDirI
     const fragCount = (ep.fragments || []).length
     return {
       id: ep.id,
-      label: epNo >= 1 ? `ตอนที่  ${epNo}  ตอน` : `未编号 · ${ep.id}`,
-      title: ep.name || `分 ตอน ${ep.id}`,
+      label: epNo >= 1 ? `ตอนที่ ${epNo}` : `ยังไม่มีหมายเลข · ${ep.id}`,
+      title: ep.name || `ตอนที่ ${ep.id}`,
       meta: fragCount > 0 ? `${fragCount} 镜` : undefined,
     }
   })
@@ -40,7 +40,7 @@ export function buildEpisodeDirItems(episodes: DramaEpisode[]): DramaEpisodeDirI
 
 // 左侧分 ตอน目录
 export function DramaEpisodeDir({
-  title = '分 ตอน目录',
+  title = 'สารบัญตอน',
   items,
   activeId,
   onSelect,

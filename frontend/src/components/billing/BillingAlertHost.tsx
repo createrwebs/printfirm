@@ -26,9 +26,9 @@ export default function BillingAlertHost() {
       if (!items.length) return
       for (const item of items) {
         await dialog.alert({
-          title: item.title || '消费提醒',
+          title: item.title || 'แจ้งเตือนการใช้เครดิต',
           message: item.message,
-          confirmText: '知道了',
+          confirmText: 'รับทราบ',
         })
         try {
           await api.billingAlertAck(item.id)

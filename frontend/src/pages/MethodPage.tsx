@@ -82,7 +82,7 @@ export default function MethodPage() {
         <a className="pf-method-brand" href={METHOD_START_URL} rel="noopener noreferrer">
           <img src="/logo.svg" alt="" />
           <span className="pf-method-word">
-            <strong>PRINTFILM</strong>
+            <strong>ToraFILM</strong>
             <span>{copy.brandLine}</span>
           </span>
         </a>

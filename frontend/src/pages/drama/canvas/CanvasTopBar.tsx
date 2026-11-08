@@ -12,9 +12,9 @@ type Props = {
 
 /** บันทึกสถานะ文案 */
 function saveStatusLabel(status: CanvasSaveStatus): string | null {
-  if (status === 'dirty') return '未บันทึก'
+  if (status === 'dirty') return 'ยังไม่ได้บันทึก'
   if (status === 'saving') return 'กำลังบันทึก…'
-  if (status === 'saved') return '已บันทึก'
+  if (status === 'saved') return 'บันทึกแล้ว'
   if (status === 'error') return 'บันทึกไม่สำเร็จ'
   return null
 }
@@ -50,7 +50,7 @@ export function CanvasTopBar({ variant = 'fullscreen' }: Props) {
             </button>
           )}
           <span className="fc-topbar-title">
-            {embedded ? 'แอสเซท画布' : freeCanvasMode ? '自由画布' : 'แอสเซท库编排'}
+            {embedded ? 'แคนวาสแอสเซท' : freeCanvasMode ? 'แคนวาสอิสระ' : 'จัดลำดับคลังแอสเซท'}
           </span>
           {statusText ? (
             <span
@@ -75,8 +75,8 @@ export function CanvasTopBar({ variant = 'fullscreen' }: Props) {
             <button
               type="button"
               className="fc-icon-btn"
-              aria-label="全屏画布"
-              title="全屏画布"
+              aria-label="แคนวาสเต็มหน้าจอ"
+              title="แคนวาสเต็มหน้าจอ"
               onClick={() => navigate(`/drama/projects/${projectId}/canvas`)}
             >
               <Maximize2 size={18} strokeWidth={1.8} />
@@ -96,11 +96,11 @@ export function CanvasTopBar({ variant = 'fullscreen' }: Props) {
       </div>
 
       {settingsOpen ? (
-        <div className="fc-settings-pop" role="dialog" aria-label="画布ตั้งค่า">
-          <strong>画布ตั้งค่า</strong>
+        <div className="fc-settings-pop" role="dialog" aria-label="ตั้งค่าแคนวาส">
+          <strong>ตั้งค่าแคนวาส</strong>
           {freeCanvasMode
-            ? '在画布上เพิ่ม节点、连线并สร้างรูปภาพ与วิดีโอ。布局与แอสเซท会自动บันทึก。'
-            : '布局与โปรเจกต์แอสเซท会自动同步บันทึก。อัปโหลด走 OSS；合成时按需拉本地缓存。'}
+            ? 'เพิ่มโหนด เชื่อมโยงสาย และสร้างรูปภาพหรือวิดีโอบนแคนวาส เลย์เอาต์และแอสเซทจะถูกบันทึกอัตโนมัติ'
+            : 'เลย์เอาต์และแอสเซทของโปรเจกต์จะซิงค์และบันทึกอัตโนมัติ อัปโหลดผ่าน OSS และดึงแคชในเครื่องเมื่อรวมไฟล์'}
           <div style={{ marginTop: 10 }}>
             <button
               type="button"

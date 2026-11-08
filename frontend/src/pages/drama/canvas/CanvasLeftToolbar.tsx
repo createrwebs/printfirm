@@ -44,9 +44,9 @@ export function CanvasLeftToolbar({ onSelectNode }: CanvasLeftToolbarProps) {
           <button
             type="button"
             className={`fc-icon-btn is-primary${panelOpen ? ' is-open' : ''}`}
-            aria-label={panelOpen ? 'ปิดเพิ่ม节点' : 'เพิ่ม节点'}
+            aria-label={panelOpen ? 'ปิดแผงเพิ่มโหนด' : 'เพิ่มโหนด'}
             aria-expanded={panelOpen}
-            title="เพิ่ม节点"
+            title="เพิ่มโหนด"
             onClick={(event) => {
               event.stopPropagation()
               setPanelOpen((v) => !v)
@@ -57,7 +57,7 @@ export function CanvasLeftToolbar({ onSelectNode }: CanvasLeftToolbarProps) {
           </button>
 
           {panelOpen ? (
-            <div className="fc-add-panel-bridge" role="menu" aria-label="เพิ่ม节点ประเภท">
+            <div className="fc-add-panel-bridge" role="menu" aria-label="ประเภทของโหนดที่เพิ่ม">
               <div className="fc-add-panel">
                 {ADD_NODE_OPTIONS.map((option) => {
                   const Icon = option.icon
@@ -86,8 +86,8 @@ export function CanvasLeftToolbar({ onSelectNode }: CanvasLeftToolbarProps) {
         <button
           type="button"
           className={`fc-icon-btn${folderOpen ? ' is-active' : ''}`}
-          aria-label="แอสเซท文件夹"
-          title="แอสเซท文件夹"
+          aria-label="โฟลเดอร์แอสเซท"
+          title="โฟลเดอร์แอสเซท"
           aria-expanded={folderOpen}
           onClick={() => {
             setFolderOpen((v) => !v)
@@ -101,7 +101,7 @@ export function CanvasLeftToolbar({ onSelectNode }: CanvasLeftToolbarProps) {
           <div className="fc-folder-panel" role="dialog" aria-label="画布节点列表">
             <h4>画布节点</h4>
             {nodes.length === 0 ? (
-              <p className="fc-folder-empty">暂无节点，点击 + เพิ่ม</p>
+              <p className="fc-folder-empty">ยังไม่มีโหนด คลิก + เพื่อเพิ่ม</p>
             ) : (
               nodes.map((node) => {
                 const option = CANVAS_NODE_OPTION_BY_KIND[node.data.kind]

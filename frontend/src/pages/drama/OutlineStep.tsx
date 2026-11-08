@@ -171,9 +171,16 @@ export function OutlineStep({
       onProjectChange(p)
       let st = getAssetsSeedStatus(p)
       /* เสร็จสมบูรณ์/已ล้มเหลว直接กลับ，不置抽取态，避免进页闪一下“กำลังสกัดแอสเซท”。 */
-      if (st === 'done' || st === 'failed') {
+      if (st === 'done') {
         setAssetsSeeding(false)
         return true
+      }
+      if (st === 'failed') {
+        setAssetsSeeding(false)
+        const msg = String((p.params as Record<string, unknown> | undefined)?.assets_seed_error || 'สกัดแอสเซทไม่สำเร็จ')
+        setEpisodeError(msg)
+        onError(msg)
+        return false
       }
       if (st !== 'generating') {
         try {
@@ -189,18 +196,31 @@ export function OutlineStep({
         p = await dramaApi.getProject(projectId)
         onProjectChange(p)
         st = getAssetsSeedStatus(p)
-        if (st === 'done' || st === 'failed') {
+        if (st === 'done') {
           setAssetsSeeding(false)
-          return st === 'done' || st === 'failed'
+          return true
+        }
+        if (st === 'failed') {
+          setAssetsSeeding(false)
+          const msg = String((p.params as Record<string, unknown> | undefined)?.assets_seed_error || 'สกัดแอสเซทไม่สำเร็จ')
+          setEpisodeError(msg)
+          onError(msg)
+          return false
         }
         setAssetsSeeding(st === 'generating' || !st)
         await new Promise((r) => setTimeout(r, 2000))
       }
       setAssetsSeeding(false)
-      return true
+      const msg = 'หมดเวลารอสกัดแอสเซท กรุณาตรวจสอบสถานะแล้วลองใหม่'
+      setEpisodeError(msg)
+      onError(msg)
+      return false
     } catch {
       setAssetsSeeding(false)
-      return true
+      const msg = 'ตรวจสอบสถานะแอสเซทไม่สำเร็จ'
+      setEpisodeError(msg)
+      onError(msg)
+      return false
     }
   }
 
@@ -321,7 +341,8 @@ export function OutlineStep({
 
       // 2) สกัดแอสเซทหลังสรุปเรื่องย่อเสร็จ
       if (token !== pipelineRef.current) return
-      await ensureAssetsSeeded(token)
+      const assetsReady = await ensureAssetsSeeded(token)
+      if (!assetsReady) return
       if (token !== pipelineRef.current) return
 
       const target =
@@ -447,7 +468,7 @@ export function OutlineStep({
             onChange={(id) => void handleStyleChange(id)}
           />
           <span className="drama-outline-toolbar-meta">
-            {episodeCount ? `共 ${episodeCount}  ตอน` : 'รอกำหนดจำนวนตอน'}
+            {episodeCount ? `ทั้งหมด ${episodeCount} ตอน` : 'รอกำหนดจำนวนตอน'}
             {summaryGenerating || summaryStatus === 'generating'
               ? ' · สรุปเรื่องย่อทั้งเรื่องกำลังสร้าง…'
               : assetsSeeding || assetsSeedStatus === 'generating'
@@ -525,7 +546,7 @@ export function OutlineStep({
         }
       >
         <div className="drama-outline-meta-modal-body">
-          {scriptLock.readOnly && <p className="pf-team-alert" role="status">{scriptLock.checking ? '正在取得แก้ไข占用…' : scriptLock.error}<button type="button" onClick={scriptLock.retry}>重新取得แก้ไข权并รีเฟรช</button></p>}
+          {scriptLock.readOnly && <p className="pf-team-alert" role="status">{scriptLock.checking ? 'กำลังตรวจสอบสิทธิ์การแก้ไข…' : scriptLock.error}<button type="button" onClick={scriptLock.retry}>รับสิทธิ์การแก้ไขอีกครั้งและรีเฟรช</button></p>}
         {sourceEditing ? (
             <textarea
               className="drama-ep-section-textarea"
@@ -534,7 +555,7 @@ export function OutlineStep({
               onChange={(e) => setSourceDraft(e.target.value)}
             />
           ) : (
-            <p className="drama-pre">{script?.source?.trim() || '暂无แนวคิดเรื่องย่อทั้งหมด'}</p>
+            <p className="drama-pre">{script?.source?.trim() || 'ยังไม่มีเรื่องย่อทั้งหมด'}</p>
           )}
         </div>
       </Modal>
@@ -572,7 +593,7 @@ export function OutlineStep({
         }
       >
         <div className="drama-outline-meta-modal-body">
-          {scriptLock.readOnly && <p className="pf-team-alert" role="status">{scriptLock.checking ? '正在取得แก้ไข占用…' : scriptLock.error}<button type="button" onClick={scriptLock.retry}>重新取得แก้ไข权并รีเฟรช</button></p>}
+          {scriptLock.readOnly && <p className="pf-team-alert" role="status">{scriptLock.checking ? 'กำลังตรวจสอบสิทธิ์การแก้ไข…' : scriptLock.error}<button type="button" onClick={scriptLock.retry}>รับสิทธิ์การแก้ไขอีกครั้งและรีเฟรช</button></p>}
           {summaryGenerating || summaryStatus === 'generating' ? (
             <p className="drama-loader">สรุปเรื่องย่อทั้งเรื่องกำลังสร้าง…</p>
           ) : null}
@@ -582,14 +603,14 @@ export function OutlineStep({
           {summaryEditing && summaryDraft ? (
             <div className="drama-outline-edit">
               <EditableSummaryField
-                label="剧名"
+                label="ชื่อเรื่อง"
                 value={String(summaryDraft.seriesTitle || '')}
                 onChange={(v) =>
                   setSummaryDraft((prev) => (prev ? { ...prev, seriesTitle: v } : prev))
                 }
               />
               <EditableSummaryField
-                label="กำหนดเอง ตอน数"
+                label="กำหนดจำนวนตอนเอง"
                 value={String(summaryDraft.episodeCount ?? '')}
                 onChange={(v) =>
                   setSummaryDraft((prev) =>
@@ -620,22 +641,22 @@ export function OutlineStep({
           ) : null}
           {!summaryEditing && summary && summaryStatus === 'completed' ? (
             <div className="drama-summary-structured">
-              <SummaryField label="剧名" value={String(summary.seriesTitle || '')} />
+              <SummaryField label="ชื่อเรื่อง" value={String(summary.seriesTitle || '')} />
               <SummaryField label="ประเภทเรื่องราว" value={String(summary.storyType || '')} />
               <SummaryField label="สรุปเรื่องในหนึ่งประโยค" value={String(summary.oneLineStory || '')} />
               <SummaryField label="เรื่องย่อ" value={String(summary.synopsis || '')} />
               {characters.length > 0 ? (
                 <section>
-                  <h4>人物</h4>
+                  <h4>ตัวละคร</h4>
                   <p className="drama-muted">
-                    {characters.map((ch) => String(ch.name || '')).filter(Boolean).join('、')}
+                    {characters.map((ch) => String(ch.name || '')).filter(Boolean).join(', ')}
                   </p>
                 </section>
               ) : null}
             </div>
           ) : null}
           {!summaryEditing && !summary && summaryStatus !== 'generating' && !summaryError ? (
-            <p className="drama-muted">暂无การตั้งค่าทั่วไป，等待เรื่องย่อ生成或点击สร้างใหม่。</p>
+            <p className="drama-muted">ยังไม่มีการตั้งค่าส่วนกลาง กำลังรอสร้างเรื่องย่อหรือคลิกสร้างใหม่</p>
           ) : null}
         </div>
       </Modal>
@@ -673,10 +694,10 @@ export function OutlineStep({
               </strong>
               <p>
                 {summaryGenerating || summaryStatus === 'generating'
-                  ? '顺序：ทั้งเรื่องเรื่องย่อ → 抽取แอสเซท → บทละครแต่ละตอน → 每 ตอน立刻 AI 分镜'
+                  ? 'ลำดับ: สรุปเรื่องย่อทั้งเรื่อง → สกัดแอสเซท → สร้างบทละครแต่ละตอน → แบ่งสตอรี่บอร์ด AI แต่ละตอนทันที'
                   : assetsSeeding || assetsSeedStatus === 'generating'
-                    ? '正在从ทั้งเรื่องเรื่องย่อ抽取ตัวละคร/ฉาก到แอสเซท库，เสร็จสิ้น后เริ่มสร้าง各 ตอน剧本'
-                    : '每 ตอน剧本เสร็จสิ้น后立即执行 AI 分镜；左侧可看「AI 分镜中…」สถานะ'}
+                    ? 'กำลังสกัดตัวละครและฉากจากเรื่องย่อไปยังคลังแอสเซท เมื่อเสร็จสิ้นจะเริ่มสร้างบทละครแต่ละตอน'
+                    : 'เมื่อบทแต่ละตอนสร้างเสร็จ จะดำเนินการแบ่งสตอรี่บอร์ด AI ทันที สามารถดูสถานะได้ที่แถบด้านซ้าย'}
               </p>
             </div>
           </div>

@@ -63,7 +63,7 @@ export default function UsageChargeRecords({ variant = 'compact' }: UsageChargeR
       setPage(nextPage)
       setItems(res.items)
     } catch (e) {
-      setError(e instanceof Error ? e.message : '加载扣费记录ล้มเหลว')
+      setError(e instanceof Error ? e.message : 'โหลดบันทึกการหักค่าใช้จ่ายล้มเหลว')
       setItems([])
       setTotal(0)
     } finally {
@@ -83,8 +83,8 @@ export default function UsageChargeRecords({ variant = 'compact' }: UsageChargeR
   return (
     <section className={`pf-usage-records${variant === 'compact' ? ' is-compact' : ''}`}>
       <header className="pf-usage-records-head">
-        <h3>使用扣费记录</h3>
-        <p className="pf-muted">每次 AI 调用的 token 用量与扣费明细</p>
+        <h3>บันทึกการหักค่าใช้จ่าย</h3>
+        <p className="pf-muted">รายละเอียดการใช้โทเค็นและค่าธรรมเนียมสำหรับการเรียกใช้ AI แต่ละครั้ง</p>
       </header>
 
       {loading ? <p className="pf-muted">กำลังโหลด…</p> : null}
@@ -92,7 +92,7 @@ export default function UsageChargeRecords({ variant = 'compact' }: UsageChargeR
 
       {!loading && !error && items.length === 0 ? (
         <div className="pf-settings-empty">
-          <p>暂无扣费记录</p>
+          <p>ยังไม่มีบันทึกการหักค่าใช้จ่าย</p>
         </div>
       ) : null}
 
@@ -106,7 +106,7 @@ export default function UsageChargeRecords({ variant = 'compact' }: UsageChargeR
                   <em className="pf-muted">
                     {item.context}
                     {item.total_tokens > 0 ? ` · ${formatTokens(item.total_tokens)} tokens` : ''}
-                    {item.estimated ? ' · 估算' : ''}
+                    {item.estimated ? ' · ประมาณการ' : ''}
                   </em>
                 </span>
                 <span className="pf-settings-list-meta pf-usage-record-meta">
@@ -129,7 +129,7 @@ export default function UsageChargeRecords({ variant = 'compact' }: UsageChargeR
           pageSize={pageSize}
           onPageSizeChange={handlePageSizeChange}
           onChange={setPage}
-          ariaLabel="扣费记录分页"
+          ariaLabel="การแบ่งหน้าบันทึกการหักค่าใช้จ่าย"
         />
       ) : null}
     </section>

@@ -96,8 +96,8 @@ export function DramaEpisodeCountPopover({ value, onChange, disabled = false }: 
       </button>
 
       {open ? (
-        <div className="drama-ep-count-panel" role="dialog" aria-label="กำหนดเอง ตอน数">
-          <p className="drama-ep-count-title">กำหนดเอง ตอน数</p>
+        <div className="drama-ep-count-panel" role="dialog" aria-label="กำหนดจำนวนตอนเอง">
+          <p className="drama-ep-count-title">กำหนดจำนวนตอนเอง</p>
           <div className="drama-ep-count-presets">
             {EPISODE_COUNT_PRESETS.map((count) => (
               <button
@@ -111,7 +111,7 @@ export function DramaEpisodeCountPopover({ value, onChange, disabled = false }: 
             ))}
           </div>
           <div className="drama-ep-count-custom">
-            <p>กำหนดเอง ตอน数</p>
+            <p>กำหนดจำนวนตอนเอง</p>
             <div className="drama-ep-count-custom-row">
               <input
                 type="number"

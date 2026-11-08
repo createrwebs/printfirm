@@ -41,7 +41,7 @@ export default function CreationSessionEditorBridge() {
           timer = setTimeout(() => { void transfer() }, 2000)
         } else if (status === 401) {
           nav(`/auth?next=${encodeURIComponent(returnPath)}`, { replace: true })
-        } else setError(cause instanceof Error ? cause.message : '暂时无法打开โปรเจกต์，请ลองใหม่')
+        } else setError(cause instanceof Error ? cause.message : 'ไม่สามารถเปิดโปรเจกต์ได้ชั่วคราว โปรดลองใหม่อีกครั้ง')
       }
     }
     void transfer()
@@ -50,9 +50,9 @@ export default function CreationSessionEditorBridge() {
   return <AppShell active="studio"><div className="sv-create-page">
     <Link to="/history" className="sv-back"><ArrowLeft size={16} /> 我的短片</Link>
     <section className="sv-panel" style={{ marginTop: 24 }}>
-      <h2>打开分步เวิร์กสเตชัน</h2>
-      <p>{waiting ? '正在停止旧制作任务，已有文案与素材会保留。任务退出后自动เข้าสู่แก้ไข。' : '正在整理โปรเจกต์文案与素材，准备继续แก้ไข。'}</p>
-      {error ? <><BillingErrorNotice message={error} /><Button variant="lime" onClick={() => setAttempt(value => value + 1)}><RefreshCw size={16} /> ลองใหม่</Button></> : <div className="sv-loading"><LoaderCircle size={20} className="sv-spin" /> {waiting ? '等待原任务退出…' : '正在打开…'}</div>}
+      <h2>เปิดเวิร์กสเปซแบบเป็นขั้นตอน</h2>
+      <p>{waiting ? 'กำลังหยุดงานผลิตเดิม บทและแอสเซทที่มีอยู่จะยังคงอยู่ เมื่อออกจากงานแล้วจะเข้าสู่ตัวแก้ไขอัตโนมัติ' : 'กำลังจัดเตรียมบทและแอสเซทของโปรเจกต์ เพื่อแก้ไขต่อไป'}</p>
+      {error ? <><BillingErrorNotice message={error} /><Button variant="lime" onClick={() => setAttempt(value => value + 1)}><RefreshCw size={16} /> ลองใหม่</Button></> : <div className="sv-loading"><LoaderCircle size={20} className="sv-spin" /> {waiting ? 'กำลังรองานเดิมออก…' : 'กำลังเปิด…'}</div>}
     </section>
   </div></AppShell>
 }

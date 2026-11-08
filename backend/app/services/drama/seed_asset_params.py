@@ -81,10 +81,11 @@ def compose_character_visual_text(character: dict[str, Any]) -> str:
 
 # 组装角色资产 params（形象名 + 生图提示词，对齐 manju buildCharacterParams）
 def build_character_params(character: dict[str, Any]) -> dict[str, Any]:
-    body = manju_join_character_prompt(character)
+    # Keep the full character context when the source only provides a short
+    # visual sentence. The old path dropped identity/growth/relationships.
+    body = compose_character_visual_text(character)
     prompt = ensure_structure_in_prompt(body, "character")
-    visual = str(character.get("visualImage") or "").strip()
-    visual = ensure_structure_in_prompt(visual, "character") if visual else prompt
+    visual = ensure_structure_in_prompt(body, "character") if body else prompt
     is_thai = detect_content_language(f"{character.get('name', '')} {body}") == "th"
     appearance_name = "รูปลักษณ์พื้นฐาน" if is_thai else DEFAULT_APPEARANCE_NAME
     return {

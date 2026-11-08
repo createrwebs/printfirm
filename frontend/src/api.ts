@@ -278,6 +278,8 @@ export type Wallet = {
   plan: string
   billing_enabled: boolean
   markup: number
+  toraapi_linked?: boolean
+  topup_url?: string
 }
 
 export type BillingPreflight = {
@@ -343,6 +345,22 @@ export const api = {
       body: JSON.stringify({ email, password }),
     })
   },
+  loginWithToraApi(
+    token: string,
+    nickname = '',
+    extra?: { username?: string; password?: string; turnstile?: string },
+  ) {
+    return request<{ access_token: string; user?: User }>('/api/auth/toraapi', {
+      method: 'POST',
+      body: JSON.stringify({
+        token,
+        nickname,
+        username: extra?.username || '',
+        password: extra?.password || '',
+        turnstile: extra?.turnstile || '',
+      }),
+    })
+  },
   forgotPassword(email: string) {
     return request<{ ok: boolean; message: string }>('/api/auth/forgot-password', {
       method: 'POST',
@@ -373,7 +391,7 @@ export const api = {
   /** อัปโหลด用户头像并กลับ更新后的用户资料。 */
   uploadAvatar(file: File) {
     return uploadFile<User>('/api/auth/avatar', file, (response, detail) => {
-      throw new Error(apiErrorMessage(detail, response.statusText) || '头像อัปโหลดไม่สำเร็จ')
+      throw new Error(apiErrorMessage(detail, response.statusText) || 'อัปโหลดรูปโปรไฟล์ไม่สำเร็จ')
     })
   },
   templates() {
@@ -437,7 +455,7 @@ export const api = {
   /** อัปโหลด科普โปรเจกต์封面并กลับโปรเจกต์。 */
   uploadCover(id: number, file: File) {
     return uploadFile<Project>(`/api/projects/${id}/cover`, file, (response, detail) => {
-      throw new Error(apiErrorMessage(detail, response.statusText) || '封面อัปโหลดไม่สำเร็จ')
+      throw new Error(apiErrorMessage(detail, response.statusText) || 'อัปโหลดรูปหน้าปกไม่สำเร็จ')
     })
   },
   voices() {
@@ -490,7 +508,7 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ ids }),
     }, (response, detail) => {
-      throw new Error(apiErrorMessage(detail, response.statusText) || '打包ดาวน์โหลดล้มเหลว')
+      throw new Error(apiErrorMessage(detail, response.statusText) || 'ดาวน์โหลดแพ็กเกจล้มเหลว')
     })
     const blob = await res.blob()
     const cd = res.headers.get('Content-Disposition') || ''
@@ -529,7 +547,7 @@ export const api = {
   /** อัปโหลด分镜รูปภาพ，保留当前โปรเจกต์响应结构。 */
   uploadShotImage(projectId: number, shotId: number, file: File) {
     return uploadFile<Project>(`/api/projects/${projectId}/shots/${shotId}/image`, file, (_response, detail) => {
-      throw new Error(typeof detail === 'string' ? detail : '画面อัปโหลดไม่สำเร็จ')
+      throw new Error(typeof detail === 'string' ? detail : 'อัปโหลดภาพไม่สำเร็จ')
     })
   },
   regenImage(projectId: number, shotId: number) {
@@ -567,6 +585,16 @@ export const api = {
   },
   wallet() {
     return request<Wallet>('/api/billing/wallet')
+  },
+  syncToraApiWallet() {
+    return request<{
+      ok: boolean
+      balance_fen: number
+      balance_yuan: number
+      frozen_fen: number
+      frozen_yuan: number
+      topup_url?: string
+    }>('/api/billing/toraapi/sync', { method: 'POST' })
   },
   billingSkus(language?: string) {
     const lang = language === 'zh' ? 'zh' : 'en'

@@ -54,7 +54,8 @@ export function createHttpTransport(options: {
     if (priceVersion !== null && init?.method && init.method.toUpperCase() !== 'GET') {
       headers.set('X-Media-Price-Version', String(priceVersion))
     }
-    const token = options.getToken()
+    const isAuthLoginRoute = path === '/api/auth/login' || path === '/api/auth/register' || path === '/api/auth/toraapi'
+    const token = isAuthLoginRoute ? null : options.getToken()
     if (token) headers.set('Authorization', `Bearer ${token}`)
     if (!(init?.body instanceof FormData)) headers.set('Content-Type', 'application/json')
     new Headers(init?.headers).forEach((value, key) => headers.set(key, value))
@@ -63,7 +64,7 @@ export function createHttpTransport(options: {
       result = await fetch(`${options.baseUrl}${path}`, { ...init, headers })
     } catch (cause) {
       // 浏览器有时把中断显示为 TypeError/Failed to fetch；仍按原始ยกเลิก原因处理。
-      if (init?.signal?.aborted) throw init.signal.reason || new DOMException('请求ยกเลิกแล้ว', 'AbortError')
+      if (init?.signal?.aborted) throw init.signal.reason || new DOMException('คำขอถูกยกเลิกแล้ว', 'AbortError')
       throw cause
     }
     if (!result.ok) {

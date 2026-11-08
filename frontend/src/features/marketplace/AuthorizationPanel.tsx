@@ -80,14 +80,14 @@ export default function AuthorizationPanel({ onSigned }: { onSigned?: () => void
     if (!value) return
     const link = document.createElement('a')
     link.href = value.url
-    link.download = value.image ? '授权函.png' : '授权函.pdf'
+    link.download = value.image ? 'หนังสืออนุญาตสิทธิ์.png' : 'หนังสืออนุญาตสิทธิ์.pdf'
     link.click()
     link.remove()
   }
   async function sign() {
     if (!status || !ready) return
     const valid = strokes.current.filter(stroke => stroke.length >= 2)
-    if (valid.flat().length < 12) { setError('请在签名区完整手写签名，再确认签署。'); return }
+    if (valid.flat().length < 12) { setError('โปรดลงลายมือชื่อให้สมบูรณ์ในช่องลงนามก่อนกดยืนยันการลงนาม'); return }
     setBusy(true); setError('')
     try {
       const result = await request<Signed>('/authorization', 'POST', { template_version: status.template.version, signer_name: name.trim(), accepted_terms: true, adult: true, read_all: true, accept_key: true, strokes: valid })
@@ -95,42 +95,42 @@ export default function AuthorizationPanel({ onSigned }: { onSigned?: () => void
     } catch (e) { setError((e as Error).message) }
     finally { setBusy(false) }
   }
-  return <section className="pf-market-authorization"><h2>PrintFilm 作品授权函</h2><p>按现行条款签署一次，本账号后续 PrintFilm 作品可引用。本函是许可使用，不是著作权转让。</p>
+  return <section className="pf-market-authorization"><h2>หนังสืออนุญาตสิทธิ์ผลงาน PrintFilm</h2><p>ลงนามครั้งเดียวตามข้อกำหนดปัจจุบัน บัญชีนี้จะสามารถอ้างอิงผลงาน PrintFilm ได้ในอนาคต หนังสือฉบับนี้เป็นการอนุญาตให้ใช้งาน มิใช่การโอนลิขสิทธิ์</p>
     {status && <>
       <h3>{status.template.title}</h3>
       <p>版本 {status.template.version}</p>
       <ol className="pf-market-letter-notices">{status.template.notices.map(item => <li key={item}>{item}</li>)}</ol>
       <div className="pf-market-letter">{status.template.body}</div>
       {status.current ? <>
-        <p className="pf-market-notice">已签署：{status.current.signer_name} · {date(status.current.created_at)}。可点击ดูตัวอย่าง或ดาวน์โหลด已签署授权函。</p>
-        <div className="pf-market-letter-actions"><button type="button" onClick={() => { void openPreview() }} disabled={previewBusy}>{previewBusy ? '正在打开…' : 'ดูตัวอย่าง授权函'}</button><button type="button" onClick={() => { void downloadLetter() }} disabled={previewBusy}>{previewBusy ? 'กำลังประมวลผล…' : 'ดาวน์โหลด授权函'}</button></div>
-        <Modal open={previewOpen} onClose={() => setPreviewOpen(false)} title="授权函ดูตัวอย่าง" size="xl" className="pf-market-letter-modal">
+        <p className="pf-market-notice">ลงนามแล้ว: {status.current.signer_name} · {date(status.current.created_at)} สามารถคลิกดูตัวอย่างหรือดาวน์โหลดหนังสืออนุญาตสิทธิ์ที่ลงนามแล้ว</p>
+        <div className="pf-market-letter-actions"><button type="button" onClick={() => { void openPreview() }} disabled={previewBusy}>{previewBusy ? 'กำลังเปิด…' : 'ดูตัวอย่างหนังสืออนุญาตสิทธิ์'}</button><button type="button" onClick={() => { void downloadLetter() }} disabled={previewBusy}>{previewBusy ? 'กำลังประมวลผล…' : 'ดาวน์โหลดหนังสืออนุญาตสิทธิ์'}</button></div>
+        <Modal open={previewOpen} onClose={() => setPreviewOpen(false)} title="ดูตัวอย่างหนังสืออนุญาตสิทธิ์" size="xl" className="pf-market-letter-modal">
           <div className="pf-market-letter-modal-summary">
             <div className="pf-market-letter-modal-summary-top">
               <span className="pf-market-letter-modal-eyebrow"><ShieldCheck size={14} /> PRINTFILM · ตลาดดิจิทัลแอสเซท</span>
-              <span className="pf-market-letter-modal-status"><FileCheck2 size={13} /> 已签署</span>
+              <span className="pf-market-letter-modal-status"><FileCheck2 size={13} /> ลงนามแล้ว</span>
             </div>
-            <strong>账号授权函</strong>
-            <span className="pf-market-letter-modal-meta">签署人：{status.current.signer_name} · {date(status.current.created_at)} · 条款 {status.current.template_version}</span>
-            <p>此处展示已签署的ข้อตกลงการอนุญาตสิทธิ์，具体授权范围以协议正文为准。在线ดูตัวอย่าง不会自动ดาวน์โหลด文件。</p>
+            <strong>หนังสือมอบอำนาจบัญชี</strong>
+            <span className="pf-market-letter-modal-meta">ผู้ลงนาม: {status.current.signer_name} · {date(status.current.created_at)} · ข้อกำหนด {status.current.template_version}</span>
+            <p>ส่วนนี้แสดงข้อตกลงการอนุญาตสิทธิ์ที่ลงนามแล้ว ขอบเขตการอนุญาตเป็นไปตามเนื้อหาของข้อตกลง การดูตัวอย่างออนไลน์จะไม่ดาวน์โหลดไฟล์โดยอัตโนมัติ</p>
           </div>
           <div className="pf-market-letter-preview-surface">
-            <div className="pf-market-letter-preview-label"><Eye size={14} /> เอกสารดูตัวอย่าง</div>
-            {preview && (preview.image ? <img className="pf-market-letter-image" src={preview.url} alt="已签署授权函" /> : <iframe className="pf-market-letter-frame" src={preview.url} title="授权函ดูตัวอย่าง" />)}
+            <div className="pf-market-letter-preview-label"><Eye size={14} /> ตัวอย่างเอกสาร</div>
+            {preview && (preview.image ? <img className="pf-market-letter-image" src={preview.url} alt="หนังสืออนุญาตสิทธิ์ที่ลงนามแล้ว" /> : <iframe className="pf-market-letter-frame" src={preview.url} title="ดูตัวอย่างหนังสืออนุญาตสิทธิ์" />)}
           </div>
-          <div className="pf-market-letter-modal-actions"><button type="button" className="pf-market-letter-modal-secondary" onClick={() => setPreviewOpen(false)}>ปิด</button><button type="button" className="pf-market-letter-modal-primary" onClick={() => { void downloadLetter() }} disabled={previewBusy}><Download size={14} /> {previewBusy ? 'กำลังประมวลผล…' : 'ดาวน์โหลด授权函'}</button></div>
+          <div className="pf-market-letter-modal-actions"><button type="button" className="pf-market-letter-modal-secondary" onClick={() => setPreviewOpen(false)}>ปิด</button><button type="button" className="pf-market-letter-modal-primary" onClick={() => { void downloadLetter() }} disabled={previewBusy}><Download size={14} /> {previewBusy ? 'กำลังประมวลผล…' : 'ดาวน์โหลดหนังสืออนุญาตสิทธิ์'}</button></div>
         </Modal>
       </> : <div className="pf-market-fields">
-        <label>签署人真实姓名<input value={name} minLength={2} maxLength={80} onChange={e => setName(e.target.value)} disabled={busy} /></label>
-        <p>在下方手写签名（支持鼠标或触屏）</p>
-        <canvas aria-label="手写签名区域" ref={canvas} width={800} height={240} className="pf-market-signature" onPointerDown={e => { if (busy || drawing.current !== null || strokes.current.length >= 40) return; try { e.currentTarget.setPointerCapture(e.pointerId) } catch { /* 当前指针无法捕获时仍记录笔画 */ } drawing.current = e.pointerId; strokes.current.push([point(e)]) }} onPointerMove={move} onPointerUp={e => { if (drawing.current === e.pointerId) drawing.current = null }} onPointerCancel={() => { drawing.current = null }} />
-        <button type="button" disabled={busy} onClick={() => { strokes.current = []; canvas.current?.getContext('2d')?.clearRect(0, 0, 800, 240) }}>清除签名</button>
-        <label><input type="checkbox" checked={adult} disabled={busy} onChange={e => setAdult(e.target.checked)} />我已年满十八周岁，具有完全民事行为能力，所填姓名真实。</label>
-        <label><input type="checkbox" checked={readAll} disabled={busy} onChange={e => setReadAll(e.target.checked)} />我已完整阅读本协议全文。</label>
-        <label><input type="checkbox" checked={acceptKey} disabled={busy} onChange={e => setAcceptKey(e.target.checked)} />我已特别阅读并同意第7、8、10、11、13、15条。</label>
-        <button type="button" disabled={busy || !ready} onClick={sign}>{busy ? '正在存档…' : '确认签署并บันทึก授权函'}</button>
+        <label>ชื่อ-นามสกุลจริงของผู้ลงนาม<input value={name} minLength={2} maxLength={80} onChange={e => setName(e.target.value)} disabled={busy} /></label>
+        <p>ลงลายมือชื่อที่ช่องด้านล่าง (รองรับเมาส์หรือหน้าจอสัมผัส)</p>
+        <canvas aria-label="พื้นที่ลงลายมือชื่อ" ref={canvas} width={800} height={240} className="pf-market-signature" onPointerDown={e => { if (busy || drawing.current !== null || strokes.current.length >= 40) return; try { e.currentTarget.setPointerCapture(e.pointerId) } catch { /* 当前指针无法捕获时仍记录笔画 */ } drawing.current = e.pointerId; strokes.current.push([point(e)]) }} onPointerMove={move} onPointerUp={e => { if (drawing.current === e.pointerId) drawing.current = null }} onPointerCancel={() => { drawing.current = null }} />
+        <button type="button" disabled={busy} onClick={() => { strokes.current = []; canvas.current?.getContext('2d')?.clearRect(0, 0, 800, 240) }}>ล้างลายมือชื่อ</button>
+        <label><input type="checkbox" checked={adult} disabled={busy} onChange={e => setAdult(e.target.checked)} />ฉันมีอายุครบ 18 ปีบริบูรณ์ มีความสามารถตามกฎหมาย และชื่อที่ระบุเป็นความจริง</label>
+        <label><input type="checkbox" checked={readAll} disabled={busy} onChange={e => setReadAll(e.target.checked)} />ฉันได้อ่านข้อกำหนดของข้อตกลงนี้อย่างครบถ้วนแล้ว</label>
+        <label><input type="checkbox" checked={acceptKey} disabled={busy} onChange={e => setAcceptKey(e.target.checked)} />ฉันได้อ่านและยอมรับข้อที่ 7, 8, 10, 11, 13 และ 15 เป็นกรณีพิเศษแล้ว</label>
+        <button type="button" disabled={busy || !ready} onClick={sign}>{busy ? 'กำลังบันทึกข้อมูล…' : 'ยืนยันการลงนามและบันทึกหนังสืออนุญาตสิทธิ์'}</button>
       </div>}
     </>}
-    {!status && !error && <p role="status">正在读取授权条款…</p>}{error && <p role="alert">{error}</p>}
+    {!status && !error && <p role="status">กำลังโหลดข้อกำหนดการอนุญาตสิทธิ์…</p>}{error && <p role="alert">{error}</p>}
   </section>
 }

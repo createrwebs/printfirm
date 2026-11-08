@@ -213,9 +213,9 @@ export const KEPU_STEPS = [
   { key: 'topic', label: '选题' },
   { key: 'style', label: '风格' },
   { key: 'confirm', label: '确认分镜' },
-  { key: 'assets', label: 'ภาพอ้างอิง画面' },
-  { key: 'videos', label: '镜头วิดีโอ' },
-  { key: 'compose', label: '合成ดูตัวอย่าง' },
+  { key: 'assets', label: 'ภาพอ้างอิง' },
+  { key: 'videos', label: 'วิดีโอช็อต' },
+  { key: 'compose', label: 'ตัดต่อรวมตัวอย่าง' },
 ]
 
 export const CREATE_STEPS = KEPU_STEPS
@@ -299,18 +299,18 @@ export function kepuPhaseHint(project: {
   shots?: Array<{ image_url?: string | null; audio_url?: string | null; video_url?: string | null }>
 }): string {
   if (project.pipeline_mode === 'image_text') {
-    if (isRunning(effectiveStatus(project))) return '当前步骤正在制作，เสร็จสิ้น后可ดู结果并继续ถัดไป。'
+    if (isRunning(effectiveStatus(project))) return 'ขั้นตอนปัจจุบันกำลังดำเนินการ เมื่อเสร็จสิ้นสามารถดูผลลัพธ์และทำขั้นตอนถัดไป'
     const phase = kepuBillingPhase(project)
-    if (phase === 'script') return 'บันทึก文案后สร้างสตอรี่บอร์ด，确认每张卡片里的เสียงบรรยาย和画面。'
-    if (phase === 'assets') return '确认分镜后สร้างรูปภาพ与เสียงพากย์；เสร็จสมบูรณ์的素材会继续保留。'
-    return 'รูปภาพ与เสียงพากย์已齐，可以试听后合成带运镜和คำบรรยาย (ซับไตเติล)的成片。'
+    if (phase === 'script') return 'บันทึกบทแล้วสร้างสตอรี่บอร์ด ตรวจสอบเสียงบรรยายและภาพในแต่ละการ์ด'
+    if (phase === 'assets') return 'ยืนยันสตอรี่บอร์ดแล้วสร้างภาพพร้อมเสียงพากย์ สื่อที่สร้างเสร็จแล้วจะยังคงอยู่'
+    return 'ภาพและเสียงพากย์พร้อมแล้ว สามารถทดลองฟังก่อนตัดต่อรวมเป็นวิดีโอที่มีการเคลื่อนไหวและคำบรรยาย'
   }
   if (isRunning(effectiveStatus(project))) {
-    return '生成进行中，可在右侧ดู各阶段进度。'
+    return 'การสร้างกำลังดำเนินอยู่ สามารถดูความคืบหน้าของแต่ละขั้นตอนทางด้านขวา'
   }
   const phase = kepuBillingPhase(project)
-  if (phase === 'script') return '先在风格页点「生成故事板」，本步只拆บทสตอรี่บอร์ด（预扣文字模型）。'
-  if (phase === 'assets') return '确认分镜后，使用画风ภาพอ้างอิง逐镜สร้างรูปภาพ，并参考前镜画面保持ตัวละคร与风格一致。'
-  if (phase === 'videos') return 'รูปภาพ已齐。使用每镜รูปภาพสร้างวิดีโอ与声音，后镜参考上一镜尾帧延续画面。'
-  return '镜头วิดีโอ已齐。检查各镜头画面与声音后，即可合成成片。'
+  if (phase === 'script') return 'คลิก "สร้างสตอรี่บอร์ด" ในหน้าตั้งค่าสไตล์ ขั้นตอนนี้จะแบ่งสตอรี่บอร์ดเท่านั้น'
+  if (phase === 'assets') return 'หลังยืนยันสตอรี่บอร์ด จะสร้างภาพทีละช็อตตามภาพอ้างอิงสไตล์ และอ้างอิงช็อตก่อนหน้าเพื่อความต่อเนื่องของตัวละครและสไตล์'
+  if (phase === 'videos') return 'ภาพพร้อมแล้ว นำภาพในแต่ละช็อตไปสร้างวิดีโอและเสียง ช็อตถัดไปจะอ้างอิงเฟรมท้ายของช็อตก่อนเพื่อความต่อเนื่อง'
+  return 'วิดีโอทุกช็อตพร้อมแล้ว ตรวจสอบภาพและเสียงในแต่ละช็อต แล้วเริ่มตัดต่อรวมเป็นวิดีโอ'
 }

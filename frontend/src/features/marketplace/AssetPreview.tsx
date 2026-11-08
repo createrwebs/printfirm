@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { media, request, type Row } from './api'
 import { explainMarketplaceError } from './messages'
 
-const fileStatusNames: Record<string, string> = { ready: 'อัปโหลดเสร็จสิ้น', uploading: 'กำลังอัปโหลด', processing: '正在校验文件', failed: '文件校验ล้มเหลว', cancelled: 'ยกเลิกแล้วอัปโหลด', expired: 'อัปโหลด已过期' }
+const fileStatusNames: Record<string, string> = { ready: 'อัปโหลดเสร็จสิ้น', uploading: 'กำลังอัปโหลด', processing: 'กำลังตรวจสอบไฟล์', failed: 'ตรวจสอบไฟล์ล้มเหลว', cancelled: 'ยกเลิกการอัปโหลดแล้ว', expired: 'การอัปโหลดหมดอายุแล้ว' }
 
 // 浏览器原生ดูตัวอย่าง；不把文件或签名链接บันทึก到 localStorage。
 export function PreviewContent({ url, filename, video = false, onReady, onFailure }: { url: string; filename: string; video?: boolean; onReady?: () => void; onFailure?: () => void }) {
@@ -10,8 +10,8 @@ export function PreviewContent({ url, filename, video = false, onReady, onFailur
   function fail() { setFailed(true); onFailure?.() }
   const pdf = /\.pdf$/i.test(filename)
   return <div className="pf-market-file-preview">
-    {video ? <video src={url} controls preload="metadata" onLoadedMetadata={onReady} onError={fail} /> : pdf ? <><iframe src={url} title={`PDFดูตัวอย่าง：${filename}`} onLoad={onReady} /><a href={url} target="_blank" rel="noreferrer">在新窗口ดู PDF</a></> : <img src={url} alt={filename} onLoad={onReady} onError={fail} />}
-    {failed && <p role="alert">{video ? 'วิดีโอ暂时无法ดูตัวอย่าง，请โหลดใหม่；若仍无法播放，可能是浏览器不支持该วิดีโอ编码。' : '文件暂时无法ดูตัวอย่าง，请โหลดใหม่；若仍ล้มเหลว，请稍后ลองใหม่或联系客服。'}</p>}
+    {video ? <video src={url} controls preload="metadata" onLoadedMetadata={onReady} onError={fail} /> : pdf ? <><iframe src={url} title={`ตัวอย่าง PDF: ${filename}`} onLoad={onReady} /><a href={url} target="_blank" rel="noreferrer">ดู PDF ในหน้าต่างใหม่</a></> : <img src={url} alt={filename} onLoad={onReady} onError={fail} />}
+    {failed && <p role="alert">{video ? 'ไม่สามารถแสดงตัวอย่างวิดีโอได้ชั่วคราว โปรดโหลดใหม่ หากยังเล่นไม่ได้ อาจเป็นเพราะเบราว์เซอร์ไม่รองรับการเข้ารหัสวิดีโอนี้' : 'ไม่สามารถแสดงตัวอย่างไฟล์ได้ชั่วคราว โปรดโหลดใหม่ หากยังล้มเหลว โปรดลองอีกครั้งในภายหลังหรือติดต่อฝ่ายบริการลูกค้า'}</p>}
   </div>
 }
 
@@ -47,10 +47,10 @@ export default function AssetPreview({ id, onReady, onMediaReady, hideMedia = fa
     const timer = window.setTimeout(() => setRevision(value => value + 1), 2000)
     return () => window.clearTimeout(timer)
   }, [asset])
-  return <div className="pf-market-asset-preview"><p>{asset?.filename || '正在读取文件信息'} · {fileStatusNames[asset?.status || ''] || '正在读取สถานะ'}</p>
-    {url && <div hidden={hideMedia}><PreviewContent key={url} url={url} filename={asset?.filename || ''} video={asset?.kind === 'video'} onReady={() => { onReady?.(id); onMediaReady?.(id) }} onFailure={() => { onMediaReady?.(id); if (hideMedia) setError('อัปโหลด文件暂时无法ดูตัวอย่าง，请点击“โหลดใหม่ดูตัวอย่าง”ลองใหม่。') }} /></div>}
-    {asset?.status === 'processing' && <p>文件已อัปโหลด，正在校验文件信息，สถานะ会自动更新。</p>}
+  return <div className="pf-market-asset-preview"><p>{asset?.filename || 'กำลังอ่านข้อมูลไฟล์'} · {fileStatusNames[asset?.status || ''] || 'กำลังอ่านสถานะ'}</p>
+    {url && <div hidden={hideMedia}><PreviewContent key={url} url={url} filename={asset?.filename || ''} video={asset?.kind === 'video'} onReady={() => { onReady?.(id); onMediaReady?.(id) }} onFailure={() => { onMediaReady?.(id); if (hideMedia) setError('ไม่สามารถแสดงตัวอย่างไฟล์ที่อัปโหลดได้ชั่วคราว โปรดคลิก "โหลดตัวอย่างใหม่" เพื่อลองอีกครั้ง') }} /></div>}
+    {asset?.status === 'processing' && <p>อัปโหลดไฟล์แล้ว กำลังตรวจสอบข้อมูลไฟล์ สถานะจะอัปเดตอัตโนมัติ</p>}
     {asset?.error && <p role="alert">{explainMarketplaceError(asset.error)}</p>}{error && <p role="alert">{error}</p>}
-    <button type="button" onClick={() => setRevision(v => v + 1)}>โหลดใหม่ดูตัวอย่าง</button>
+    <button type="button" onClick={() => setRevision(v => v + 1)}>โหลดตัวอย่างใหม่</button>
   </div>
 }

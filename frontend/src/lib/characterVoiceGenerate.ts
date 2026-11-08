@@ -20,7 +20,7 @@ export async function generateAndBindCharacterVoice(
   })
   const voicePrompt = (promptResult.voice_prompt || '').trim()
   if (!voicePrompt) {
-    throw new Error('น้ำเสียง描述为空')
+    throw new Error('คำอธิบายน้ำเสียงว่างเปล่า')
   }
 
   const voiceResult = await dramaApi.generateVoice({
@@ -33,7 +33,7 @@ export async function generateAndBindCharacterVoice(
   })
   const voice = voiceResult.asset
   if (!voice?.url) {
-    throw new Error('น้ำเสียง合成ล้มเหลว')
+    throw new Error('สังเคราะห์น้ำเสียงล้มเหลว')
   }
 
   const character = await dramaApi.updateAsset(asset.id, {

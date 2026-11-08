@@ -251,7 +251,7 @@ function CanvasAssetNodeComponent({ id, data, selected }: NodeProps<Node<CanvasA
 
       <div
         className={`pf-library-card fc-asset-card${canPreview ? ' is-previewable' : ''}`}
-        title={canPreview ? '双击ขยายขนาดดูตัวอย่าง' : undefined}
+        title={canPreview ? 'ดับเบิลคลิกเพื่อขยายดูตัวอย่าง' : undefined}
         onDoubleClick={handleCardDoubleClick}
       >
         <AssetCover

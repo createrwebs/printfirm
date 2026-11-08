@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from contextvars import ContextVar
 from typing import Any
 
 from app.schemas_routing import SystemModelChannel
@@ -13,6 +14,9 @@ TOKENFREE_BASE_URL = "https://www.toraapi.com/v1"
 TOKENFREE_CONSOLE_URL = "https://www.toraapi.com"
 # New API 内部额度：500000 quota = 1 USD
 TOKENFREE_QUOTA_PER_USD = 500_000
+
+# 当前请求或后台任务所属用户的 ToraAPI Key
+current_user_toraapi_token: ContextVar[str] = ContextVar("current_user_toraapi_token", default="")
 
 
 def get_configured_gateway_url() -> str:
@@ -33,7 +37,10 @@ def tokenfree_site_origin(base_url: str | None = None) -> str:
 
 
 def resolve_tokenfree_api_key() -> str:
-    """优先渠道 Key，其次运行时 overlay / 环境变量。"""
+    """优先当前登录用户的 ToraAPI Key，其次渠道 Key，最后运行时 overlay / 环境变量。"""
+    user_key = (current_user_toraapi_token.get() or "").strip()
+    if user_key:
+        return user_key
     try:
         from app.services.model_settings import get_routing_snapshot
 

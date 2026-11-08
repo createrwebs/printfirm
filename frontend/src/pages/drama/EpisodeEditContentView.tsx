@@ -39,7 +39,7 @@ export function EpisodeEditContentView({ content, assets, onOpenAsset }: Props) 
   const parts = useMemo(() => splitContentParts(content || ''), [content])
 
   if (!content.trim()) {
-    return <p className="drama-ep-content-empty">暂无脚本内容，点击「แก้ไข」开始填写</p>
+    return <p className="drama-ep-content-empty">ยังไม่มีเนื้อหาบท คลิก "แก้ไข" เพื่อเริ่มเขียน</p>
   }
 
   return (

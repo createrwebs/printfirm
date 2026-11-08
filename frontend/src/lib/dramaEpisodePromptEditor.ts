@@ -233,7 +233,7 @@ export function createDurationChipElement(seconds: number) {
   chipEl.contentEditable = 'false'
   chipEl.dataset.mention = 'true'
   chipEl.dataset.durationSec = String(seconds)
-  chipEl.title = `ความยาว ${seconds}s，แก้ไข时点击切换`
+  chipEl.title = `ความยาว ${seconds} วินาที คลิกเพื่อสลับขณะแก้ไข`
 
   const labelEl = document.createElement('span')
   labelEl.dataset.durationLabel = 'true'
@@ -247,7 +247,7 @@ export function createDurationChipElement(seconds: number) {
 // 更新已有ความยาว标签วินาที数
 export function updateDurationChipElement(chipEl: HTMLElement, seconds: number) {
   chipEl.dataset.durationSec = String(seconds)
-  chipEl.title = `ความยาว ${seconds}s，แก้ไข时点击切换`
+  chipEl.title = `ความยาว ${seconds} วินาที คลิกเพื่อสลับขณะแก้ไข`
   const labelEl = chipEl.querySelector<HTMLElement>('[data-duration-label]')
   if (labelEl) labelEl.textContent = `${seconds}s`
 }

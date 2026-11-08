@@ -12,13 +12,13 @@ export function EpisodeEditReferenceStrip({ items, onSelect }: Props) {
   if (items.length === 0) {
     return (
       <div className="drama-ep-ref-strip is-empty">
-        <span className="drama-ep-ref-strip-hint">暂无关联แอสเซท · 点击左侧卡片或键入 @asset:id</span>
+        <span className="drama-ep-ref-strip-hint">ยังไม่มีแอสเซทที่เชื่อมโยง · คลิกการ์ดทางซ้ายหรือพิมพ์ @asset:id</span>
       </div>
     )
   }
 
   return (
-    <div className="drama-ep-ref-strip" aria-label="本镜关联แอสเซท">
+    <div className="drama-ep-ref-strip" aria-label="แอสเซทที่เชื่อมโยงในช็อตนี้">
       {items.map((item) => (
         <button
           key={item.assetId}
@@ -30,7 +30,7 @@ export function EpisodeEditReferenceStrip({ items, onSelect }: Props) {
             DRAMA_VOICE_BINDING_ENABLED && item.isCharacter
               ? item.voiceLabel
                 ? ` · น้ำเสียง：${item.voiceLabel}`
-                : ' · 未ผูกน้ำเสียง'
+                : ' · ยังไม่ได้ผูกน้ำเสียง'
               : ''
           }`}
           onClick={() => onSelect?.(item.assetId)}

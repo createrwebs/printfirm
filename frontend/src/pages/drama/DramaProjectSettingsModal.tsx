@@ -172,12 +172,12 @@ export function DramaProjectSettingsModal({
     >
       <div className="drama-project-settings">
         <p className="drama-muted drama-project-settings-lead">
-          全โปรเจกต์统一；分镜页只读展示。修改画幅后请สร้างใหม่相关镜头。
+          ใช้ค่าเดียวกันทั้งโปรเจกต์ หน้ารายละเอียดสตอรี่บอร์ดจะแสดงแบบอ่านอย่างเดียว หลังจากเปลี่ยนอัตราส่วนภาพแล้ว โปรดสร้างช็อตที่เกี่ยวข้องใหม่
         </p>
 
         <section className="drama-project-settings-section">
           <div className="drama-project-settings-head">
-            <h4>画幅</h4>
+            <h4>อัตราส่วนภาพ</h4>
           </div>
           <SettingsChoiceRow
             value={aspectRatio}
@@ -213,14 +213,14 @@ export function DramaProjectSettingsModal({
 
         <section className="drama-project-settings-section">
           <div className="drama-project-settings-head">
-            <h4>คำบรรยาย (ซับไตเติล)方式</h4>
+            <h4>รูปแบบคำบรรยาย (ซับไตเติล)</h4>
           </div>
           <SettingsChoiceRow
             value={subtitleMode}
             disabled={saving}
             options={[
-              { value: 'post' as DramaSubtitleMode, label: '后期คำบรรยาย (ซับไตเติล)' },
-              { value: 'model' as DramaSubtitleMode, label: '模型คำบรรยาย (ซับไตเติล)' },
+              { value: 'post' as DramaSubtitleMode, label: 'คำบรรยายขั้นตัดต่อ (Post-production)' },
+              { value: 'model' as DramaSubtitleMode, label: 'คำบรรยายฝังในโมเดล (Model burn-in)' },
             ]}
             onChange={(mode) =>
               void patchProjectParams({
@@ -229,19 +229,19 @@ export function DramaProjectSettingsModal({
               })
             }
           />
-          <p className="drama-muted">后期คำบรรยาย (ซับไตเติล)成片后拼接；模型คำบรรยาย (ซับไตเติล)生成时烧录。</p>
+          <p className="drama-muted">คำบรรยายขั้นตัดต่อจะถูกประกอบหลังเรนเดอร์เสร็จ คำบรรยายฝังในโมเดลจะถูกเบิร์นลงวิดีโอขณะสร้าง</p>
         </section>
 
         <section className="drama-project-settings-section">
           <div className="drama-project-settings-head">
-            <h4>人物介绍叠字</h4>
+            <h4>ข้อความแนะนำตัวละคร</h4>
           </div>
           <SettingsChoiceRow
             value={characterIntroMode}
             disabled={saving}
             options={[
-              { value: 'off' as DramaCharacterIntroMode, label: '无介绍叠字' },
-              { value: 'model' as DramaCharacterIntroMode, label: '人物介绍' },
+              { value: 'off' as DramaCharacterIntroMode, label: 'ไม่มีข้อความแนะนำ' },
+              { value: 'model' as DramaCharacterIntroMode, label: 'แสดงการแนะนำตัวละคร' },
             ]}
             onChange={(mode) =>
               void patchProjectParams({
@@ -254,18 +254,18 @@ export function DramaProjectSettingsModal({
 
         <section className="drama-project-settings-section">
           <div className="drama-project-settings-head">
-            <h4>镜间衔接</h4>
+            <h4>ความต่อเนื่องระหว่างช็อต</h4>
           </div>
           <SettingsChoiceRow
             value={linkLastFrame}
             disabled={saving}
             options={[
-              { value: true, label: '尾帧衔接' },
-              { value: false, label: '并发生成' },
+              { value: true, label: 'เชื่อมต่อด้วยเฟรมท้าย' },
+              { value: false, label: 'สร้างพร้อมกัน (Concurrent)' },
             ]}
             onChange={(enabled) => void patchProjectParams({ linkLastFrame: enabled })}
           />
-          <p className="drama-muted">开启后后一镜会参考前一镜尾帧，สไตล์更连贯。</p>
+          <p className="drama-muted">เมื่อเปิดใช้งาน ช็อตถัดไปจะอ้างอิงเฟรมท้ายของช็อตก่อนหน้า เพื่อให้สไตล์มีความต่อเนื่องยิ่งขึ้น</p>
         </section>
       </div>
     </Modal>

@@ -76,12 +76,12 @@ export function DramaProjectOutputSettings({
     videoModels,
   ) as DramaResolution
   const outputLabel = formatProjectOutputLabel(clampedAspect, clampedResolution)
-  const scopeHint = scope === 'episode' ? '本 ตอน' : 'โปรเจกต์统一'
-  const panelTitle = scope === 'episode' ? '分 ตอน画幅' : 'โปรเจกต์画幅'
+  const scopeHint = scope === 'episode' ? 'ตอนนี้' : 'ทั้งโปรเจกต์'
+  const panelTitle = scope === 'episode' ? 'อัตราส่วนภาพของตอนนี้' : 'อัตราส่วนภาพของโปรเจกต์'
   const panelNote =
     scope === 'episode'
-      ? '仅本 ตอน分镜使用；未单独ตั้งค่า时继承โปรเจกต์ค่าเริ่มต้น。อัตราส่วน与ความคมชัด随当前วิดีโอ模型过滤，可点选修改。'
-      : 'ทุกตอน共用同一规格；อัตราส่วน与ความคมชัด随当前วิดีโอ模型过滤。'
+      ? 'ใช้สำหรับสตอรี่บอร์ดของตอนนี้เท่านั้น หากไม่ได้ตั้งค่าแยกจะใช้ค่าเริ่มต้นของโปรเจกต์ อัตราส่วนและความคมชัดจะถูกกรองตามโมเดลวิดีโอปัจจุบัน สามารถคลิกเลือกเพื่อแก้ไขได้'
+      : 'ทุกตอนใช้ข้อกำหนดเดียวกัน อัตราส่วนและความคมชัดจะถูกกรองตามโมเดลวิดีโอปัจจุบัน'
 
   /* 仅在目录已匹配到模型白名单时静默钳制回写，避免 catalog/modelId 未就绪时把 1080p 写成 720p */
   useEffect(() => {
@@ -172,8 +172,8 @@ export function DramaProjectOutputSettings({
         disabled={disabled || saving}
         title={
           scope === 'episode'
-            ? '本 ตอน画幅与ความคมชัด；各镜生成后可直接拼接'
-            : '全โปรเจกต์统一画幅与ความคมชัด，各分镜生成后可直接拼接'
+            ? 'อัตราส่วนภาพและความคมชัดของตอนนี้ แต่ละช็อตสร้างเสร็จแล้วสามารถต่อคลิปได้ทันที'
+            : 'อัตราส่วนภาพและความคมชัดเดียวกันทั้งโปรเจกต์ แต่ละช็อตสร้างเสร็จแล้วสามารถต่อคลิปได้ทันที'
         }
         onClick={() => setOpen((c) => !c)}
       >
@@ -189,7 +189,7 @@ export function DramaProjectOutputSettings({
               className="fc-gen-opt-panel drama-ep-opt-panel fc-gen-opt-panel--portal"
               style={panelStyle}
               role="dialog"
-              aria-label={scope === 'episode' ? '分 ตอน画幅与ความคมชัด' : 'โปรเจกต์画幅与ความคมชัด'}
+              aria-label={scope === 'episode' ? 'อัตราส่วนภาพและความคมชัดของตอนนี้' : 'อัตราส่วนภาพและความคมชัดของโปรเจกต์'}
             >
               <div className="fc-gen-opt-panel-title">{panelTitle}</div>
               <p className="drama-project-output-note">{panelNote}</p>

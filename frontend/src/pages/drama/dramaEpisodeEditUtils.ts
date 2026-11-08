@@ -33,8 +33,11 @@ export function extractAssetIds(content: string): number[] {
   return ids
 }
 
-// 合并เนื้อหาหลัก @asset 与 asset_ids，去重保序
-export function collectFragmentAssetIds(frag: DramaFragment | null | undefined): number[] {
+// 合并เนื้อหาหลัก @asset 与 asset_ids，去重保序；若为空则兜底匹配项目资产
+export function collectFragmentAssetIds(
+  frag: DramaFragment | null | undefined,
+  assets?: DramaAsset[],
+): number[] {
   if (!frag) return []
   const seen = new Set<number>()
   const out: number[] = []
@@ -42,6 +45,17 @@ export function collectFragmentAssetIds(frag: DramaFragment | null | undefined):
     if (!id || seen.has(id)) continue
     seen.add(id)
     out.push(id)
+  }
+  if (assets && assets.length > 0) {
+    const text = `${frag.content || ''} ${(frag.params?.sceneName as string) || ''}`
+    for (const a of assets) {
+      if (!a.name || seen.has(a.id)) continue
+      const name = a.name.trim()
+      if (name.length >= 2 && text.includes(name)) {
+        seen.add(a.id)
+        out.push(a.id)
+      }
+    }
   }
   return out
 }
@@ -64,7 +78,7 @@ export function buildFragmentRefStripItems(
   readVoice?: (asset: DramaAsset) => { label: string; url: string } | null,
 ): FragmentRefStripItem[] {
   const byId = new Map(assets.map((a) => [a.id, a]))
-  return collectFragmentAssetIds(frag).map((assetId) => {
+  return collectFragmentAssetIds(frag, assets).map((assetId) => {
     const asset = byId.get(assetId)
     const preview = asset ? resolveUrl(asset.cover || asset.url) : ''
     const isCharacter = asset ? normalizeAssetTab(asset.type) === 'character' : false
@@ -200,7 +214,7 @@ export function resolveFragmentDurationSec(
 export function formatFragLabel(index: number, durationSec: number | null | undefined) {
   const n = String(index + 1).padStart(2, '0')
   const sec = durationSec && durationSec > 0 ? durationSec : 8
-  return `片段 ${n} · ${sec}s`
+  return `บทคัดย่อ ${n} · ${sec}s`
 }
 
 // 按本 ตอน/全 ตอน与分类ตัวกรองแอสเซท

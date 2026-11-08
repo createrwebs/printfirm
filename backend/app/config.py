@@ -14,7 +14,7 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    app_name: str = "PRINTFILM"
+    app_name: str = "TORAFILM"
     debug: bool = True
     # 是否打印 SQLAlchemy 原始 SQL（默认关，避免刷屏；需要排查 SQL 时设 SQL_ECHO=true）
     sql_echo: bool = False
@@ -115,7 +115,7 @@ class Settings(BaseSettings):
     quota_enabled: bool = False
 
     # Token 计费：用户扣费 = TokenFree 官方成本（billing_markup 保留兼容，不再乘）
-    billing_enabled: bool = False
+    billing_enabled: bool = True
     billing_markup: float = 1.0
     # token / 视频时长估价缓冲；按张生图官价不再乘此系数（否则 5 元赠金冻不住一张图）
     billing_estimate_buffer: float = 1.2
@@ -137,7 +137,7 @@ class Settings(BaseSettings):
     billing_est_tts_tokens: int = 5_000
     billing_est_seedance_tokens_per_sec: int = 32_000
     # Signup grant (fen)
-    billing_signup_grant_fen: int = 500
+    billing_signup_grant_fen: int = 0
 
     # 用户消费里程碑弹窗（累计扣费每达 interval 分提醒一次；默认 10000 = ¥100）
     billing_user_alert_enabled: bool = True
@@ -196,6 +196,15 @@ class Settings(BaseSettings):
     # 生成链路：先落盘返回 /static，再入队异步上传并回填 OSS URL
     oss_upload_async: bool = True
     oss_upload_queue: str = "oss"
+
+    # Backblaze B2 — 兼容 oss_svc 接口上传媒体与公网访问；FFmpeg 仍读本地文件
+    storage_driver: str = ""
+    b2_key_id: str = ""
+    b2_application_key: str = ""
+    b2_bucket_name: str = ""
+    b2_endpoint: str = ""
+    b2_region: str = ""
+    b2_public_domain: str = ""
 
     cors_origins: str = (
         "http://localhost:5173,http://127.0.0.1:5173,"

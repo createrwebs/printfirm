@@ -47,7 +47,7 @@ export async function request<T>(path: string, method = 'GET', body?: unknown, s
     })
   } catch (cause) {
     if (signal?.aborted) throw cause
-    throw new Error('网络连接ล้มเหลว，请检查网络后ลองใหม่。', { cause })
+    throw new Error('การเชื่อมต่อเครือข่ายล้มเหลว โปรดตรวจสอบเครือข่ายแล้วลองใหม่อีกครั้ง', { cause })
   }
   const result = await response.json().catch(() => ({}))
   if (!response.ok) {
@@ -142,7 +142,7 @@ export async function upload(file: File, kind: string, progress: (percent: numbe
   } catch (error) {
     if (signal?.aborted && session) {
       try { await request(`/uploads/${session.id}`, 'DELETE'); localStorage.removeItem(key) }
-      catch { throw new Error('ยกเลิก未确认，请到我的文件检查สถานะ；重新เลือก相同文件可恢复อัปโหลด。') }
+      catch { throw new Error('การยกเลิกยังไม่ได้รับการยืนยัน โปรดตรวจสอบสถานะในไฟล์ของฉัน การเลือกไฟล์เดิมซ้ำสามารถดำเนินการอัปโหลดต่อได้') }
       throw new Error('ยกเลิกแล้วอัปโหลด')
     }
     throw error
@@ -156,6 +156,6 @@ export const date = (value?: string) => value ? new Date(value).toLocaleString('
 // 将UTC转为当前浏览器datetime-local值，避免表单回填时改变时区。
 export function localDate(value: string) { const date = new Date(value); return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16) }
 // สถานะ不在客户端推断，仅翻译后端结果。
-export const labels: Record<string, string> = { draft: 'ฉบับร่าง', preview_failed: '短试看สร้างไม่สำเร็จ', pending: '待审核', approved: '已通过', rejected: '已驳回', missing: '未ส่ง', ready: '已就绪', processing: 'กำลังประมวลผล', uploading: 'กำลังอัปโหลด', failed: 'ล้มเหลว', open: '征集中', closed: 'ปิดใช้งานแล้ว', expired: '已到期', to_review: '待看', candidate: '候选', not_selected: '不采用', pending_materials: '待材料', reviewing: '材料核验中', supplement: '待补正', applying: '办理中', certificated: '已取得证书', cancelled: 'ยกเลิกแล้ว', existing: '已有证书', self_service: '自行办理', assisted: '客服协办' }
+export const labels: Record<string, string> = { draft: 'ฉบับร่าง', preview_failed: 'สร้างตัวอย่างสั้นไม่สำเร็จ', pending: 'รอการตรวจสอบ', approved: 'อนุมัติแล้ว', rejected: 'ปฏิเสธแล้ว', missing: 'ยังไม่ได้ส่ง', ready: 'พร้อมแล้ว', processing: 'กำลังประมวลผล', uploading: 'กำลังอัปโหลด', failed: 'ล้มเหลว', open: 'เปิดรับสมัคร', closed: 'ปิดใช้งานแล้ว', expired: 'หมดอายุแล้ว', to_review: 'รอตรวจดู', candidate: 'ผู้สมัครที่ผ่านเกณฑ์', not_selected: 'ไม่ได้รับเลือก', pending_materials: 'รอเอกสาร', reviewing: 'กำลังตรวจสอบเอกสาร', supplement: 'รอแก้ไขเอกสาร', applying: 'กำลังดำเนินการ', certificated: 'ได้รับใบรับรองแล้ว', cancelled: 'ยกเลิกแล้ว', existing: 'มีใบรับรองอยู่แล้ว', self_service: 'ดำเนินการเอง', assisted: 'ฝ่ายบริการลูกค้าประสานงาน' }
 
 

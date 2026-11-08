@@ -12,7 +12,7 @@ export function useTeamPage<T>(key: string, load: (signal: AbortSignal) => Promi
     const controller = new AbortController()
     setLoading(true); setError('')
     const timer = window.setTimeout(() => {
-      void load(controller.signal).then((result) => { if (!controller.signal.aborted) setData(result) }).catch((cause) => { if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : 'โหลดไม่สำเร็จ，请ลองใหม่') }).finally(() => { if (!controller.signal.aborted) setLoading(false) })
+      void load(controller.signal).then((result) => { if (!controller.signal.aborted) setData(result) }).catch((cause) => { if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : 'โหลดไม่สำเร็จ โปรดลองใหม่อีกครั้ง') }).finally(() => { if (!controller.signal.aborted) setLoading(false) })
     }, 180)
     return () => { window.clearTimeout(timer); controller.abort() }
     // load 由 key 描述，避免组件内联函数导致无穷重载。

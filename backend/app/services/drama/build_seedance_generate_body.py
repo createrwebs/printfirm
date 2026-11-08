@@ -1007,10 +1007,26 @@ def build_seedance_prompt_text(
 
     resolved_catalog = catalog or build_seedance_reference_catalog(reference, script=normalized)
     lang = detect_content_language(normalized)
+    subtitle_guard = ""
+    if not burn_subtitles:
+        subtitle_guard = (
+            "ห้ามฝังคำบรรยายหรือข้อความบทพูดลงในภาพ คำบรรยายจะใส่ในขั้นตอนหลังการเรนเดอร์"
+            if lang == "th"
+            else "禁止在画面内烧录字幕，字幕由后期步骤添加。"
+        )
+    intro_guard = ""
+    if not character_intro:
+        intro_guard = (
+            "ห้ามใส่ข้อความแนะนำตัวละครหรือป้ายชื่อบนภาพ"
+            if lang == "th"
+            else "禁止任何人物介绍叠字、角色名卡或身份标签。"
+        )
     # Submitted prompts contain the selected visual style and storyboard body only.
     # Reference images/audio stay in content[], without extra mandatory instruction paragraphs.
     sections = [
         build_visual_style_section(video_style_id, has_style_board=has_style_board, lang=lang),
+        subtitle_guard,
+        intro_guard,
         build_seedance_body_text(normalized, reference, resolved_catalog),
     ]
     return "\n\n".join(section for section in sections if section)

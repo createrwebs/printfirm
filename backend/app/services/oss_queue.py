@@ -20,7 +20,16 @@ _ENQUEUE_KEY = "ai_movie:oss:enqueued:{digest}"
 _ENQUEUE_TTL = 7200
 
 # JSON params 内可能存本地媒体 URL 的字段
-_ASSET_PARAM_URL_KEYS = ("voiceAudio", "cover", "url", "image", "video")
+_ASSET_PARAM_URL_KEYS = (
+    "voiceAudio",
+    "cover",
+    "url",
+    "image",
+    "video",
+    "lastFrameUrl",
+    "last_frame_url",
+    "cover_url",
+)
 
 
 def _redis() -> redis.Redis:
@@ -145,23 +154,24 @@ async def backfill_media_url(old_url: str, new_url: str) -> int:
                 )
                 changed += int(result.rowcount or 0)
 
-        # 仅当 params JSON 文本含该 URL 时回写（音色 voiceAudio 等）
-        assets = (
-            await db.execute(
-                select(DramaAsset).where(
-                    DramaAsset.params.is_not(None),
-                    cast(DramaAsset.params, String).like(f"%{old}%"),
+        # 仅当 params JSON 文本含该 URL 时回写（音色 voiceAudio、分镜版本等）
+        for param_model in (DramaAsset, DramaEpisodeFragment):
+            rows = (
+                await db.execute(
+                    select(param_model).where(
+                        param_model.params.is_not(None),
+                        cast(param_model.params, String).like(f"%{old}%"),
+                    )
                 )
-            )
-        ).scalars().all()
-        for asset in assets:
-            params = asset.params
-            if not isinstance(params, dict):
-                continue
-            rewritten = dict(params)
-            if _rewrite_local_urls_in_params(rewritten, old, new):
-                asset.params = rewritten
-                changed += 1
+            ).scalars().all()
+            for row in rows:
+                params = row.params
+                if not isinstance(params, dict):
+                    continue
+                rewritten = dict(params)
+                if _rewrite_local_urls_in_params(rewritten, old, new):
+                    row.params = rewritten
+                    changed += 1
         await db.commit()
     if changed:
         logger.info("oss backfill %s row(s): %s → %s", changed, old, new)
@@ -185,7 +195,7 @@ def collect_pending_column_targets() -> list[tuple[type, list[str]]]:
 async def collect_pending_local_media_urls(*, limit: int = 2000) -> list[str]:
     """扫描库中仍指向本地 /static 的媒体 URL（含漫剧）。"""
     from app.database import AsyncSessionLocal
-    from app.models_drama import DramaAsset
+    from app.models_drama import DramaAsset, DramaEpisodeFragment
 
     found: set[str] = set()
     async with AsyncSessionLocal() as db:
@@ -205,15 +215,16 @@ async def collect_pending_local_media_urls(*, limit: int = 2000) -> list[str]:
                         if len(found) >= limit:
                             return sorted(found)
 
-        assets = (
-            await db.execute(
-                select(DramaAsset).where(DramaAsset.params.is_not(None))
-            )
-        ).scalars().all()
-        for asset in assets:
-            _collect_local_urls_from_params(asset.params, found)
-            if len(found) >= limit:
-                break
+        for param_model in (DramaAsset, DramaEpisodeFragment):
+            rows = (
+                await db.execute(
+                    select(param_model).where(param_model.params.is_not(None))
+                )
+            ).scalars().all()
+            for row in rows:
+                _collect_local_urls_from_params(row.params, found)
+                if len(found) >= limit:
+                    break
     return sorted(found)[:limit]
 
 

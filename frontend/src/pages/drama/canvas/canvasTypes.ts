@@ -82,12 +82,12 @@ export const CANVAS_NODE_OPTION_BY_KIND = Object.fromEntries(
 
 /** 各ประเภทค่าเริ่มต้น展示名 */
 export const CANVAS_NODE_DEFAULT_LABEL: Record<CanvasNodeKind, string> = {
-  character: '新ตัวละคร',
-  scene: '新ฉาก',
-  video: '新วิดีโอ',
-  image: '新รูปภาพ',
+  character: 'ตัวละครใหม่',
+  scene: 'ฉากใหม่',
+  video: 'วิดีโอใหม่',
+  image: 'รูปภาพใหม่',
   text: '文本',
-  audio: '新เสียง',
+  audio: 'เสียงใหม่',
 }
 
 /**

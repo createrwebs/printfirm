@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Annotated
 
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, Path as APIPath
@@ -39,6 +39,21 @@ from app.services.drama.seed import (
 )
 
 router = APIRouter()
+
+ASSET_SEED_STALE_MINUTES = 30
+
+
+def _asset_seed_is_stale(params: dict) -> bool:
+    started_raw = params.get("assets_seed_generating_at")
+    if not started_raw:
+        return True
+    try:
+        started = datetime.fromisoformat(str(started_raw).replace("Z", "+00:00"))
+    except ValueError:
+        return True
+    if started.tzinfo is None:
+        started = started.replace(tzinfo=timezone.utc)
+    return datetime.now(timezone.utc) - started > timedelta(minutes=ASSET_SEED_STALE_MINUTES)
 
 
 @router.get(
@@ -216,18 +231,17 @@ async def update_asset(
 
 @router.post(
     "/assets/{asset_id}/upload", response_model=DramaAssetOut,
-    summary="上传资产图片或音频",
-    description="通过 multipart/form-data 为 asset_id 指定的资产上传媒体；启用 OSS 时上传到 OSS，否则保存到本地 static 目录。支持 JPG、PNG、WebP、GIF 图片（最大 20MB）及 MP3、WAV、M4A、AAC、OGG、WebM 音频（最大 30MB）。图片替换前归档当前版本，音频不写入图片封面；生成进行中返回 409，团队项目需持有该资产的编辑租约。",
+    summary="上传资产图片、音频或视频",
+    description="通过 multipart/form-data 为 asset_id 指定的资产上传媒体；启用 OSS/B2 时同时保存本地副本并上传到云存储。支持 JPG、PNG、WebP、GIF 图片（最大 20MB）、MP3、WAV、M4A、AAC、OGG、WebM 音频（最大 30MB）及 MP4、MOV、WebM、MKV 视频（最大 200MB）。",
     response_description="上传完成后的资产，包含媒体地址、媒体元数据和 done 生成状态",
 )
 async def upload_asset_media(
     asset_id: Annotated[int, APIPath(description="项目资产编号，需有其所属项目的访问权限")],
-    file: UploadFile = File(..., description="资产图片或音频文件；图片最大 20MB，音频最大 30MB，不接受空文件"),
+    file: UploadFile = File(..., description="资产图片、音频或视频文件"),
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> DramaAssetOut:
-    """上传图片或音频；有 OSS 时远端保存，否则使用本地 static 存储。音频资产不写 cover。"""
-    from app.models_drama import DramaProject
+    """上传图片、音频或视频；有 OSS/B2 时同时落盘并远端保存，否则使用本地 static 存储。"""
     from app.services import oss as oss_svc
     from app.services import storage
 
@@ -259,8 +273,15 @@ async def upload_asset_media(
         "audio/ogg": ".ogg",
         "audio/webm": ".webm",
     }
-    ext = image_allowed.get(content_type) or audio_allowed.get(content_type)
+    video_allowed = {
+        "video/mp4": ".mp4",
+        "video/quicktime": ".mov",
+        "video/webm": ".webm",
+        "video/x-matroska": ".mkv",
+    }
+    ext = image_allowed.get(content_type) or audio_allowed.get(content_type) or video_allowed.get(content_type)
     is_audio = content_type in audio_allowed
+    is_video = content_type in video_allowed
     if not ext:
         suffix = Path(file.filename or "").suffix.lower()
         if suffix in {".jpg", ".jpeg", ".png", ".webp", ".gif"}:
@@ -272,7 +293,8 @@ async def upload_asset_media(
                 ".gif": "image/gif",
             }.get(ext, "application/octet-stream")
             is_audio = False
-        elif suffix in {".mp3", ".wav", ".m4a", ".aac", ".ogg", ".webm"}:
+            is_video = False
+        elif suffix in {".mp3", ".wav", ".m4a", ".aac", ".ogg"}:
             ext = suffix
             content_type = {
                 ".mp3": "audio/mpeg",
@@ -280,11 +302,24 @@ async def upload_asset_media(
                 ".m4a": "audio/mp4",
                 ".aac": "audio/aac",
                 ".ogg": "audio/ogg",
-                ".webm": "audio/webm",
             }.get(ext, "application/octet-stream")
             is_audio = True
+            is_video = False
+        elif suffix in {".mp4", ".mov", ".webm", ".mkv"}:
+            ext = suffix
+            content_type = {
+                ".mp4": "video/mp4",
+                ".mov": "video/quicktime",
+                ".webm": "video/webm",
+                ".mkv": "video/x-matroska",
+            }.get(ext, "application/octet-stream")
+            is_audio = False
+            is_video = True
         else:
-            raise HTTPException(status_code=400, detail="仅支持图片（JPG/PNG/WebP/GIF）或音频（MP3/WAV/M4A 等）")
+            raise HTTPException(
+                status_code=400,
+                detail="仅支持图片（JPG/PNG/WebP/GIF）、音频（MP3/WAV/M4A 等）或视频（MP4/MOV/WebM/MKV）",
+            )
 
     # 直接检查上传临时文件大小，避免先把整文件读入内存。
     upload_fp = file.file
@@ -296,40 +331,32 @@ async def upload_asset_media(
         raise HTTPException(status_code=400, detail=f"无法读取上传文件：{exc}") from exc
     if size <= 0:
         raise HTTPException(status_code=400, detail="空文件")
-    max_bytes = 30 * 1024 * 1024 if is_audio else 20 * 1024 * 1024
+    max_bytes = (
+        200 * 1024 * 1024
+        if is_video
+        else (30 * 1024 * 1024 if is_audio else 20 * 1024 * 1024)
+    )
     if size > max_bytes:
         raise HTTPException(
             status_code=400,
-            detail="音频不能超过 30MB" if is_audio else "文件不能超过 20MB",
+            detail=(
+                "视频不能超过 200MB"
+                if is_video
+                else ("音频不能超过 30MB" if is_audio else "文件不能超过 20MB")
+            ),
         )
 
-    if oss_svc.oss_enabled():
-        object_key = (
-            f"{oss_svc.folder_prefix()}/generated/p{asset.project_id}/"
-            f"asset_{asset.id}_{uuid.uuid4().hex[:10]}{ext}"
-        )
-        try:
-            # OSS SDK 为同步阻塞 IO，放到线程池里避免阻塞事件循环。
-            url = await run_in_threadpool(
-                oss_svc.upload_fileobj,
-                upload_fp,
-                object_key,
-                content_type=content_type or "application/octet-stream",
-            )
-        except Exception as exc:  # noqa: BLE001
-            raise HTTPException(status_code=502, detail=f"OSS 上传失败：{exc}") from exc
-    else:
-        dest = storage.project_dir(asset.project_id) / f"asset_{asset.id}_{uuid.uuid4().hex[:10]}{ext}"
-        try:
-            upload_fp.seek(0)
-            dest.write_bytes(upload_fp.read())
-            url = storage.publish_local(dest)
-        except Exception as exc:  # noqa: BLE001
-            raise HTTPException(status_code=500, detail=f"本地存储保存失败：{exc}") from exc
+    dest = storage.project_dir(asset.project_id) / f"asset_{asset.id}_{uuid.uuid4().hex[:10]}{ext}"
+    try:
+        upload_fp.seek(0)
+        dest.write_bytes(upload_fp.read())
+        url = await run_in_threadpool(storage.publish_local, dest, sync=True)
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=500, detail=f"保存及上传文件失败：{exc}") from exc
 
     from app.services.drama.generation import archive_asset_image_version
 
-    if not is_audio:
+    if not is_audio and not is_video:
         archive_asset_image_version(asset, source="upload")
     asset.url = url
     if is_audio:
@@ -338,6 +365,9 @@ async def upload_asset_media(
             asset.asset_type = "audio"
         if (asset.type or "").lower() in {"", "none", "image", "prop"}:
             asset.type = "audio"
+    elif is_video:
+        if not asset.asset_type or asset.asset_type in {"none", "image"}:
+            asset.asset_type = "video"
     else:
         asset.cover = url
         if not asset.asset_type or asset.asset_type == "none":
@@ -395,8 +425,6 @@ async def delete_asset(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> dict:
-    from app.models_drama import DramaProject
-
     asset = await get_owned_asset(db, asset_id, user)
     await db.delete(asset)
     await db.commit()
@@ -426,7 +454,7 @@ async def seed_assets(
         )
     ).scalar_one()
     params = dict(locked.params or {}) if isinstance(locked.params, dict) else {}
-    if str(params.get("assets_seed_status") or "") == "generating":
+    if str(params.get("assets_seed_status") or "") == "generating" and not _asset_seed_is_stale(params):
         existing = list(
             (await db.execute(select(DramaAsset).where(DramaAsset.project_id == locked.id)))
             .scalars()
@@ -437,6 +465,12 @@ async def seed_assets(
             status="generating",
             message="资产抽取进行中，请稍候刷新",
         )
+    if str(params.get("assets_seed_status") or "") == "generating":
+        params["assets_seed_status"] = "failed"
+        params["assets_seed_error"] = "资产抽取任务已超时或 worker 已中断，请重新提交"
+        params.pop("assets_seed_generating_at", None)
+        locked.params = params
+        await db.commit()
 
     if heavy:
         params["assets_seed_status"] = "generating"

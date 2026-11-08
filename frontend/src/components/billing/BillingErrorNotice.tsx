@@ -36,7 +36,7 @@ export default function BillingErrorNotice({
     <Tag className={className} style={style} role={inline ? undefined : 'alert'}>
       {text}{' '}
       <Link to={workspaceScope.teamId === null ? PRICING_PATH : `/teams/${workspaceScope.teamId}?tab=billing`} className="pf-link pf-billing-topup-link">
-        {workspaceScope.teamId === null ? linkText : 'ดู团队用量 →'}
+        {workspaceScope.teamId === null ? linkText : 'ดูการใช้งานของทีม →'}
       </Link>
     </Tag>
   )

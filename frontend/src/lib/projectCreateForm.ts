@@ -34,7 +34,7 @@ export function validateProjectCreate(
   const episodeCount = Number(draft.episodeCount)
   const errors: ProjectCreateErrors = {}
 
-  if ((kind === 'canvas' || titleRequired) && !title) errors.title = kind === 'canvas' ? '请填写画布名称' : '请填写ชื่อโปรเจกต์'
+  if ((kind === 'canvas' || titleRequired) && !title) errors.title = kind === 'canvas' ? 'โปรดกรอกชื่อแคนวาส' : 'โปรดกรอกชื่อโปรเจกต์'
   else if (title.length > titleMaxLength) errors.title = `名称请控制在 ${titleMaxLength} 字以内`
   if (description.length > 500) errors.description = '简介请控制在 500 字以内'
   if (kind === 'drama') {

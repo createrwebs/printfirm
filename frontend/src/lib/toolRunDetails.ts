@@ -20,9 +20,9 @@ export function toolRunDetailAsset(record: ToolRunRecord, resultIndex = 0): Asse
   const params = record.params || {}
   const url = record.kind === 'text' ? null : record.urls[resultIndex] || record.urls[0] || null
   const duration = seconds(params.duration_sec ?? params.duration)
-  const labels: Record<string, string> = { video: 'วิดีโอ生成', image: 'รูปภาพ生成', audio: 'เสียง生成', text: '文字生成' }
-  const statuses: Record<string, string> = { queued: '任务正在排队，结果会自动更新。', running: '任务正在生成，结果会自动更新。', succeeded: '任务เสร็จสมบูรณ์，暂无可ดูตัวอย่าง的媒体结果。', failed: 'สร้างไม่สำเร็จ。', cancelled: '任务ยกเลิกแล้ว。' }
-  const textContent = record.text_content || formatGenerationErrorMessage(record.error) || statuses[record.status] || `任务สถานะ：${record.status}`
+  const labels: Record<string, string> = { video: 'สร้างวิดีโอ', image: 'สร้างรูปภาพ', audio: 'สร้างเสียง', text: 'สร้างข้อความ' }
+  const statuses: Record<string, string> = { queued: 'งานกำลังรอคิว ผลลัพธ์จะอัปเดตอัตโนมัติ', running: 'งานกำลังสร้าง ผลลัพธ์จะอัปเดตอัตโนมัติ', succeeded: 'งานเสร็จสมบูรณ์ ยังไม่มีผลลัพธ์สื่อที่แสดงตัวอย่างได้', failed: 'สร้างไม่สำเร็จ', cancelled: 'งานถูกยกเลิกแล้ว' }
+  const textContent = record.text_content || formatGenerationErrorMessage(record.error) || statuses[record.status] || `สถานะงาน: ${record.status}`
 
   return {
     id: record.id,

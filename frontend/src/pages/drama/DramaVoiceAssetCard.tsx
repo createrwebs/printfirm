@@ -40,7 +40,7 @@ export function DramaVoiceAssetCard({
       actions={<>
         {hasAudio && <CharacterVoicePreviewButton url={asset.url || ''} label={asset.name || undefined} variant="button" size="sm" onError={onError} />}
         {onSynth && <button type="button" className="pf-btn pf-btn-lime pf-btn-sm" disabled={synthBusy || !promptValue.trim()} onClick={onSynth}>
-          {synthBusy ? '合成中…' : hasAudio ? '重新合成' : '按คำแนะนำ词合成'}
+          {synthBusy ? 'กำลังสร้างเสียง...' : hasAudio ? 'สร้างเสียงใหม่' : 'สร้างเสียงตามพรอมต์'}
         </button>}
         <button type="button" className="pf-btn pf-btn-sm drama-btn-danger-text" aria-label={`ลบ ${asset.name || 'น้ำเสียง'}`} disabled={synthBusy} onClick={onDelete}><Trash2 size={14} />ลบ</button>
       </>}
@@ -53,7 +53,7 @@ export function DramaVoiceAssetCard({
             disabled={synthBusy}
             onChange={(e) => onPromptChange(e.target.value)}
             onBlur={onPromptBlur}
-            placeholder="คำอธิบายน้ำเสียง：年龄、性别、语气、ความเร็วเสียง…"
+            placeholder="อธิบายน้ำเสียง: อายุ, เพศ, อารมณ์, ความเร็วเสียง..."
           />
         </label>
 

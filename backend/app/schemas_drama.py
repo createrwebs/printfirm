@@ -296,6 +296,23 @@ class DramaGenerateRequest(BaseModel):
     model_id: str | None = Field(default=None, max_length=64)
 
 
+class DramaColabCheckRequest(BaseModel):
+    url: str = Field(..., min_length=1, max_length=512)
+
+
+class DramaRenderColabRequest(BaseModel):
+    fragment_ids: list[int]
+    comfyui_url: str = Field(..., min_length=1, max_length=512)
+    engine: str | None = Field(default="h3", description="Video engine: h3 or wan2")
+    duration_sec: int | None = Field(default=5, ge=3, le=15)
+    prompt_override: str | None = Field(default=None, max_length=10000)
+    seed: int | None = None
+    reference_image_url: str | None = Field(default=None, max_length=1024)
+    reference_image_urls: list[str] | None = Field(default=None)
+    first_frame_url: str | None = Field(default=None, max_length=1024)
+    last_frame_url: str | None = Field(default=None, max_length=1024)
+
+
 class DramaComposeEpisodeRequest(BaseModel):
     # fragment_ids 仅拼接指定分镜；None 表示本集全部已有视频的分镜
     fragment_ids: list[int] | None = None
